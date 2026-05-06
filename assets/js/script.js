@@ -61,10 +61,7 @@ function setApplyJob(jobId, title, company) {
     if (companyEl) companyEl.textContent = company;
 }
 
-// Stub — overridden by DB-backed pages
-function submitApplication() {
-    showToast("Submission not configured for this page.", "warning");
-}
+// submitApplication is defined per-page (browse-jobs.php, etc.)
 
 // ── Profile toggle stub — overridden by profile pages ──────
 function toggleEditProfile() {}
