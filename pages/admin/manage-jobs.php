@@ -101,14 +101,12 @@ include $basePath . 'layouts/navbar-admin.php';
 <!-- Modals -->
 <?php include $basePath . 'modals/add-job-modal.php'; ?>
 
-<?php include $basePath . 'layouts/footer.php'; ?>
-
 <script>
-// ── Manage Jobs — DB-backed overrides (must load AFTER script.js) ──
+// ── Manage Jobs ──
 const JOBS_HANDLER = '../../handlers/jobs.php';
 
 // Override: open Add modal
-openAddJobModal = function() {
+function openAddJobModal() {
     _editingJobId = null;
     document.getElementById('addJobModalLabel').innerHTML =
         '<i class="bi bi-plus-circle me-2"></i>Add New Job Post';
@@ -118,7 +116,7 @@ openAddJobModal = function() {
 };
 
 // Override: open Edit modal
-editJob = function(title, company, description, qualification, datePosted, status, id) {
+function editJob(title, company, description, qualification, datePosted, status, id) {
     _editingJobId = id;
     document.getElementById('addJobModalLabel').innerHTML =
         '<i class="bi bi-pencil-square me-2"></i>Edit Job Post';
@@ -132,7 +130,7 @@ editJob = function(title, company, description, qualification, datePosted, statu
 };
 
 // Override: save (add or edit) via fetch
-saveJob = function() {
+function saveJob() {
     const title         = document.getElementById('jobTitle')?.value.trim();
     const company       = document.getElementById('jobCompany')?.value.trim();
     const description   = document.getElementById('jobDescription')?.value.trim();
@@ -165,7 +163,7 @@ saveJob = function() {
 };
 
 // Override: delete via fetch
-deleteJob = function(id) {
+function deleteJob(id) {
     if (!confirm('Are you sure you want to delete this job post?')) return;
     fetch(JOBS_HANDLER, {
         method: 'POST',
@@ -180,3 +178,4 @@ deleteJob = function(id) {
     .catch(() => showToast('Request failed. Please try again.', 'danger'));
 };
 </script>
+<?php include $basePath . 'layouts/footer.php'; ?>
