@@ -33,11 +33,12 @@ $monthly_report = $stmtMonthly->fetchAll();
 $maxMonthly = !empty($monthly_report) ? max(array_column($monthly_report, "applications")) : 1;
 
 include $basePath . "layouts/header.php";
-include $basePath . "layouts/sidebar-admin.php";
+include $basePath . "layouts/navbar-admin.php";
 ?>
-<div class="main-content">
-    <div class="container-fluid py-4">
-        <?php include $basePath . "layouts/navbar-admin.php"; ?>
+<div class="container-fluid">
+    <div class="row">
+        <?php include $basePath . "layouts/sidebar-admin.php"; ?>
+        <div class="col-lg-10 col-md-9 py-4 px-4">
         <!-- Page Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
@@ -158,6 +159,7 @@ include $basePath . "layouts/sidebar-admin.php";
                 </div>
             </div>
         </div>
-    </div>
-</div>
-<?php include $basePath . "layouts/footer.php"; ?>
+        </div><!-- /col-lg-10 -->
+    </div><!-- /row -->
+</div><!-- /container-fluid -->
+<?php include $basePath . "layouts/footer.php"; ?><?php include $basePath . "layouts/footer.php"; ?>
