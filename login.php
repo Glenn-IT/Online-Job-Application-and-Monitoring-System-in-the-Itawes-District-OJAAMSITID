@@ -1,11 +1,51 @@
 <?php
-/**
- * ==============================================
- * OJAMS - Login Page
- * ==============================================
- * Prototype login page with role-based navigation.
- * No actual authentication is implemented.
- */
+
+require_once __DIR__ . '/config/auth.php';
+
+// Already logged in? Redirect to the right dashboard.
+if (isLoggedIn()) {
+    header('Location: ' . (isAdmin()
+        ? BASE_URL . '/pages/admin/dashboard.php'
+        : BASE_URL . '/pages/user/browse-jobs.php'));
+    exit;
+}
+
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email    = trim($_POST['email']    ?? '');
+    $password = trim($_POST['password'] ?? '');
+
+    if ($email === '' || $password === '') {
+        $error = 'Please enter both email and password.';
+    } else {
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+
+        if (!$user || !password_verify($password, $user['password_hash'])) {
+            $error = 'Invalid email or password.';
+        } else {
+            // Build a clean session payload (never store password_hash)
+            $_SESSION['ojams_user'] = [
+                'id'             => $user['id'],
+                'role'           => $user['role'],
+                'full_name'      => $user['full_name'],
+                'email'          => $user['email'],
+                'contact_number' => $user['contact_number'],
+                'address'        => $user['address'],
+                'birthdate'      => $user['birthdate'],
+            ];
+
+            // Role-based redirect
+            header('Location: ' . ($user['role'] === 'admin'
+                ? BASE_URL . '/pages/admin/dashboard.php'
+                : BASE_URL . '/pages/user/browse-jobs.php'));
+            exit;
+        }
+    }
+}
+
 $pageTitle = "OJAMS - Login";
 $basePath  = "";
 include 'layouts/header.php';
@@ -27,22 +67,29 @@ include 'layouts/header.php';
                         </div>
 
                         <!-- Alert Box -->
-                        <div id="loginAlert" class="alert d-none mb-3" role="alert"></div>
+                        <?php if ($error): ?>
+                        <div class="alert alert-danger mb-3" role="alert">
+                            <i class="bi bi-exclamation-circle me-2"></i><?= htmlspecialchars($error) ?>
+                        </div>
+                        <?php endif; ?>
 
                         <!-- Login Form -->
-                        <form id="loginForm" onsubmit="doLogin(event)">
+                        <form id="loginForm" method="post" action="login.php">
                             <div class="mb-3">
                                 <label class="form-label">Email Address</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                                    <input type="email" class="form-control" id="loginEmail" placeholder="Enter your email" required>
+                                    <input type="email" class="form-control" name="email" id="loginEmail"
+                                           placeholder="Enter your email"
+                                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Password</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                                    <input type="password" class="form-control" id="loginPassword" placeholder="Enter your password" required>
+                                    <input type="password" class="form-control" name="password" id="loginPassword"
+                                           placeholder="Enter your password" required>
                                     <button type="button" class="btn btn-outline-secondary" onclick="toggleLoginPass()">
                                         <i class="bi bi-eye" id="loginEyeIcon"></i>
                                     </button>
@@ -163,49 +210,10 @@ document.getElementById('forgotPasswordModal').addEventListener('hidden.bs.modal
 </script>
 
 <script>
-/* ── Login Page Logic (localStorage) ── */
-function doLogin(e) {
-    e.preventDefault();
-    const email    = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const alertBox = document.getElementById('loginAlert');
-
-    const result = Users.authenticate(email, password);
-    if (!result.success) {
-        alertBox.className = 'alert alert-danger';
-        alertBox.textContent = result.message;
-        alertBox.classList.remove('d-none');
-        return;
-    }
-
-    // Save session & redirect based on role
-    Session.set(result.user);
-    alertBox.className = 'alert alert-success';
-    alertBox.textContent = `Welcome back, ${result.user.full_name}! Redirecting...`;
-    alertBox.classList.remove('d-none');
-
-    setTimeout(() => {
-        if (result.user.role === 'admin') {
-            window.location.href = 'pages/admin/dashboard.php';
-        } else {
-            window.location.href = 'pages/user/browse-jobs.php';
-        }
-    }, 800);
-}
-
 function toggleLoginPass() {
     const inp  = document.getElementById('loginPassword');
     const icon = document.getElementById('loginEyeIcon');
     if (inp.type === 'password') { inp.type = 'text'; icon.className = 'bi bi-eye-slash'; }
     else                         { inp.type = 'password'; icon.className = 'bi bi-eye'; }
 }
-
-// Redirect if already logged in
-document.addEventListener('DOMContentLoaded', () => {
-    if (Session.isLoggedIn()) {
-        window.location.href = Session.isAdmin()
-            ? 'pages/admin/dashboard.php'
-            : 'pages/user/browse-jobs.php';
-    }
-});
 </script>
