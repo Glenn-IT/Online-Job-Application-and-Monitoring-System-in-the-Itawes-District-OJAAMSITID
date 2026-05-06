@@ -108,7 +108,7 @@ activity_logs
 
 ---
 
-### ✅ PHASE 3 — Authentication Backend *(DONE)*
+### ✅ PHASE 3 — Authentication Backend _(DONE)_
 
 - **Objective:** Replace localStorage login/register/logout/session guards with real PHP sessions.
 - **Files updated:** `login.php`, `register.php`, `logout.php`
@@ -119,7 +119,7 @@ activity_logs
 
 ---
 
-### ✅ PHASE 4 — Job Management Backend *(DONE)*
+### ✅ PHASE 4 — Job Management Backend _(DONE)_
 
 - **Objective:** Replace localStorage job CRUD with real MySQL operations.
 - **Files created:** `handlers/jobs.php` (add/edit/delete POST handler, JSON responses)
