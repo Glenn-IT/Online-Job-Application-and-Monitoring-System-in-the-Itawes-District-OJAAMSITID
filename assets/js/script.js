@@ -96,8 +96,8 @@ function editJob(title, company, description, qualification, datePosted, status,
 function saveJob() { showToast("saveJob not configured.", "warning"); }
 function deleteJob(id) { showToast("deleteJob not configured.", "warning"); }
 
-// ── Application cancel stub — overridden by my-applications ─
-let _cancelAppId   = null;
+// ── Application cancel — shared state used by my-applications ─
+let _cancelAppId    = null;
 let _cancelJobTitle = null;
 
 function confirmCancel(jobTitle, appId) {
@@ -106,21 +106,7 @@ function confirmCancel(jobTitle, appId) {
     _setText("cancelAppJobTitle", jobTitle);
 }
 
-function cancelApplication() {
-    showToast("cancelApplication not configured.", "warning");
-}
-
-// ── Browse jobs search filter ───────────────────────────────
-function filterJobs() {
-    const q = (document.getElementById("jobSearch")?.value || "").toLowerCase();
-    const status = (document.getElementById("statusFilter")?.value || "").toLowerCase();
-    document.querySelectorAll("#jobCardsContainer .col-md-6, #jobCardsContainer .col-md-4")
-        .forEach(card => {
-            const matchText   = !q || card.textContent.toLowerCase().includes(q);
-            const matchStatus = !status || card.textContent.toLowerCase().includes(status);
-            card.style.display = (matchText && matchStatus) ? "" : "none";
-        });
-}
+// cancelApplication, filterJobs, submitApplication are defined per-page.
 
 // ── Misc ────────────────────────────────────────────────────
 function comingSoon() { alert("Feature Coming Soon"); }
