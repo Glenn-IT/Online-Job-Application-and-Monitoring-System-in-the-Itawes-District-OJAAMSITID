@@ -1,23 +1,17 @@
 <?php
-/**
- * ==============================================
- * OJAMS - Logout Handler
- * ==============================================
- * Clears the localStorage session via JS redirect page.
- */
-$basePath = "";
-$pageTitle = "OJAMS - Logging out...";
-include 'layouts/header.php';
-?>
-<div class="min-vh-100 d-flex align-items-center justify-content-center bg-light">
-    <div class="text-center">
-        <div class="spinner-border text-primary mb-3" role="status"></div>
-        <p class="text-muted">Logging you out...</p>
-    </div>
-</div>
-<?php include 'layouts/footer.php'; ?>
-<script>
-    Session.clear();
-    setTimeout(() => { window.location.href = 'login.php'; }, 600);
-</script>
 
+$configPath = __DIR__ . '/config/db.php';
+require_once $configPath;
+
+// Destroy PHP session
+$_SESSION = [];
+if (ini_get('session.use_cookies')) {
+    $p = session_get_cookie_params();
+    setcookie(session_name(), '', time() - 42000,
+        $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+}
+session_destroy();
+
+// Redirect to login
+header('Location: ' . BASE_URL . '/login.php');
+exit;
