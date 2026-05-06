@@ -93,8 +93,7 @@ function editJob(title, company, description, qualification, datePosted, status,
     new bootstrap.Modal(document.getElementById("addJobModal")).show();
 }
 
-function saveJob() { showToast("saveJob not configured.", "warning"); }
-function deleteJob(id) { showToast("deleteJob not configured.", "warning"); }
+// saveJob, deleteJob are defined per-page (manage-jobs.php).
 
 // ── Application cancel — shared state used by my-applications ─
 let _cancelAppId    = null;
