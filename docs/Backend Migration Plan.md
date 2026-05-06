@@ -89,43 +89,43 @@ activity_logs
 
 ---
 
-### PHASE 1 — Database Planning
+### ✅ PHASE 1 — Database Planning _(DONE)_
 
 - **Objective:** Design and create the MySQL database with all tables and seed data.
-- **Files to create:** `config/database.sql` (schema + seeds)
+- **Files created:** `config/database.sql` (schema + seeds)
 - **Tables:** `users`, `jobs`, `applications`, `activity_logs`
 - **Outcome:** Database is ready; demo accounts and sample jobs are seeded.
 
 ---
 
-### PHASE 2 — Core Configuration
+### ✅ PHASE 2 — Core Configuration _(DONE)_
 
 - **Objective:** Create the PHP database connection and shared config file used by all backend files.
-- **Files to create:** `config/db.php`, `config/config.php`
-- **Files to update:** `layouts/header.php` (include config), `index.php`
+- **Files created:** `config/config.php`, `config/db.php`, `config/auth.php` (stub), `config/seed.php` (one-time hash generator)
+- **Files updated:** `layouts/header.php` (auto-includes db.php), `index.php`
 - **Tables:** None (connection only)
-- **Outcome:** All PHP pages can connect to MySQL via `$pdo`.
+- **Outcome:** All PHP pages can connect to MySQL via `$pdo`; session is started automatically.
 
 ---
 
-### PHASE 3 — Authentication Backend
+### ✅ PHASE 3 — Authentication Backend *(DONE)*
 
 - **Objective:** Replace localStorage login/register/logout/session guards with real PHP sessions.
-- **Files to update:** `login.php`, `register.php`, `logout.php`
-- **Files to create:** `config/auth.php` (session guard helpers: `requireAdmin()`, `requireUser()`)
-- **Files to update:** All pages (swap `requireAdmin()` JS call → PHP `include 'auth.php'` at top)
+- **Files updated:** `login.php`, `register.php`, `logout.php`
+- **Files updated:** `config/auth.php` (guards activated), all 8 protected pages (PHP guard added at top)
+- **Files updated:** `layouts/navbar-admin.php`, `layouts/navbar-user.php` (session-driven username)
 - **Tables:** `users`
-- **Outcome:** Real login/logout with `$_SESSION`; auth guards work server-side; `storage.js` session functions become dead code.
+- **Outcome:** Real login/logout with `$_SESSION`; auth guards work server-side; `storage.js` session functions are now dead code.
 
 ---
 
-### PHASE 4 — Job Management Backend
+### ✅ PHASE 4 — Job Management Backend *(DONE)*
 
 - **Objective:** Replace localStorage job CRUD with real MySQL operations.
-- **Files to update:** `pages/admin/manage-jobs.php`
-- **Files to create:** `handlers/jobs.php` (add/edit/delete POST handlers)
+- **Files created:** `handlers/jobs.php` (add/edit/delete POST handler, JSON responses)
+- **Files updated:** `pages/admin/manage-jobs.php` (DB query replaces sample-data; fetch() replaces localStorage CRUD)
 - **Tables:** `jobs`, `activity_logs`
-- **Outcome:** Admin can add, edit, and delete jobs stored in MySQL.
+- **Outcome:** Admin can add, edit, and delete jobs; all changes persist to MySQL and are logged.
 
 ---
 
