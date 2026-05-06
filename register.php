@@ -1,11 +1,53 @@
 <?php
-/**
- * ==============================================
- * OJAMS - Registration Page
- * ==============================================
- * Prototype registration page.
- * No actual user creation is implemented.
- */
+
+$configPath = __DIR__ . '/config/db.php';
+require_once $configPath;
+
+// Already logged in? Go to dashboard.
+if (isLoggedIn()) {
+    header('Location: ' . BASE_URL . '/pages/user/browse-jobs.php');
+    exit;
+}
+
+$error   = '';
+$success = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $full_name = trim($_POST['full_name'] ?? '');
+    $email     = trim($_POST['email']     ?? '');
+    $contact   = trim($_POST['contact']   ?? '');
+    $password  = $_POST['password']  ?? '';
+    $confirm   = $_POST['confirm']   ?? '';
+
+    // Basic validation
+    if (!$full_name || !$email || !$contact || !$password || !$confirm) {
+        $error = 'All fields are required.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Please enter a valid email address.';
+    } elseif (strlen($password) < 6) {
+        $error = 'Password must be at least 6 characters.';
+    } elseif ($password !== $confirm) {
+        $error = 'Passwords do not match.';
+    } else {
+        // Check duplicate email
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+        $stmt->execute([$email]);
+        if ($stmt->fetch()) {
+            $error = 'That email address is already registered.';
+        } else {
+            // Insert new user
+            $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => BCRYPT_COST]);
+            $stmt = $pdo->prepare("
+                INSERT INTO users (role, full_name, email, password_hash, contact_number)
+                VALUES ('user', ?, ?, ?, ?)
+            ");
+            $stmt->execute([$full_name, $email, $hash, $contact]);
+            $success = 'Account created! Redirecting to login...';
+            header('Refresh: 1.5; url=' . BASE_URL . '/login.php');
+        }
+    }
+}
+
 $pageTitle = "OJAMS - Register";
 $basePath  = "";
 include 'layouts/header.php';
@@ -27,36 +69,47 @@ include 'layouts/header.php';
                         </div>
 
                         <!-- Alert Box -->
-                        <div id="registerAlert" class="alert d-none mb-3" role="alert"></div>
+                        <?php if ($error): ?>
+                        <div class="alert alert-danger mb-3"><i class="bi bi-exclamation-circle me-2"></i><?= htmlspecialchars($error) ?></div>
+                        <?php elseif ($success): ?>
+                        <div class="alert alert-success mb-3"><i class="bi bi-check-circle me-2"></i><?= htmlspecialchars($success) ?></div>
+                        <?php endif; ?>
 
                         <!-- Registration Form -->
-                        <form id="registerForm" onsubmit="registerUser(event)">
+                        <form id="registerForm" method="post" action="register.php">
                             <div class="mb-3">
                                 <label class="form-label">Full Name <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-person"></i></span>
-                                    <input type="text" class="form-control" id="regName" placeholder="Enter your full name" required>
+                                    <input type="text" class="form-control" name="full_name" id="regName"
+                                           placeholder="Enter your full name"
+                                           value="<?= htmlspecialchars($_POST['full_name'] ?? '') ?>" required>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Email Address <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                                    <input type="email" class="form-control" id="regEmail" placeholder="Enter your email" required>
+                                    <input type="email" class="form-control" name="email" id="regEmail"
+                                           placeholder="Enter your email"
+                                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Contact Number <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-phone"></i></span>
-                                    <input type="tel" class="form-control" id="regContact" placeholder="e.g. 09171234567" required>
+                                    <input type="tel" class="form-control" name="contact" id="regContact"
+                                           placeholder="e.g. 09171234567"
+                                           value="<?= htmlspecialchars($_POST['contact'] ?? '') ?>" required>
                                 </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Password <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                                    <input type="password" class="form-control" id="regPassword" placeholder="Create a password" required minlength="6">
+                                    <input type="password" class="form-control" name="password" id="regPassword"
+                                           placeholder="Create a password" required minlength="6">
                                     <button type="button" class="btn btn-outline-secondary" onclick="toggleRegPass()">
                                         <i class="bi bi-eye" id="regEyeIcon"></i>
                                     </button>
@@ -66,7 +119,8 @@ include 'layouts/header.php';
                                 <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
-                                    <input type="password" class="form-control" id="regConfirm" placeholder="Confirm your password" required>
+                                    <input type="password" class="form-control" name="confirm" id="regConfirm"
+                                           placeholder="Confirm your password" required>
                                 </div>
                             </div>
 
@@ -100,42 +154,6 @@ include 'layouts/header.php';
 <?php include 'layouts/footer.php'; ?>
 
 <script>
-function registerUser(e) {
-    e.preventDefault();
-    const alertBox = document.getElementById('registerAlert');
-    const name     = document.getElementById('regName').value.trim();
-    const email    = document.getElementById('regEmail').value.trim();
-    const contact  = document.getElementById('regContact').value.trim();
-    const password = document.getElementById('regPassword').value;
-    const confirm  = document.getElementById('regConfirm').value;
-
-    if (password !== confirm) {
-        alertBox.className = 'alert alert-danger';
-        alertBox.textContent = 'Passwords do not match.';
-        alertBox.classList.remove('d-none');
-        return;
-    }
-    if (password.length < 6) {
-        alertBox.className = 'alert alert-danger';
-        alertBox.textContent = 'Password must be at least 6 characters.';
-        alertBox.classList.remove('d-none');
-        return;
-    }
-
-    const result = Users.create({ full_name: name, email, password, contact_number: contact });
-    if (!result.success) {
-        alertBox.className = 'alert alert-danger';
-        alertBox.textContent = result.message;
-        alertBox.classList.remove('d-none');
-        return;
-    }
-
-    alertBox.className = 'alert alert-success';
-    alertBox.textContent = 'Account created! Redirecting to login...';
-    alertBox.classList.remove('d-none');
-    setTimeout(() => { window.location.href = 'login.php'; }, 1200);
-}
-
 function toggleRegPass() {
     const inp  = document.getElementById('regPassword');
     const icon = document.getElementById('regEyeIcon');
