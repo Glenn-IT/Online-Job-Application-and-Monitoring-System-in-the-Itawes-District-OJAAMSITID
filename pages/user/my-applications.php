@@ -1,25 +1,29 @@
 <?php
-/**
- * ==============================================
- * OJAMS - My Applications (User Module)
- * ==============================================
- * Displays a table of the user's submitted applications.
- */
+require_once __DIR__ . "/../../config/auth.php";
+requireUser();
 $pageTitle   = "OJAMS - My Applications";
 $basePath    = "../../";
 $currentPage = "my-applications";
 
-// Load sample data
-include $basePath . 'data/sample-data.php';
+$userId = $_SESSION["ojams_user"]["id"];
+$stmt = $pdo->prepare("
+    SELECT a.*, j.title as job_title, j.company
+    FROM applications a
+    JOIN jobs j ON j.id = a.job_id
+    WHERE a.user_id = ?
+    ORDER BY a.date_applied DESC
+");
+$stmt->execute([$userId]);
+$myApps = $stmt->fetchAll();
 
-// Include header and user navbar
-include $basePath . 'layouts/header.php';
-include $basePath . 'layouts/navbar-user.php';
+$total    = count($myApps);
+$pending  = count(array_filter($myApps, fn($a) => $a["status"] === "Pending"));
+$approved = count(array_filter($myApps, fn($a) => $a["status"] === "Approved"));
+
+include $basePath . "layouts/header.php";
+include $basePath . "layouts/navbar-user.php";
 ?>
-
-<!-- ── Page Content ── -->
 <div class="container py-4">
-    <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold mb-1">
@@ -28,115 +32,80 @@ include $basePath . 'layouts/navbar-user.php';
             <p class="text-muted mb-0">Track the status of your submitted job applications.</p>
         </div>
     </div>
-
-    <!-- Applications Table -->
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
-                    <!-- Table Header -->
                     <?php
-                    $columns = ['#', 'Job Title', 'Company', 'Date Applied', 'Status', 'Actions'];
-                    include $basePath . 'components/table-header.php';
+                    $columns = ["#", "Job Title", "Company", "Date Applied", "Status", "Actions"];
+                    include $basePath . "components/table-header.php";
                     ?>
-
-                    <!-- Table Body -->
                     <tbody id="myAppsTbody">
-                        <?php
-                        // Filter applications for current user (prototype: show Juan's apps)
-                        $userApplications = array_filter($applications, fn($a) => $a['name'] === 'Juan Dela Cruz');
-                        $count = 1;
-                        ?>
-                        <?php if (count($userApplications) > 0): ?>
-                            <?php foreach ($userApplications as $app): ?>
-                                <tr>
-                                    <td><?php echo $count++; ?></td>
-                                    <td>
-                                        <i class="bi bi-briefcase me-1 text-primary"></i>
-                                        <?php echo $app['job_title']; ?>
-                                    </td>
-                                    <td><?php echo $app['company']; ?></td>
-                                    <td><?php echo $app['date_applied']; ?></td>
-                                    <td>
-                                        <?php
-                                        $badgeClass = match($app['status']) {
-                                            'Approved' => 'bg-success',
-                                            'Rejected' => 'bg-danger',
-                                            'Pending'  => 'bg-warning text-dark',
-                                            default    => 'bg-secondary'
-                                        };
-                                        ?>
-                                        <span class="badge <?php echo $badgeClass; ?>">
-                                            <?php echo $app['status']; ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <!-- View Button -->
-                                        <button class="btn btn-sm btn-outline-primary me-1"
-                                            onclick="viewApplication(
-                                                '<?php echo htmlspecialchars($app['job_title']); ?>',
-                                                '<?php echo htmlspecialchars($app['company']); ?>',
-                                                '<?php echo $app['date_applied']; ?>',
-                                                '<?php echo $app['status']; ?>'
-                                            )"
-                                            data-bs-toggle="modal" data-bs-target="#viewMyApplicationModal"
-                                            title="View Application">
-                                            <i class="bi bi-eye"></i> View
-                                        </button>
-                                        <!-- Cancel Button (only for Pending) -->
-                                        <?php if ($app['status'] === 'Pending'): ?>
-                                        <button class="btn btn-sm btn-outline-danger"
-                                            onclick="confirmCancel('<?php echo htmlspecialchars($app['job_title']); ?>', '<?php echo $app['id']; ?>')"
-                                            data-bs-toggle="modal" data-bs-target="#cancelApplicationModal"
-                                            title="Cancel Application">
-                                            <i class="bi bi-x-circle"></i> Cancel
-                                        </button>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
+                        <?php if (empty($myApps)): ?>
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-4">
+                                <td colspan="6" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox display-6 d-block mb-2"></i>
                                     No applications submitted yet.
                                 </td>
                             </tr>
-                        <?php endif; ?>
+                        <?php else: $count = 1; foreach ($myApps as $app):
+                            $badgeClass = match($app["status"]) {
+                                "Approved" => "bg-success",
+                                "Rejected" => "bg-danger",
+                                "Pending"  => "bg-warning text-dark",
+                                default    => "bg-secondary"
+                            };
+                        ?>
+                            <tr>
+                                <td><?php echo $count++; ?></td>
+                                <td><i class="bi bi-briefcase me-1 text-primary"></i><?php echo htmlspecialchars($app["job_title"]); ?></td>
+                                <td><?php echo htmlspecialchars($app["company"]); ?></td>
+                                <td><?php echo $app["date_applied"]; ?></td>
+                                <td><span class="badge <?php echo $badgeClass; ?>"><?php echo $app["status"]; ?></span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1"
+                                        onclick="viewMyApp(<?php echo $app['id']; ?>)"
+                                        data-bs-toggle="modal" data-bs-target="#viewMyApplicationModal">
+                                        <i class="bi bi-eye"></i> View
+                                    </button>
+                                    <?php if ($app["status"] === "Pending"): ?>
+                                    <button class="btn btn-sm btn-outline-danger"
+                                        onclick="confirmCancel('<?php echo htmlspecialchars($app['job_title'], ENT_QUOTES); ?>', <?php echo $app['id']; ?>)"
+                                        data-bs-toggle="modal" data-bs-target="#cancelApplicationModal">
+                                        <i class="bi bi-x-circle"></i> Cancel
+                                    </button>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; endif; ?>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-
     <!-- Summary Cards -->
     <div class="row mt-4">
         <div class="col-md-4 mb-3">
             <div class="card border-0 shadow-sm text-center p-3">
-                <h4 class="fw-bold text-primary mb-1" data-stat="total"><?php echo count($userApplications); ?></h4>
+                <h4 class="fw-bold text-primary mb-1"><?php echo $total; ?></h4>
                 <small class="text-muted">Total Applications</small>
             </div>
         </div>
         <div class="col-md-4 mb-3">
             <div class="card border-0 shadow-sm text-center p-3">
-                <h4 class="fw-bold text-warning mb-1" data-stat="pending">
-                    <?php echo count(array_filter($userApplications, fn($a) => $a['status'] === 'Pending')); ?>
-                </h4>
+                <h4 class="fw-bold text-warning mb-1"><?php echo $pending; ?></h4>
                 <small class="text-muted">Pending</small>
             </div>
         </div>
         <div class="col-md-4 mb-3">
             <div class="card border-0 shadow-sm text-center p-3">
-                <h4 class="fw-bold text-success mb-1" data-stat="approved">
-                    <?php echo count(array_filter($userApplications, fn($a) => $a['status'] === 'Approved')); ?>
-                </h4>
+                <h4 class="fw-bold text-success mb-1"><?php echo $approved; ?></h4>
                 <small class="text-muted">Approved</small>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Cancel Application Confirmation Modal -->
+<!-- Cancel Confirmation Modal -->
 <div class="modal fade" id="cancelApplicationModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -154,15 +123,14 @@ include $basePath . 'layouts/navbar-user.php';
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-arrow-left me-1"></i>Go Back
                 </button>
-                <button type="button" class="btn btn-danger" onclick="cancelApplication()" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-danger" id="confirmCancelBtn">
                     <i class="bi bi-x-circle me-1"></i>Yes, Cancel Application
                 </button>
             </div>
         </div>
     </div>
 </div>
-
-<!-- View My Application Modal -->
+<!-- View Application Modal -->
 <div class="modal fade" id="viewMyApplicationModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -175,19 +143,21 @@ include $basePath . 'layouts/navbar-user.php';
                     <div class="col-md-6">
                         <h6 class="fw-bold text-primary border-bottom pb-2">Job Information</h6>
                         <table class="table table-borderless table-sm">
-                            <tr><th class="text-muted" style="width:45%;">Job Title</th>    <td id="vmyAppJobTitle">—</td></tr>
-                            <tr><th class="text-muted">Company</th>                          <td id="vmyAppCompany">—</td></tr>
-                            <tr><th class="text-muted">Date Applied</th>                     <td id="vmyAppDate">—</td></tr>
-                            <tr><th class="text-muted">Status</th>                           <td id="vmyAppStatus">—</td></tr>
+                            <tr><th class="text-muted" style="width:45%;">Job Title</th>  <td id="vmyAppJobTitle">—</td></tr>
+                            <tr><th class="text-muted">Company</th>                        <td id="vmyAppCompany">—</td></tr>
+                            <tr><th class="text-muted">Date Applied</th>                   <td id="vmyAppDate">—</td></tr>
+                            <tr><th class="text-muted">Status</th>                         <td id="vmyAppStatus">—</td></tr>
                         </table>
                     </div>
                     <div class="col-md-6">
                         <h6 class="fw-bold text-primary border-bottom pb-2">Your Info</h6>
                         <table class="table table-borderless table-sm">
-                            <tr><th class="text-muted" style="width:45%;">Name</th>         <td id="vmyAppName">—</td></tr>
-                            <tr><th class="text-muted">Email</th>                            <td id="vmyAppEmail">—</td></tr>
-                            <tr><th class="text-muted">Contact</th>                          <td id="vmyAppContact">—</td></tr>
-                            <tr><th class="text-muted">Address</th>                          <td id="vmyAppAddress">—</td></tr>
+                            <tr><th class="text-muted" style="width:45%;">Name</th>       <td id="vmyAppName">—</td></tr>
+                            <tr><th class="text-muted">Email</th>                          <td id="vmyAppEmail">—</td></tr>
+                            <tr><th class="text-muted">Contact</th>                        <td id="vmyAppContact">—</td></tr>
+                            <tr><th class="text-muted">Address</th>                        <td id="vmyAppAddress">—</td></tr>
+                            <tr><th class="text-muted">Birthdate</th>                      <td id="vmyAppBirthdate">—</td></tr>
+                            <tr><th class="text-muted">Age</th>                            <td id="vmyAppAge">—</td></tr>
                         </table>
                     </div>
                     <div class="col-12">
@@ -214,98 +184,60 @@ include $basePath . 'layouts/navbar-user.php';
         </div>
     </div>
 </div>
-
-<?php include $basePath . 'layouts/footer.php'; ?>
-
 <script>
-requireUser('../../login.php', '../../pages/admin/dashboard.php');
+const APP_HANDLER_MY = "../../handlers/applications.php";
+let _cancelAppId = null;
 
-/* ── Render My Applications from localStorage ── */
-function renderMyApplicationsTable() {
-    const session = Session.get();
-    if (!session) return;
-    const apps  = Applications.byUser(session.id);
-    const tbody = document.getElementById('myAppsTbody');
-    if (!tbody) return;
-
-    // Update summary counts
-    const totalEl    = document.querySelector('[data-stat="total"]');
-    const pendingEl  = document.querySelector('[data-stat="pending"]');
-    const approvedEl = document.querySelector('[data-stat="approved"]');
-    if (totalEl)    totalEl.textContent = apps.length;
-    if (pendingEl)  pendingEl.textContent = apps.filter(a => a.status === 'Pending').length;
-    if (approvedEl) approvedEl.textContent = apps.filter(a => a.status === 'Approved').length;
-
-    if (apps.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">
-            <i class="bi bi-inbox display-6 d-block mb-2"></i>No applications submitted yet.</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = apps.map((app, i) => {
-        const badge = app.status === 'Approved' ? 'bg-success' : app.status === 'Rejected' ? 'bg-danger' : 'bg-warning text-dark';
-        const cancelBtn = app.status === 'Pending'
-            ? `<button class="btn btn-sm btn-outline-danger"
-                   onclick="confirmCancel('${escS(app.job_title)}', ${app.id})"
-                   data-bs-toggle="modal" data-bs-target="#cancelApplicationModal">
-                   <i class="bi bi-x-circle"></i> Cancel</button>`
-            : '';
-        return `<tr>
-            <td>${i + 1}</td>
-            <td><i class="bi bi-briefcase me-1 text-primary"></i>${app.job_title}</td>
-            <td>${app.company}</td>
-            <td>${app.date_applied}</td>
-            <td><span class="badge ${badge}">${app.status}</span></td>
-            <td>
-                <button class="btn btn-sm btn-outline-primary me-1"
-                    onclick="viewMyApplication(${app.id})"
-                    data-bs-toggle="modal" data-bs-target="#viewMyApplicationModal">
-                    <i class="bi bi-eye"></i> View
-                </button>
-                ${cancelBtn}
-            </td>
-        </tr>`;
-    }).join('');
+function confirmCancel(title, appId) {
+    _cancelAppId = appId;
+    const el = document.getElementById("cancelAppJobTitle");
+    if (el) el.textContent = title;
 }
 
-function escS(str) { return (str || '').replace(/'/g, "\\'"); }
+document.getElementById("confirmCancelBtn").addEventListener("click", function() {
+    if (!_cancelAppId) return;
+    fetch(APP_HANDLER_MY, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel", id: _cancelAppId })
+    })
+    .then(r => r.json())
+    .then(res => {
+        bootstrap.Modal.getInstance(document.getElementById("cancelApplicationModal"))?.hide();
+        showToast(res.message, res.success ? "warning" : "danger");
+        if (res.success) setTimeout(() => location.reload(), 900);
+    })
+    .catch(() => showToast("Request failed.", "danger"));
+    _cancelAppId = null;
+});
 
-function viewMyApplication(appId) {
-    const app = Applications.findById(appId);
+// PHP-embedded application data for view modal
+const myAppsData = <?php echo json_encode(array_values($myApps)); ?>;
+
+function viewMyApp(appId) {
+    const app = myAppsData.find(a => a.id == appId);
     if (!app) return;
-    const setT = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v || '—'; };
-    setT('vmyAppJobTitle',  app.job_title);
-    setT('vmyAppCompany',   app.company);
-    setT('vmyAppDate',      app.date_applied);
-    setT('vmyAppName',      app.user_name);
-    setT('vmyAppEmail',     app.email);
-    setT('vmyAppContact',   app.contact);
-    setT('vmyAppAddress',   app.address);
-    setT('vmyAppElem',      app.education?.elementary);
-    setT('vmyAppJhs',       app.education?.jhs);
-    setT('vmyAppShs',       app.education?.shs);
-    setT('vmyAppCollege',   app.education?.college);
-    setT('vmyAppSkills',    app.skills);
-    setT('vmyAppExperience',app.experience);
-    const statusEl = document.getElementById('vmyAppStatus');
+    const setT = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v || "—"; };
+    setT("vmyAppJobTitle",  app.job_title);
+    setT("vmyAppCompany",   app.company);
+    setT("vmyAppDate",      app.date_applied);
+    setT("vmyAppName",      app.full_name);
+    setT("vmyAppEmail",     app.email);
+    setT("vmyAppContact",   app.contact);
+    setT("vmyAppAddress",   app.address);
+    setT("vmyAppBirthdate", app.birthdate);
+    setT("vmyAppAge",       app.age);
+    setT("vmyAppElem",      app.elementary);
+    setT("vmyAppJhs",       app.jhs);
+    setT("vmyAppShs",       app.shs);
+    setT("vmyAppCollege",   app.college);
+    setT("vmyAppSkills",    app.skills);
+    setT("vmyAppExperience",app.experience);
+    const statusEl = document.getElementById("vmyAppStatus");
     if (statusEl) {
-        const badge = app.status === 'Approved' ? 'bg-success' : app.status === 'Rejected' ? 'bg-danger' : 'bg-warning text-dark';
-        statusEl.innerHTML = `<span class="badge ${badge}">${app.status}</span>`;
+        const cls = app.status === "Approved" ? "bg-success" : app.status === "Rejected" ? "bg-danger" : "bg-warning text-dark";
+        statusEl.innerHTML = "<span class=\"badge " + cls + "\">" + app.status + "</span>";
     }
 }
-
-// viewApplication kept for legacy PHP calls
-function viewApplication(title, company, date, status) {
-    const setT = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v || '—'; };
-    setT('vmyAppJobTitle', title);
-    setT('vmyAppCompany',  company);
-    setT('vmyAppDate',     date);
-    const statusEl = document.getElementById('vmyAppStatus');
-    if (statusEl) {
-        const badge = status === 'Approved' ? 'bg-success' : status === 'Rejected' ? 'bg-danger' : 'bg-warning text-dark';
-        statusEl.innerHTML = `<span class="badge ${badge}">${status}</span>`;
-    }
-}
-
-document.addEventListener('DOMContentLoaded', renderMyApplicationsTable);
 </script>
+<?php include $basePath . "layouts/footer.php"; ?>
