@@ -22,7 +22,7 @@
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-shield-lock-fill me-1"></i>Administrator
+                        <i class="bi bi-shield-lock-fill me-1"></i><?= htmlspecialchars($_SESSION['ojams_user']['full_name'] ?? 'Administrator') ?>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li>
