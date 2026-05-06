@@ -1,6 +1,6 @@
 <?php
 
-$configPath = __DIR__ . '/config/db.php';
+$configPath = __DIR__ . '/config/auth.php';
 require_once $configPath;
 
 // Already logged in? Go to dashboard.
