@@ -1,14 +1,5 @@
 <?php
-/**
- * ==============================================
- * OJAMS - Online Job Application Monitoring System
- * Sample Data File
- * ==============================================
- * 
- * This file contains all sample data arrays used
- * throughout the prototype. No database is used.
- * ==============================================
- */
+
 
 // ── Job Listings ──────────────────────────────
 $jobs = [
