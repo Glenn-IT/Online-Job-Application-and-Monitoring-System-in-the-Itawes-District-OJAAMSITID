@@ -1,10 +1,8 @@
 <?php
-/**
- * ==============================================
- * OJAMS - Admin Dashboard
- * ==============================================
- * Displays overview statistics and recent activity.
- */
+
+require_once __DIR__ . '/../../config/auth.php';
+requireAdmin();
+
 $pageTitle   = "OJAMS - Admin Dashboard";
 $basePath    = "../../";
 $currentPage = "dashboard";
