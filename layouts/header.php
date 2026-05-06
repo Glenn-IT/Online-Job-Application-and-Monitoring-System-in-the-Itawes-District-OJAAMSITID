@@ -22,5 +22,7 @@ if (!defined('DB_HOST')) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <!-- Custom Styles -->
     <link href="<?php echo $basePath ?? ''; ?>assets/css/style.css" rel="stylesheet">
+    <!-- Custom Scripts (deferred so DOM is ready) -->
+    <script src="<?php echo $basePath ?? ''; ?>assets/js/script.js" defer></script>
 </head>
 <body class="bg-light">
