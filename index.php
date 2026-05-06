@@ -1,10 +1,7 @@
 <?php
-/**
- * ==============================================
- * OJAMS - Online Job Application Monitoring System
- * Landing Page / Entry Point
- * ==============================================
- * Redirects to the login page.
- */
+
+$configPath = __DIR__ . '/config/db.php';
+require_once $configPath;
+
 header("Location: login.php");
 exit;
