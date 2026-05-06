@@ -1,3 +1,15 @@
+<?php
+// OJAMS - Shared HTML Head
+// config/db.php (which pulls in config.php) is included here
+// so every page that uses this layout gets $pdo and session automatically.
+// Pages set $configPath before including this layout:
+//   $configPath = __DIR__ . '/../../config/auth.php';  (from pages/*/)
+//   $configPath = __DIR__ . '/../config/auth.php';     (from root pages)
+if (!defined('DB_HOST')) {
+    $configPath = $configPath ?? (__DIR__ . '/../config/db.php');
+    require_once $configPath;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
