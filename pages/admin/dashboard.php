@@ -30,11 +30,12 @@ $stmtLog = $pdo->query("
 $activity_history = $stmtLog->fetchAll();
 
 include $basePath . "layouts/header.php";
-include $basePath . "layouts/sidebar-admin.php";
+include $basePath . "layouts/navbar-admin.php";
 ?>
-<div class="main-content">
-    <div class="container-fluid py-4">
-        <?php include $basePath . "layouts/navbar-admin.php"; ?>
+<div class="container-fluid">
+    <div class="row">
+        <?php include $basePath . "layouts/sidebar-admin.php"; ?>
+        <div class="col-lg-10 col-md-9 py-4 px-4">
         <!-- Page Header -->
         <div class="mb-4">
             <h2 class="fw-bold mb-1">
@@ -125,6 +126,7 @@ include $basePath . "layouts/sidebar-admin.php";
                 </div>
             </div>
         </div>
-    </div>
-</div>
+        </div><!-- /col-lg-10 -->
+    </div><!-- /row -->
+</div><!-- /container-fluid -->
 <?php include $basePath . "layouts/footer.php"; ?>
