@@ -1,17 +1,14 @@
 <?php
-/**
- * ==============================================
- * OJAMS - Manage Jobs (Admin Module)
- * ==============================================
- * Admin view to manage all job postings.
- * Supports Add, Edit, Delete via modals.
- */
+
+require_once __DIR__ . '/../../config/auth.php';
+requireAdmin();
+
 $pageTitle   = "OJAMS - Manage Jobs";
 $basePath    = "../../";
 $currentPage = "manage-jobs";
 
-// Load sample data
-include $basePath . 'data/sample-data.php';
+// ── Fetch all jobs from DB ──────────────────────────────────
+$jobs = $pdo->query("SELECT * FROM jobs ORDER BY date_posted DESC")->fetchAll();
 
 // Include header and admin navbar
 include $basePath . 'layouts/header.php';
@@ -49,37 +46,49 @@ include $basePath . 'layouts/navbar-admin.php';
                             include $basePath . 'components/table-header.php';
                             ?>
                             <tbody id="jobsTableBody">
-                                <?php $count = 1; ?>
-                                <?php foreach ($jobs as $job): ?>
+                                <?php if (empty($jobs)): ?>
+                                    <tr><td colspan="6" class="text-center text-muted py-4">No jobs found. Add your first job post!</td></tr>
+                                <?php else: ?>
+                                <?php $count = 1; foreach ($jobs as $job): ?>
                                     <tr>
-                                        <td><?php echo $count++; ?></td>
+                                        <td><?= $count++ ?></td>
                                         <td>
                                             <i class="bi bi-briefcase me-1 text-primary"></i>
-                                            <?php echo htmlspecialchars($job['title']); ?>
+                                            <?= htmlspecialchars($job['title']) ?>
                                         </td>
-                                        <td><?php echo htmlspecialchars($job['company']); ?></td>
-                                        <td><?php echo $job['date_posted']; ?></td>
+                                        <td><?= htmlspecialchars($job['company']) ?></td>
+                                        <td><?= $job['date_posted'] ?></td>
                                         <td>
-                                            <span class="badge <?php echo $job['status'] === 'Open' ? 'bg-success' : 'bg-secondary'; ?>">
-                                                <?php echo $job['status']; ?>
+                                            <span class="badge <?= $job['status'] === 'Open' ? 'bg-success' : 'bg-secondary' ?>">
+                                                <?= $job['status'] ?>
                                             </span>
                                         </td>
                                         <td>
-                                            <!-- Edit Button -->
                                             <button class="btn btn-sm btn-outline-warning me-1"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#addJobModal"
-                                                    onclick="editJob('<?php echo addslashes($job['title']); ?>', '<?php echo addslashes($job['company']); ?>', '<?php echo addslashes($job['description']); ?>', '<?php echo addslashes($job['qualification']); ?>', '<?php echo $job['date_posted']; ?>', '<?php echo $job['status']; ?>', <?php echo $job['id']; ?>)">
+                                                onclick="editJob(
+                                                    this.dataset.title,
+                                                    this.dataset.company,
+                                                    this.dataset.description,
+                                                    this.dataset.qualification,
+                                                    this.dataset.date,
+                                                    this.dataset.status,
+                                                    <?= $job['id'] ?>)"
+                                                data-title="<?= htmlspecialchars($job['title'], ENT_QUOTES) ?>"
+                                                data-company="<?= htmlspecialchars($job['company'], ENT_QUOTES) ?>"
+                                                data-description="<?= htmlspecialchars($job['description'], ENT_QUOTES) ?>"
+                                                data-qualification="<?= htmlspecialchars($job['qualification'], ENT_QUOTES) ?>"
+                                                data-date="<?= $job['date_posted'] ?>"
+                                                data-status="<?= $job['status'] ?>">
                                                 <i class="bi bi-pencil"></i> Edit
                                             </button>
-                                            <!-- Delete Button -->
                                             <button class="btn btn-sm btn-outline-danger"
-                                                    onclick="deleteJob(<?php echo $job['id']; ?>)">
+                                                onclick="deleteJob(<?= $job['id'] ?>)">
                                                 <i class="bi bi-trash"></i> Delete
                                             </button>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -91,45 +100,83 @@ include $basePath . 'layouts/navbar-admin.php';
 
 <!-- Modals -->
 <?php include $basePath . 'modals/add-job-modal.php'; ?>
-<?php include $basePath . 'modals/edit-job-modal.php'; ?>
 
 <?php include $basePath . 'layouts/footer.php'; ?>
 
 <script>
-requireAdmin('../../login.php', '../../pages/user/browse-jobs.php');
+// ── Manage Jobs — DB-backed overrides (must load AFTER script.js) ──
+const JOBS_HANDLER = '../../handlers/jobs.php';
 
-/* Render jobs table from localStorage (replaces PHP-rendered rows) */
-function renderJobsTable() {
-    const tbody = document.getElementById('jobsTableBody');
-    if (!tbody) return;
-    const jobs = Jobs.all();
-    if (jobs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No jobs found. Add your first job post!</td></tr>';
+// Override: open Add modal
+openAddJobModal = function() {
+    _editingJobId = null;
+    document.getElementById('addJobModalLabel').innerHTML =
+        '<i class="bi bi-plus-circle me-2"></i>Add New Job Post';
+    document.getElementById('addJobForm').reset();
+    document.getElementById('jobDatePosted').value = new Date().toISOString().split('T')[0];
+    new bootstrap.Modal(document.getElementById('addJobModal')).show();
+};
+
+// Override: open Edit modal
+editJob = function(title, company, description, qualification, datePosted, status, id) {
+    _editingJobId = id;
+    document.getElementById('addJobModalLabel').innerHTML =
+        '<i class="bi bi-pencil-square me-2"></i>Edit Job Post';
+    document.getElementById('jobTitle').value         = title;
+    document.getElementById('jobCompany').value       = company;
+    document.getElementById('jobDescription').value   = description;
+    document.getElementById('jobQualification').value = qualification;
+    document.getElementById('jobDatePosted').value    = datePosted;
+    document.getElementById('jobStatus').value        = status;
+    new bootstrap.Modal(document.getElementById('addJobModal')).show();
+};
+
+// Override: save (add or edit) via fetch
+saveJob = function() {
+    const title         = document.getElementById('jobTitle')?.value.trim();
+    const company       = document.getElementById('jobCompany')?.value.trim();
+    const description   = document.getElementById('jobDescription')?.value.trim();
+    const qualification = document.getElementById('jobQualification')?.value.trim();
+    const date_posted   = document.getElementById('jobDatePosted')?.value;
+    const status        = document.getElementById('jobStatus')?.value;
+    if (!title || !company || !description || !qualification) {
+        showToast('Please fill in all required fields.', 'warning');
         return;
     }
-    tbody.innerHTML = jobs.map((job, i) => `
-        <tr>
-            <td>${i + 1}</td>
-            <td><i class="bi bi-briefcase me-1 text-primary"></i>${job.title}</td>
-            <td>${job.company}</td>
-            <td>${job.date_posted}</td>
-            <td><span class="badge ${job.status === 'Open' ? 'bg-success' : 'bg-secondary'}">${job.status}</span></td>
-            <td>
-                <button class="btn btn-sm btn-outline-warning me-1"
-                    onclick="editJob('${escHtml(job.title)}','${escHtml(job.company)}','${escHtml(job.description)}','${escHtml(job.qualification)}','${job.date_posted}','${job.status}',${job.id})"
-                    data-bs-toggle="modal" data-bs-target="#addJobModal">
-                    <i class="bi bi-pencil"></i> Edit
-                </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteJob(${job.id})">
-                    <i class="bi bi-trash"></i> Delete
-                </button>
-            </td>
-        </tr>`).join('');
-}
+    const payload = _editingJobId
+        ? { action: 'edit', id: _editingJobId, title, company, description, qualification, date_posted, status }
+        : { action: 'add',                     title, company, description, qualification, date_posted, status };
+    fetch(JOBS_HANDLER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(res => {
+        bootstrap.Modal.getInstance(document.getElementById('addJobModal'))?.hide();
+        if (res.success) {
+            showToast(_editingJobId ? 'Job updated successfully!' : 'Job added successfully!', 'success');
+            setTimeout(() => location.reload(), 800);
+        } else {
+            showToast(res.message, 'danger');
+        }
+    })
+    .catch(() => showToast('Request failed. Please try again.', 'danger'));
+};
 
-function escHtml(str) {
-    return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-}
-
-document.addEventListener('DOMContentLoaded', renderJobsTable);
+// Override: delete via fetch
+deleteJob = function(id) {
+    if (!confirm('Are you sure you want to delete this job post?')) return;
+    fetch(JOBS_HANDLER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id: id })
+    })
+    .then(r => r.json())
+    .then(res => {
+        showToast(res.success ? 'Job deleted.' : res.message, res.success ? 'danger' : 'warning');
+        if (res.success) setTimeout(() => location.reload(), 800);
+    })
+    .catch(() => showToast('Request failed. Please try again.', 'danger'));
+};
 </script>
