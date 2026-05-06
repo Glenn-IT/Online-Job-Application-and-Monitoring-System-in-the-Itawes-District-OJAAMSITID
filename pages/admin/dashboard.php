@@ -1,152 +1,130 @@
 <?php
-
-require_once __DIR__ . '/../../config/auth.php';
+require_once __DIR__ . "/../../config/auth.php";
 requireAdmin();
 
 $pageTitle   = "OJAMS - Admin Dashboard";
 $basePath    = "../../";
 $currentPage = "dashboard";
 
-// Load sample data
-include $basePath . 'data/sample-data.php';
+// DB stats
+$stmtStats = $pdo->query("
+    SELECT
+        (SELECT COUNT(*) FROM jobs)                                   AS total_jobs,
+        (SELECT COUNT(*) FROM applications)                          AS total_applicants,
+        (SELECT COUNT(*) FROM applications WHERE status = 'Pending') AS pending_applications,
+        (SELECT COUNT(*) FROM applications WHERE status = 'Approved') AS approved_applications
+");
+$stats = $stmtStats->fetch();
 
-// Include header and admin navbar
-include $basePath . 'layouts/header.php';
-include $basePath . 'layouts/navbar-admin.php';
+// Recent activity (latest 20)
+$stmtLog = $pdo->query("
+    SELECT
+        DATE_FORMAT(created_at, '%b %d, %Y') AS date,
+        DATE_FORMAT(created_at, '%h:%i %p')  AS time,
+        action,
+        status
+    FROM activity_logs
+    ORDER BY created_at DESC
+    LIMIT 20
+");
+$activity_history = $stmtLog->fetchAll();
+
+include $basePath . "layouts/header.php";
+include $basePath . "layouts/sidebar-admin.php";
 ?>
+<div class="main-content">
+    <div class="container-fluid py-4">
+        <?php include $basePath . "layouts/navbar-admin.php"; ?>
+        <!-- Page Header -->
+        <div class="mb-4">
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard
+            </h2>
+            <p class="text-muted mb-0">Welcome back, <?php echo htmlspecialchars($_SESSION["ojams_user"]["full_name"]); ?>! Here&#39;s an overview of the system.</p>
+        </div>
 
-<!-- ── Admin Layout: Sidebar + Content ── -->
-<div class="container-fluid">
-    <div class="row">
-        <!-- Sidebar -->
-        <?php include $basePath . 'layouts/sidebar-admin.php'; ?>
+        <!-- Statistics Cards -->
+        <div class="row">
+            <?php
+            $statTitle = "Total Job Posts";
+            $statValue = $stats["total_jobs"];
+            $statIcon  = "bi-briefcase-fill";
+            $statColor = "#0d6efd";
+            include $basePath . "components/stats-card.php";
 
-        <!-- Main Content -->
-        <div class="col-lg-10 col-md-9 py-4 px-4">
-            <!-- Page Header -->
-            <div class="mb-4">
-                <h2 class="fw-bold mb-1">
-                    <i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard
-                </h2>
-                <p class="text-muted mb-0">Welcome back, Administrator! Here's an overview of the system.</p>
+            $statTitle = "Total Applicants";
+            $statValue = $stats["total_applicants"];
+            $statIcon  = "bi-people-fill";
+            $statColor = "#198754";
+            include $basePath . "components/stats-card.php";
+
+            $statTitle = "Pending Applications";
+            $statValue = $stats["pending_applications"];
+            $statIcon  = "bi-hourglass-split";
+            $statColor = "#ffc107";
+            include $basePath . "components/stats-card.php";
+
+            $statTitle = "Approved Applications";
+            $statValue = $stats["approved_applications"];
+            $statIcon  = "bi-check-circle-fill";
+            $statColor = "#20c997";
+            include $basePath . "components/stats-card.php";
+            ?>
+        </div>
+
+        <!-- Activity History Table -->
+        <div class="card border-0 shadow-sm mt-2">
+            <div class="card-header bg-white">
+                <h5 class="mb-0 fw-bold">
+                    <i class="bi bi-clock-history me-2 text-primary"></i>Recent Activity
+                </h5>
             </div>
-
-            <!-- Statistics Cards -->
-            <div class="row">
-                <?php
-                // Total Job Posts
-                $statTitle = "Total Job Posts";
-                $statValue = $stats['total_jobs'];
-                $statIcon  = "bi-briefcase-fill";
-                $statColor = "#0d6efd";
-                include $basePath . 'components/stats-card.php';
-
-                // Total Applicants
-                $statTitle = "Total Applicants";
-                $statValue = $stats['total_applicants'];
-                $statIcon  = "bi-people-fill";
-                $statColor = "#198754";
-                include $basePath . 'components/stats-card.php';
-
-                // Pending Applications
-                $statTitle = "Pending Applications";
-                $statValue = $stats['pending_applications'];
-                $statIcon  = "bi-hourglass-split";
-                $statColor = "#ffc107";
-                include $basePath . 'components/stats-card.php';
-
-                // Approved Applications
-                $statTitle = "Approved Applications";
-                $statValue = $stats['approved_applications'];
-                $statIcon  = "bi-check-circle-fill";
-                $statColor = "#20c997";
-                include $basePath . 'components/stats-card.php';
-                ?>
-            </div>
-
-            <!-- Activity History Table -->
-            <div class="card border-0 shadow-sm mt-2">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0 fw-bold">
-                        <i class="bi bi-clock-history me-2 text-primary"></i>Recent Activity
-                    </h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <?php
-                            $columns = ['Date', 'Time', 'Action', 'Status'];
-                            include $basePath . 'components/table-header.php';
-                            ?>
-                            <tbody id="activityTbody">
-                                <?php foreach ($activity_history as $activity): ?>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <?php
+                        $columns = ["Date", "Time", "Action", "Status"];
+                        include $basePath . "components/table-header.php";
+                        ?>
+                        <tbody>
+                            <?php if (empty($activity_history)): ?>
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox me-2"></i>No activity yet.
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($activity_history as $a): ?>
                                     <tr>
-                                        <td><?php echo $activity['date']; ?></td>
-                                        <td><?php echo $activity['time']; ?></td>
-                                        <td><?php echo $activity['action']; ?></td>
+                                        <td><?php echo htmlspecialchars($a["date"]); ?></td>
+                                        <td><?php echo htmlspecialchars($a["time"]); ?></td>
+                                        <td><?php echo htmlspecialchars($a["action"]); ?></td>
                                         <td>
                                             <?php
-                                            $actBadge = match($activity['status']) {
-                                                'New'      => 'bg-info',
-                                                'Created'  => 'bg-primary',
-                                                'Approved' => 'bg-success',
-                                                'Rejected' => 'bg-danger',
-                                                default    => 'bg-secondary'
+                                            $badge = match($a["status"]) {
+                                                "New"      => "bg-info",
+                                                "Created"  => "bg-primary",
+                                                "Updated"  => "bg-secondary",
+                                                "Deleted"  => "bg-dark",
+                                                "Applied"  => "bg-primary",
+                                                "Cancelled"=> "bg-warning text-dark",
+                                                "Approved" => "bg-success",
+                                                "Rejected" => "bg-danger",
+                                                default    => "bg-secondary"
                                             };
                                             ?>
-                                            <span class="badge <?php echo $actBadge; ?>">
-                                                <?php echo $activity['status']; ?>
+                                            <span class="badge <?php echo $badge; ?>">
+                                                <?php echo htmlspecialchars($a["status"]); ?>
                                             </span>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<?php include $basePath . 'layouts/footer.php'; ?>
-
-<script>
-requireAdmin('../../login.php', '../../pages/user/browse-jobs.php');
-
-// Refresh stats from localStorage
-document.addEventListener('DOMContentLoaded', () => {
-    const jobs = Jobs.all();
-    const apps = Applications.all();
-    const pending  = apps.filter(a => a.status === 'Pending').length;
-    const approved = apps.filter(a => a.status === 'Approved').length;
-
-    const statVals = document.querySelectorAll('.stat-value');
-    if (statVals[0]) statVals[0].textContent = jobs.length;
-    if (statVals[1]) statVals[1].textContent = apps.length;
-    if (statVals[2]) statVals[2].textContent = pending;
-    if (statVals[3]) statVals[3].textContent = approved;
-
-    // Render activity log from localStorage
-    const tbody = document.getElementById('activityTbody');
-    if (tbody) {
-        const log = getActivityLog();
-        if (log.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No activity yet.</td></tr>';
-        } else {
-            tbody.innerHTML = log.map(a => `
-                <tr>
-                    <td>${a.date}</td>
-                    <td>${a.time}</td>
-                    <td>${a.action}</td>
-                    <td><span class="badge ${statusBadgeClass(a.status)}">${a.status}</span></td>
-                </tr>`).join('');
-        }
-    }
-
-    // Show logged-in admin name
-    const user = Session.get();
-    const nameEls = document.querySelectorAll('.navbar-admin-name, #adminNavName');
-    nameEls.forEach(el => { if (el) el.textContent = user?.full_name || 'Administrator'; });
-});
-</script>
+<?php include $basePath . "layouts/footer.php"; ?>
