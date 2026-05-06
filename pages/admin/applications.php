@@ -116,7 +116,6 @@ include $basePath . "layouts/navbar-admin.php";
     </div>
 </div>
 <?php include $basePath . "modals/view-application-modal.php"; ?>
-<?php include $basePath . "layouts/footer.php"; ?>
 <script>
 const APP_HANDLER_ADMIN = "../../handlers/applications.php";
 const appsData = <?php echo json_encode(array_values($applications)); ?>;
@@ -164,3 +163,4 @@ function viewAppDetails(appId) {
     }
 }
 </script>
+<?php include $basePath . "layouts/footer.php"; ?>
