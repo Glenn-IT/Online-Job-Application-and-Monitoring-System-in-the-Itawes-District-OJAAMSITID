@@ -8,11 +8,12 @@ $currentPage = "profile-settings";
 $u = $_SESSION["ojams_user"];
 
 include $basePath . "layouts/header.php";
-include $basePath . "layouts/sidebar-admin.php";
+include $basePath . "layouts/navbar-admin.php";
 ?>
-<div class="main-content">
-    <div class="container-fluid py-4">
-        <?php include $basePath . "layouts/navbar-admin.php"; ?>
+<div class="container-fluid">
+    <div class="row">
+        <?php include $basePath . "layouts/sidebar-admin.php"; ?>
+        <div class="col-lg-10 col-md-9 py-4 px-4">
         <div class="mb-4">
             <h2 class="fw-bold mb-1"><i class="bi bi-person-gear me-2 text-primary"></i>Profile Settings</h2>
             <p class="text-muted mb-0">Manage your administrator account information.</p>
@@ -111,9 +112,9 @@ include $basePath . "layouts/sidebar-admin.php";
                 </div>
             </div>
         </div>
-    </div>
-</div>
-<?php include $basePath . "layouts/footer.php"; ?>
+        </div><!-- /col-lg-10 -->
+    </div><!-- /row -->
+</div><!-- /container-fluid -->
 <script>
 const PROFILE_HANDLER = "../../handlers/profile.php";
 
@@ -199,3 +200,4 @@ function togglePwVisibility(inputId, btn) {
     }
 }
 </script>
+<?php include $basePath . "layouts/footer.php"; ?>
