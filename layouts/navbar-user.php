@@ -1,20 +1,24 @@
 <!-- ============================================
      User Navigation Bar
      ============================================ -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
+<nav class="navbar navbar-expand-lg ojams-navbar user-bar sticky-top">
     <div class="container">
+
         <!-- Brand -->
-        <a class="navbar-brand fw-bold" href="<?php echo $basePath ?? ''; ?>index.php">
+        <a class="navbar-brand" href="<?php echo $basePath ?? ''; ?>index.php">
             <i class="bi bi-briefcase-fill me-2"></i>OJAMS
         </a>
 
-        <!-- Mobile Toggle -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#userNavbar">
+        <!-- Mobile toggle -->
+        <button class="navbar-toggler" type="button"
+                data-bs-toggle="collapse" data-bs-target="#userNavbar"
+                aria-controls="userNavbar" aria-expanded="false">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <!-- Nav Links -->
         <div class="collapse navbar-collapse" id="userNavbar">
+
+            <!-- Main links -->
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
                     <a class="nav-link <?php echo ($currentPage ?? '') === 'browse-jobs' ? 'active' : ''; ?>"
@@ -28,15 +32,9 @@
                         <i class="bi bi-file-earmark-text me-1"></i>My Applications
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link <?php echo ($currentPage ?? '') === 'profile-settings' ? 'active' : ''; ?>"
-                       href="<?php echo $basePath ?? ''; ?>pages/user/profile-settings.php">
-                        <i class="bi bi-person-gear me-1"></i>Profile Settings
-                    </a>
-                </li>
             </ul>
 
-            <!-- Right Side: User Info & Logout -->
+            <!-- Right: user dropdown -->
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -44,7 +42,14 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li>
-                            <a class="dropdown-item" href="<?php echo $basePath ?? ''; ?>pages/user/profile-settings.php">
+                            <span class="dropdown-item-text text-muted" style="font-size:0.75rem;">
+                                <?= htmlspecialchars($_SESSION['ojams_user']['email'] ?? '') ?>
+                            </span>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item <?php echo ($currentPage ?? '') === 'profile-settings' ? 'active' : ''; ?>"
+                               href="<?php echo $basePath ?? ''; ?>pages/user/profile-settings.php">
                                 <i class="bi bi-gear me-2"></i>Profile Settings
                             </a>
                         </li>
@@ -57,6 +62,8 @@
                     </ul>
                 </li>
             </ul>
+
         </div>
     </div>
 </nav>
+<?php include ($basePath ?? '') . 'modals/logout-modal.php'; ?>
