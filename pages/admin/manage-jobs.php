@@ -15,14 +15,9 @@ include $basePath . 'layouts/header.php';
 include $basePath . 'layouts/navbar-admin.php';
 ?>
 
-<!-- ── Admin Layout: Sidebar + Content ── -->
-<div class="container-fluid">
-    <div class="row">
-        <!-- Sidebar -->
-        <?php include $basePath . 'layouts/sidebar-admin.php'; ?>
-
-        <!-- Main Content -->
-        <div class="col-lg-10 col-md-9 py-4 px-4">
+<div class="admin-layout">
+    <?php include $basePath . 'layouts/sidebar-admin.php'; ?>
+    <main class="admin-main">
             <!-- Page Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
@@ -94,8 +89,7 @@ include $basePath . 'layouts/navbar-admin.php';
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+    </main>
 </div>
 
 <!-- Modals -->
@@ -142,8 +136,8 @@ function saveJob() {
         return;
     }
     const payload = _editingJobId
-        ? { action: 'edit', id: _editingJobId, title, company, description, qualification, date_posted, status }
-        : { action: 'add',                     title, company, description, qualification, date_posted, status };
+        ? { action: 'edit', id: _editingJobId, title, company, description, qualification, date_posted, status, csrf_token: getCsrfToken() }
+        : { action: 'add',                     title, company, description, qualification, date_posted, status, csrf_token: getCsrfToken() };
     fetch(JOBS_HANDLER, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -168,7 +162,7 @@ function deleteJob(id) {
     fetch(JOBS_HANDLER, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', id: id })
+        body: JSON.stringify({ action: 'delete', id: id, csrf_token: getCsrfToken() })
     })
     .then(r => r.json())
     .then(res => {
