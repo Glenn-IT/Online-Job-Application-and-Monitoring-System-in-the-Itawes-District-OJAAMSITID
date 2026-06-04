@@ -4,60 +4,42 @@
 // ── Toast Notification ─────────────────────────────────────
 function showToast(msg, type = "success") {
   const iconMap = {
-    success: "check-circle",
-    danger: "x-circle",
-    warning: "exclamation-circle",
-    info: "info-circle",
+    success: "check-circle-fill",
+    danger: "x-circle-fill",
+    warning: "exclamation-triangle-fill",
+    info: "info-circle-fill",
   };
-  const icon = iconMap[type] || "info-circle";
-  let container = document.getElementById("toast-container");
+  const icon = iconMap[type] || "info-circle-fill";
+  let container = document.getElementById("toastContainer");
   if (!container) {
     container = document.createElement("div");
-    container.id = "toast-container";
-    container.style.cssText =
-      "position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;";
+    container.id = "toastContainer";
     document.body.appendChild(container);
   }
   const div = document.createElement("div");
-  const colors = {
-    success: "#198754",
-    danger: "#dc3545",
-    warning: "#856404",
-    info: "#0d6efd",
-  };
-  div.style.cssText =
-    "padding:10px 18px;border-radius:8px;color:#fff;font-size:.9rem;box-shadow:0 4px 15px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px;min-width:220px;";
-  div.style.background = colors[type] || "#198754";
-  div.innerHTML = `<i class="bi bi-${icon}"></i>${msg}`;
+  div.className = `ojams-toast toast-${type}`;
+  div.innerHTML = `<i class="bi bi-${icon}"></i><span>${msg}</span>`;
   container.appendChild(div);
-  setTimeout(() => div.remove(), 3500);
+  setTimeout(() => {
+    div.style.animation = "fadeOutRight 0.25s ease forwards";
+    setTimeout(() => div.remove(), 250);
+  }, 3500);
 }
 
 // ── Status Badge CSS Class ──────────────────────────────────
 function statusBadgeClass(status) {
   switch (status) {
-    case "Approved":
-      return "bg-success";
-    case "Rejected":
-      return "bg-danger";
-    case "Pending":
-      return "bg-warning text-dark";
-    case "Open":
-      return "bg-success";
-    case "Closed":
-      return "bg-secondary";
-    case "New":
-      return "bg-info text-dark";
-    case "Created":
-      return "bg-primary";
-    case "Updated":
-      return "bg-warning text-dark";
-    case "Deleted":
-      return "bg-danger";
-    case "Cancelled":
-      return "bg-secondary";
-    default:
-      return "bg-secondary";
+    case "Approved": return "badge-status-approved";
+    case "Rejected":  return "badge-status-rejected";
+    case "Pending":   return "badge-status-pending";
+    case "Open":      return "badge-status-open";
+    case "Closed":    return "badge-status-closed";
+    case "New":       return "bg-info";
+    case "Created":   return "bg-primary";
+    case "Updated":   return "bg-secondary";
+    case "Deleted":   return "bg-danger";
+    case "Cancelled": return "badge-status-closed";
+    default:          return "bg-secondary";
   }
 }
 
@@ -96,11 +78,14 @@ let _editingJobId = null;
 // confirmCancel, cancelApplication, filterJobs, submitApplication
 // are defined per-page.
 
+// ── CSRF Token ──────────────────────────────────────────────
+function getCsrfToken() {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  return meta ? meta.getAttribute("content") : "";
+}
+
 // ── Misc ────────────────────────────────────────────────────
 function comingSoon() {
   alert("Feature Coming Soon");
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-  console.log("OJAMS – DB-backed UI loaded");
-});
