@@ -72,3 +72,28 @@ function requireLogin(
         exit;
     }
 }
+
+// Appends a timestamped error entry to the app log file.
+function logError(string $message, array $context = []): void {
+    $line = '[' . date('Y-m-d H:i:s') . '] ' . $message;
+    if ($context) {
+        $line .= ' ' . json_encode($context);
+    }
+    error_log($line . PHP_EOL, 3, LOG_FILE);
+}
+
+// Generates a CSRF token for the current session (creates once, reuses after).
+function generateCsrfToken(): string {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+// Validates the submitted CSRF token against the session token.
+function validateCsrfToken(?string $token): bool {
+    if (empty($token) || empty($_SESSION['csrf_token'])) {
+        return false;
+    }
+    return hash_equals($_SESSION['csrf_token'], $token);
+}
