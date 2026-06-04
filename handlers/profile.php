@@ -13,6 +13,13 @@ $body   = json_decode(file_get_contents('php://input'), true);
 $action = $body['action'] ?? '';
 $userId = $_SESSION['ojams_user']['id'];
 
+// CSRF check
+if (!validateCsrfToken($body['csrf_token'] ?? null)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Invalid or missing CSRF token.']);
+    exit;
+}
+
 // ── ACTION: updateInfo ───────────────────────────────────────
 if ($action === 'updateInfo') {
     $fullName = trim($body['full_name']      ?? '');
@@ -25,6 +32,9 @@ if ($action === 'updateInfo') {
         echo json_encode(['success' => false, 'message' => 'Full name and email are required.']);
         exit;
     }
+    if (strlen($fullName) > 150) { echo json_encode(['success' => false, 'message' => 'Full name must be 150 characters or fewer.']); exit; }
+    if (strlen($email) > 150)    { echo json_encode(['success' => false, 'message' => 'Email must be 150 characters or fewer.']); exit; }
+    if (strlen($contact) > 20)   { echo json_encode(['success' => false, 'message' => 'Contact number must be 20 characters or fewer.']); exit; }
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         echo json_encode(['success' => false, 'message' => 'Invalid email address.']);
         exit;
@@ -88,5 +98,6 @@ if ($action === 'changePassword') {
     exit;
 }
 
+logError('profile.php: unknown action', ['action' => $action]);
 http_response_code(400);
 echo json_encode(['success' => false, 'message' => 'Unknown action.']);
