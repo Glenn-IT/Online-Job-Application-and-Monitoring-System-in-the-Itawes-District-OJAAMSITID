@@ -1,4 +1,5 @@
 <?php
+if (php_sapi_name() !== 'cli') { http_response_code(403); exit('Forbidden'); }
 require_once __DIR__ . '/db.php';
 $adminHash = password_hash('admin123',    PASSWORD_BCRYPT, ['cost' => 12]);
 $userHash  = password_hash('password123', PASSWORD_BCRYPT, ['cost' => 12]);
