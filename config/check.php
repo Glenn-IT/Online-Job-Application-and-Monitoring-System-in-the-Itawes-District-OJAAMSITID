@@ -1,4 +1,5 @@
 <?php
+if (php_sapi_name() !== 'cli') { http_response_code(403); exit('Forbidden'); }
 require_once __DIR__ . '/db.php';
 echo "DB: CONNECTED\n";
 $rows = $pdo->query("SELECT role, email FROM users ORDER BY role")->fetchAll(PDO::FETCH_ASSOC);
