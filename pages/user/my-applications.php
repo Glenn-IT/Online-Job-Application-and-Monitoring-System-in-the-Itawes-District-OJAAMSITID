@@ -199,7 +199,7 @@ document.getElementById("confirmCancelBtn").addEventListener("click", function()
     fetch(APP_HANDLER_MY, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "cancel", id: _cancelAppId })
+        body: JSON.stringify({ action: "cancel", id: _cancelAppId, csrf_token: getCsrfToken() })
     })
     .then(r => r.json())
     .then(res => {

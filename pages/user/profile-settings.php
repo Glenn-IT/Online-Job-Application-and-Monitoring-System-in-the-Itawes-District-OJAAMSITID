@@ -76,19 +76,19 @@ include $basePath . "layouts/navbar-user.php";
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Full Name <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="editFullName"
-                                           value="<?php echo htmlspecialchars($u['full_name']); ?>">
+                                           value="<?php echo htmlspecialchars($u['full_name']); ?>" maxlength="150">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Email <span class="text-danger">*</span></label>
                                     <input type="email" class="form-control" id="editEmail"
-                                           value="<?php echo htmlspecialchars($u['email']); ?>">
+                                           value="<?php echo htmlspecialchars($u['email']); ?>" maxlength="150">
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Contact Number</label>
                                     <input type="tel" class="form-control" id="editContact"
-                                           value="<?php echo htmlspecialchars($u['contact_number'] ?? ''); ?>">
+                                           value="<?php echo htmlspecialchars($u['contact_number'] ?? ''); ?>" maxlength="20">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Birthdate</label>
@@ -99,7 +99,7 @@ include $basePath . "layouts/navbar-user.php";
                             <div class="mb-3">
                                 <label class="form-label">Address</label>
                                 <input type="text" class="form-control" id="editAddress"
-                                       value="<?php echo htmlspecialchars($u['address'] ?? ''); ?>">
+                                       value="<?php echo htmlspecialchars($u['address'] ?? ''); ?>" maxlength="500">
                             </div>
                             <hr>
                             <p class="text-muted small mb-3">Leave blank to keep your current password.</p>
@@ -167,13 +167,13 @@ function saveProfile() {
     const updateInfo = () => fetch(PROFILE_HANDLER, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "updateInfo", full_name: fullName, email, contact_number: contact, address, birthdate })
+        body: JSON.stringify({ action: "updateInfo", full_name: fullName, email, contact_number: contact, address, birthdate, csrf_token: getCsrfToken() })
     }).then(r => r.json());
 
     const changePass = () => fetch(PROFILE_HANDLER, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "changePassword", current_password: currentPw, new_password: newPw, confirm_password: newPw })
+        body: JSON.stringify({ action: "changePassword", current_password: currentPw, new_password: newPw, confirm_password: newPw, csrf_token: getCsrfToken() })
     }).then(r => r.json());
 
     updateInfo().then(res => {

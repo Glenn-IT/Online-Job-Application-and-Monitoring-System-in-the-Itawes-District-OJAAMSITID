@@ -10,10 +10,9 @@ $u = $_SESSION["ojams_user"];
 include $basePath . "layouts/header.php";
 include $basePath . "layouts/navbar-admin.php";
 ?>
-<div class="container-fluid">
-    <div class="row">
-        <?php include $basePath . "layouts/sidebar-admin.php"; ?>
-        <div class="col-lg-10 col-md-9 py-4 px-4">
+<div class="admin-layout">
+    <?php include $basePath . "layouts/sidebar-admin.php"; ?>
+    <main class="admin-main">
         <div class="mb-4">
             <h2 class="fw-bold mb-1"><i class="bi bi-person-gear me-2 text-primary"></i>Profile Settings</h2>
             <p class="text-muted mb-0">Manage your administrator account information.</p>
@@ -44,19 +43,19 @@ include $basePath . "layouts/navbar-admin.php";
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Full Name <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="adminFullName"
-                                       value="<?php echo htmlspecialchars($u['full_name']); ?>">
+                                       value="<?php echo htmlspecialchars($u['full_name']); ?>" maxlength="150">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Email <span class="text-danger">*</span></label>
                                 <input type="email" class="form-control" id="adminEmail"
-                                       value="<?php echo htmlspecialchars($u['email']); ?>">
+                                       value="<?php echo htmlspecialchars($u['email']); ?>" maxlength="150">
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Contact Number</label>
                                 <input type="tel" class="form-control" id="adminContact"
-                                       value="<?php echo htmlspecialchars($u['contact_number'] ?? ''); ?>">
+                                       value="<?php echo htmlspecialchars($u['contact_number'] ?? ''); ?>" maxlength="20">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Birthdate</label>
@@ -67,7 +66,7 @@ include $basePath . "layouts/navbar-admin.php";
                         <div class="mb-3">
                             <label class="form-label">Address</label>
                             <input type="text" class="form-control" id="adminAddress"
-                                   value="<?php echo htmlspecialchars($u['address'] ?? ''); ?>">
+                                   value="<?php echo htmlspecialchars($u['address'] ?? ''); ?>" maxlength="500">
                         </div>
                         <button type="button" class="btn btn-primary" onclick="savePersonalInfo()">
                             <i class="bi bi-save me-1"></i>Save Information
@@ -112,9 +111,8 @@ include $basePath . "layouts/navbar-admin.php";
                 </div>
             </div>
         </div>
-        </div><!-- /col-lg-10 -->
-    </div><!-- /row -->
-</div><!-- /container-fluid -->
+    </main>
+</div>
 <script>
 const PROFILE_HANDLER = "../../handlers/profile.php";
 
@@ -128,7 +126,7 @@ function savePersonalInfo() {
     fetch(PROFILE_HANDLER, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "updateInfo", full_name: fullName, email, contact_number: contact, address, birthdate })
+        body: JSON.stringify({ action: "updateInfo", full_name: fullName, email, contact_number: contact, address, birthdate, csrf_token: getCsrfToken() })
     })
     .then(r => r.json())
     .then(res => {
@@ -149,7 +147,7 @@ function changeAdminPassword() {
     fetch(PROFILE_HANDLER, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "changePassword", current_password: current, new_password: newPw, confirm_password: confirm })
+        body: JSON.stringify({ action: "changePassword", current_password: current, new_password: newPw, confirm_password: confirm, csrf_token: getCsrfToken() })
     })
     .then(r => r.json())
     .then(res => {

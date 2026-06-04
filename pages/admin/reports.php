@@ -6,18 +6,19 @@ $pageTitle   = "OJAMS - Reports & Monitoring";
 $basePath    = "../../";
 $currentPage = "reports";
 
-// Applicants per job
+// Applicants per job — top 20 by applicant count
 $stmtPerJob = $pdo->query("
     SELECT j.title AS job_title, COUNT(a.id) AS applicants
     FROM jobs j
     LEFT JOIN applications a ON a.job_id = j.id
     GROUP BY j.id, j.title
     ORDER BY applicants DESC
+    LIMIT 20
 ");
 $applicants_per_job = $stmtPerJob->fetchAll();
 $maxApplicants = !empty($applicants_per_job) ? max(array_column($applicants_per_job, "applicants")) : 1;
 
-// Monthly application report
+// Monthly application report — last 12 months only
 $stmtMonthly = $pdo->query("
     SELECT
         DATE_FORMAT(date_applied, '%M %Y') AS month,
@@ -28,6 +29,7 @@ $stmtMonthly = $pdo->query("
     FROM applications
     GROUP BY DATE_FORMAT(date_applied, '%Y-%m')
     ORDER BY MIN(date_applied) DESC
+    LIMIT 12
 ");
 $monthly_report = $stmtMonthly->fetchAll();
 $maxMonthly = !empty($monthly_report) ? max(array_column($monthly_report, "applications")) : 1;
@@ -35,10 +37,9 @@ $maxMonthly = !empty($monthly_report) ? max(array_column($monthly_report, "appli
 include $basePath . "layouts/header.php";
 include $basePath . "layouts/navbar-admin.php";
 ?>
-<div class="container-fluid">
-    <div class="row">
-        <?php include $basePath . "layouts/sidebar-admin.php"; ?>
-        <div class="col-lg-10 col-md-9 py-4 px-4">
+<div class="admin-layout">
+    <?php include $basePath . "layouts/sidebar-admin.php"; ?>
+    <main class="admin-main">
         <!-- Page Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
@@ -159,7 +160,6 @@ include $basePath . "layouts/navbar-admin.php";
                 </div>
             </div>
         </div>
-        </div><!-- /col-lg-10 -->
-    </div><!-- /row -->
-</div><!-- /container-fluid -->
-<?php include $basePath . "layouts/footer.php"; ?><?php include $basePath . "layouts/footer.php"; ?>
+    </main>
+</div>
+<?php include $basePath . "layouts/footer.php"; ?>

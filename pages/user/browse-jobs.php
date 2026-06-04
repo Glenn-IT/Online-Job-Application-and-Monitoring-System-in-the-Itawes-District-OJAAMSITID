@@ -5,7 +5,29 @@ $pageTitle   = "OJAMS - Browse Jobs";
 $basePath    = "../../";
 $currentPage = "browse-jobs";
 
-$jobs = $pdo->query("SELECT * FROM jobs ORDER BY date_posted DESC")->fetchAll();
+// ── Filters from URL ────────────────────────────────────────
+$search       = trim($_GET['search'] ?? '');
+$statusFilter = $_GET['status'] ?? '';
+$allowedStatus = ['', 'Open', 'Closed'];
+if (!in_array($statusFilter, $allowedStatus)) $statusFilter = '';
+
+// ── Build filtered query ─────────────────────────────────────
+$where  = [];
+$params = [];
+if ($search !== '') {
+    $where[]  = "(j.title LIKE ? OR j.company LIKE ?)";
+    $params[] = "%{$search}%";
+    $params[] = "%{$search}%";
+}
+if ($statusFilter !== '') {
+    $where[]  = "j.status = ?";
+    $params[] = $statusFilter;
+}
+$whereSQL = $where ? "WHERE " . implode(" AND ", $where) : "";
+
+$jobsStmt = $pdo->prepare("SELECT j.* FROM jobs j {$whereSQL} ORDER BY j.date_posted DESC");
+$jobsStmt->execute($params);
+$jobs = $jobsStmt->fetchAll();
 
 $appliedStmt = $pdo->prepare("SELECT job_id FROM applications WHERE user_id = ?");
 $appliedStmt->execute([$_SESSION["ojams_user"]["id"]]);
@@ -17,6 +39,8 @@ foreach ($countRows as $row) {
     $appCounts[$row["job_id"]] = $row["cnt"];
 }
 
+$totalJobs = (int)$pdo->query("SELECT COUNT(*) FROM jobs")->fetchColumn();
+
 include $basePath . "layouts/header.php";
 include $basePath . "layouts/navbar-user.php";
 ?>
@@ -26,22 +50,32 @@ include $basePath . "layouts/navbar-user.php";
             <h2 class="fw-bold mb-1"><i class="bi bi-search me-2 text-primary"></i>Browse Jobs</h2>
             <p class="text-muted mb-0">Find and apply to job openings that match your skills.</p>
         </div>
-        <span class="badge bg-primary fs-6"><?php echo count($jobs); ?> Jobs Available</span>
+        <span class="badge bg-primary fs-6">
+            <?php echo count($jobs); ?> of <?php echo $totalJobs; ?> Jobs
+        </span>
     </div>
     <div class="row mb-4">
         <div class="col-md-8">
             <div class="input-group">
                 <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
                 <input type="text" class="form-control" placeholder="Search jobs by title or company..."
-                       id="jobSearch" onkeyup="filterJobs()">
+                       id="jobSearch" onkeyup="filterJobs()"
+                       value="<?php echo htmlspecialchars($search, ENT_QUOTES); ?>">
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <select class="form-select" id="statusFilter" onchange="filterJobs()">
                 <option value="">All Status</option>
-                <option value="Open">Open</option>
-                <option value="Closed">Closed</option>
+                <option value="Open"   <?php echo $statusFilter === 'Open'   ? 'selected' : ''; ?>>Open</option>
+                <option value="Closed" <?php echo $statusFilter === 'Closed' ? 'selected' : ''; ?>>Closed</option>
             </select>
+        </div>
+        <div class="col-md-1">
+            <?php if ($search !== '' || $statusFilter !== ''): ?>
+            <a href="browse-jobs.php" class="btn btn-outline-secondary w-100" title="Clear filters">
+                <i class="bi bi-x-lg"></i>
+            </a>
+            <?php endif; ?>
         </div>
     </div>
     <div class="row" id="jobCardsContainer">
@@ -177,6 +211,7 @@ function submitApplication() {
         college:    g("appCollege"),
         skills:     g("appSkills"),
         experience: g("appExperience"),
+        csrf_token: getCsrfToken(),
     };
 
     if (!payload.full_name) { showToast("Full name is required.", "warning"); return; }
@@ -195,7 +230,9 @@ function submitApplication() {
     .catch(() => showToast("Request failed. Please try again.", "danger"));
 }
 
+let _filterTimer = null;
 function filterJobs() {
+    // Instant client-side hide for immediate feedback
     const q      = (document.getElementById("jobSearch")?.value || "").toLowerCase();
     const status = (document.getElementById("statusFilter")?.value || "").toLowerCase();
     document.querySelectorAll(".job-card-wrap").forEach(card => {
@@ -203,6 +240,15 @@ function filterJobs() {
         const matchStatus = !status || card.dataset.status.toLowerCase() === status;
         card.style.display = (matchText && matchStatus) ? "" : "none";
     });
+    // Persist state in URL (debounced) so filters survive page reload
+    clearTimeout(_filterTimer);
+    _filterTimer = setTimeout(() => {
+        const params = new URLSearchParams();
+        if (q)      params.set("search", q);
+        if (status) params.set("status", document.getElementById("statusFilter").value);
+        const newUrl = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
+        history.replaceState(null, "", newUrl);
+    }, 400);
 }
 </script>
 <?php include $basePath . "layouts/footer.php"; ?>
