@@ -32,10 +32,9 @@ $activity_history = $stmtLog->fetchAll();
 include $basePath . "layouts/header.php";
 include $basePath . "layouts/navbar-admin.php";
 ?>
-<div class="container-fluid">
-    <div class="row">
-        <?php include $basePath . "layouts/sidebar-admin.php"; ?>
-        <div class="col-lg-10 col-md-9 py-4 px-4">
+<div class="admin-layout">
+    <?php include $basePath . "layouts/sidebar-admin.php"; ?>
+    <main class="admin-main">
         <!-- Page Header -->
         <div class="mb-4">
             <h2 class="fw-bold mb-1">
@@ -75,10 +74,13 @@ include $basePath . "layouts/navbar-admin.php";
 
         <!-- Activity History Table -->
         <div class="card border-0 shadow-sm mt-2">
-            <div class="card-header bg-white">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold">
                     <i class="bi bi-clock-history me-2 text-primary"></i>Recent Activity
                 </h5>
+                <button class="btn btn-sm btn-outline-danger" onclick="clearOldLogs()">
+                    <i class="bi bi-trash me-1"></i>Clear Logs &gt;90 Days
+                </button>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -126,7 +128,22 @@ include $basePath . "layouts/navbar-admin.php";
                 </div>
             </div>
         </div>
-        </div><!-- /col-lg-10 -->
-    </div><!-- /row -->
-</div><!-- /container-fluid -->
+    </main>
+</div>
+<script>
+function clearOldLogs() {
+    if (!confirm("Delete all activity logs older than 90 days?")) return;
+    fetch("../../handlers/admin.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "clearLogs", days: 90, csrf_token: getCsrfToken() })
+    })
+    .then(r => r.json())
+    .then(res => {
+        showToast(res.message, res.success ? "success" : "danger");
+        if (res.success) setTimeout(() => location.reload(), 1200);
+    })
+    .catch(() => showToast("Request failed.", "danger"));
+}
+</script>
 <?php include $basePath . "layouts/footer.php"; ?>
