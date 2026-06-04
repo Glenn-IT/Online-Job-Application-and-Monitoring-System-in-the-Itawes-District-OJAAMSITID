@@ -5,17 +5,37 @@ $pageTitle   = "OJAMS - Applications";
 $basePath    = "../../";
 $currentPage = "applications";
 
-$filter = $_GET["status"] ?? "All";
+$filter  = $_GET["status"] ?? "All";
 $allowed = ["All", "Pending", "Approved", "Rejected"];
 if (!in_array($filter, $allowed)) $filter = "All";
 
+// ── Pagination ───────────────────────────────────────────────
+$perPage    = 15;
+$page       = max(1, (int)($_GET["page"] ?? 1));
+$offset     = ($page - 1) * $perPage;
+
+// Total count for pagination
 if ($filter === "All") {
-    $stmt = $pdo->query("
+    $total = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn();
+} else {
+    $cStmt = $pdo->prepare("SELECT COUNT(*) FROM applications WHERE status = ?");
+    $cStmt->execute([$filter]);
+    $total = (int)$cStmt->fetchColumn();
+}
+$totalPages = max(1, (int)ceil($total / $perPage));
+$page       = min($page, $totalPages);
+$offset     = ($page - 1) * $perPage;
+
+// ── Fetch current page ───────────────────────────────────────
+if ($filter === "All") {
+    $stmt = $pdo->prepare("
         SELECT a.*, j.title as job_title, j.company
         FROM applications a
         JOIN jobs j ON j.id = a.job_id
         ORDER BY a.date_applied DESC
+        LIMIT ? OFFSET ?
     ");
+    $stmt->execute([$perPage, $offset]);
 } else {
     $stmt = $pdo->prepare("
         SELECT a.*, j.title as job_title, j.company
@@ -23,28 +43,31 @@ if ($filter === "All") {
         JOIN jobs j ON j.id = a.job_id
         WHERE a.status = ?
         ORDER BY a.date_applied DESC
+        LIMIT ? OFFSET ?
     ");
-    $stmt->execute([$filter]);
+    $stmt->execute([$filter, $perPage, $offset]);
 }
 $applications = $stmt->fetchAll();
 
 include $basePath . "layouts/header.php";
 include $basePath . "layouts/navbar-admin.php";
 ?>
-<div class="container-fluid">
-    <div class="row">
-        <?php include $basePath . "layouts/sidebar-admin.php"; ?>
-        <div class="col-lg-10 col-md-9 py-4 px-4">
+<div class="admin-layout">
+    <?php include $basePath . "layouts/sidebar-admin.php"; ?>
+    <main class="admin-main">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 class="fw-bold mb-1">
                         <i class="bi bi-file-earmark-person me-2 text-primary"></i>Applications
                     </h2>
-                    <p class="text-muted mb-0">Review and manage all job applications.</p>
+                    <p class="text-muted mb-0">
+                        Review and manage all job applications.
+                        <span class="text-muted small">(<?php echo $total; ?> total)</span>
+                    </p>
                 </div>
                 <div class="btn-group" role="group">
                     <?php foreach (["All", "Pending", "Approved", "Rejected"] as $s):
-                        $active = $filter === $s ? "active" : "";
+                        $active  = $filter === $s ? "active" : "";
                         $variant = match($s) { "Pending" => "warning", "Approved" => "success", "Rejected" => "danger", default => "primary" };
                     ?>
                     <a href="?status=<?php echo $s; ?>"
@@ -54,6 +77,7 @@ include $basePath . "layouts/navbar-admin.php";
                     <?php endforeach; ?>
                 </div>
             </div>
+
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -69,7 +93,7 @@ include $basePath . "layouts/navbar-admin.php";
                                             No <?php echo $filter !== "All" ? strtolower($filter) : ""; ?> applications found.
                                         </td>
                                     </tr>
-                                <?php else: $count = 1; foreach ($applications as $app):
+                                <?php else: $rowNum = $offset + 1; foreach ($applications as $app):
                                     $badgeClass = match($app["status"]) {
                                         "Approved" => "bg-success",
                                         "Rejected" => "bg-danger",
@@ -78,7 +102,7 @@ include $basePath . "layouts/navbar-admin.php";
                                     };
                                 ?>
                                     <tr>
-                                        <td><?php echo $count++; ?></td>
+                                        <td><?php echo $rowNum++; ?></td>
                                         <td><?php echo htmlspecialchars($app["full_name"]); ?></td>
                                         <td>
                                             <?php echo htmlspecialchars($app["job_title"]); ?>
@@ -111,9 +135,43 @@ include $basePath . "layouts/navbar-admin.php";
                         </table>
                     </div>
                 </div>
+
+                <!-- Pagination -->
+                <?php if ($totalPages > 1): ?>
+                <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        Showing <?php echo $offset + 1; ?>–<?php echo min($offset + $perPage, $total); ?> of <?php echo $total; ?>
+                    </small>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item <?php echo $page <= 1 ? 'disabled' : ''; ?>">
+                                <a class="page-link" href="?status=<?php echo $filter; ?>&page=<?php echo $page - 1; ?>">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                            <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+                                <?php
+                                // Show first, last, and pages around current
+                                $show = ($p === 1 || $p === $totalPages || abs($p - $page) <= 2);
+                                $ellipsisBefore = ($p === 2 && $page > 4);
+                                $ellipsisAfter  = ($p === $totalPages - 1 && $page < $totalPages - 3);
+                                if (!$show) continue;
+                                ?>
+                                <li class="page-item <?php echo $p === $page ? 'active' : ''; ?>">
+                                    <a class="page-link" href="?status=<?php echo $filter; ?>&page=<?php echo $p; ?>"><?php echo $p; ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            <li class="page-item <?php echo $page >= $totalPages ? 'disabled' : ''; ?>">
+                                <a class="page-link" href="?status=<?php echo $filter; ?>&page=<?php echo $page + 1; ?>">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+                <?php endif; ?>
             </div>
-        </div>
-    </div>
+    </main>
 </div>
 <?php include $basePath . "modals/view-application-modal.php"; ?>
 <script>
@@ -126,7 +184,7 @@ function updateAppStatus(id, status) {
     fetch(APP_HANDLER_ADMIN, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "updateStatus", id: id, status: status })
+        body: JSON.stringify({ action: "updateStatus", id: id, status: status, csrf_token: getCsrfToken() })
     })
     .then(r => r.json())
     .then(res => {
