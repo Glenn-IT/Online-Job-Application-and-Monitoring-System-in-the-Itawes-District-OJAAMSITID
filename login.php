@@ -12,11 +12,37 @@ if (isLoggedIn()) {
 
 $error = '';
 
+// ── Brute-force constants ────────────────────────────────────
+const MAX_ATTEMPTS    = 5;
+const LOCKOUT_MINUTES = 15;
+
+// Get client IP (support reverse proxies)
+$clientIp = $_SERVER['HTTP_X_FORWARDED_FOR']
+    ?? $_SERVER['HTTP_X_REAL_IP']
+    ?? $_SERVER['REMOTE_ADDR']
+    ?? '0.0.0.0';
+// Use only the first IP if a comma-separated list is forwarded
+$clientIp = trim(explode(',', $clientIp)[0]);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email    = trim($_POST['email']    ?? '');
     $password = trim($_POST['password'] ?? '');
 
-    if ($email === '' || $password === '') {
+    // ── Check lockout ────────────────────────────────────────
+    $lockStmt = $pdo->prepare("
+        SELECT attempts, last_attempt_at
+        FROM login_attempts
+        WHERE ip = ? AND last_attempt_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)
+    ");
+    $lockStmt->execute([$clientIp, LOCKOUT_MINUTES]);
+    $lockRow = $lockStmt->fetch();
+
+    if ($lockRow && $lockRow['attempts'] >= MAX_ATTEMPTS) {
+        $retryAfter = (new DateTime($lockRow['last_attempt_at']))
+            ->modify('+' . LOCKOUT_MINUTES . ' minutes');
+        $minsLeft = (int)ceil((($retryAfter->getTimestamp() - time()) / 60));
+        $error = "Too many failed attempts. Please try again in {$minsLeft} minute(s).";
+    } elseif ($email === '' || $password === '') {
         $error = 'Please enter both email and password.';
     } else {
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
@@ -24,8 +50,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
-            $error = 'Invalid email or password.';
+            // ── Record failed attempt ────────────────────────
+            $pdo->prepare("
+                INSERT INTO login_attempts (ip, attempts)
+                VALUES (?, 1)
+                ON DUPLICATE KEY UPDATE
+                    attempts        = IF(last_attempt_at > DATE_SUB(NOW(), INTERVAL ? MINUTE), attempts + 1, 1),
+                    last_attempt_at = NOW()
+            ")->execute([$clientIp, LOCKOUT_MINUTES]);
+
+            // Warn user how many tries remain
+            $attStmt = $pdo->prepare("SELECT attempts FROM login_attempts WHERE ip = ?");
+            $attStmt->execute([$clientIp]);
+            $attRow   = $attStmt->fetch();
+            $attempts = $attRow['attempts'] ?? 1;
+            $remaining = MAX_ATTEMPTS - $attempts;
+
+            if ($remaining > 0) {
+                $error = "Invalid email or password. {$remaining} attempt(s) remaining before lockout.";
+            } else {
+                $error = "Too many failed attempts. Please try again in " . LOCKOUT_MINUTES . " minute(s).";
+            }
         } else {
+            // ── Clear failed attempts on success ─────────────
+            $pdo->prepare("DELETE FROM login_attempts WHERE ip = ?")->execute([$clientIp]);
+
+            // Regenerate session ID to prevent session fixation attacks
+            session_regenerate_id(true);
+            unset($_SESSION['csrf_token']); // force fresh CSRF token for new session
+
             // Build a clean session payload (never store password_hash)
             $_SESSION['ojams_user'] = [
                 'id'             => $user['id'],
@@ -47,168 +100,188 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = "OJAMS - Login";
-$basePath  = "";
-include 'layouts/header.php';
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo $pageTitle; ?></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+        .auth-page { min-height: 100vh; display: flex; }
+        .auth-hero {
+            flex: 1;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .auth-hero::before {
+            content: '';
+            position: absolute;
+            top: -80px; right: -80px;
+            width: 320px; height: 320px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.04);
+        }
+        .auth-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -100px; left: -60px;
+            width: 400px; height: 400px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.03);
+        }
+        .auth-hero-icon {
+            width: 80px; height: 80px;
+            border-radius: 22px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            color: #fff;
+            margin-bottom: 1.5rem;
+        }
+        .auth-hero h1 { color: #fff; font-size: 2.2rem; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 0.75rem; }
+        .auth-hero > p { color: rgba(255,255,255,0.65); font-size: 1rem; max-width: 320px; text-align: center; line-height: 1.6; }
+        .auth-hero-features { list-style: none; padding: 0; margin: 2rem 0 0; text-align: left; width: 100%; max-width: 300px; }
+        .auth-hero-features li { color: rgba(255,255,255,0.75); font-size: 0.875rem; padding: 0.45rem 0; display: flex; align-items: center; gap: 0.75rem; }
+        .auth-hero-features li i { color: #a5b4fc; font-size: 1rem; width: 18px; flex-shrink: 0; }
+        .auth-form-panel {
+            width: 440px;
+            max-width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2.5rem;
+            background: #ffffff;
+            overflow-y: auto;
+        }
+        .auth-card { width: 100%; max-width: 380px; }
+        .auth-card-header { text-align: center; margin-bottom: 2rem; }
+        .auth-card-header h2 { font-size: 1.6rem; font-weight: 800; color: #1e293b; margin-bottom: 0.3rem; }
+        .auth-card-header p { color: #64748b; font-size: 0.875rem; }
+        .auth-footer-link { text-align: center; margin-top: 1.5rem; font-size: 0.845rem; color: #64748b; }
+        .auth-footer-link a { color: #4f46e5; font-weight: 600; text-decoration: none; }
+        .auth-footer-link a:hover { text-decoration: underline; }
+        .back-to-jobs { text-align: center; margin-top: 0.75rem; font-size: 0.82rem; }
+        .back-to-jobs a { color: #64748b; text-decoration: none; }
+        .back-to-jobs a:hover { color: #4f46e5; }
+        .copyright-note { font-size: 0.72rem; color: #64748b; text-align: center; margin-top: 1.5rem; }
+        @media (max-width: 767.98px) {
+            .auth-hero { display: none; }
+            .auth-form-panel { width: 100%; padding: 1.5rem; min-height: 100vh; }
+        }
+    </style>
+</head>
+<body>
 
-<div class="min-vh-100 d-flex align-items-center justify-content-center bg-light">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-5 col-lg-4">
+<div class="auth-page">
 
-                <!-- Login Card -->
-                <div class="card shadow-lg border-0">
-                    <div class="card-body p-5">
-                        <!-- Logo / Brand -->
-                        <div class="text-center mb-4">
-                            <i class="bi bi-briefcase-fill text-primary display-3"></i>
-                            <h3 class="fw-bold mt-2">OJAMS</h3>
-                            <p class="text-muted">Online Job Application Monitoring System</p>
-                        </div>
+    <!-- Left: Hero Panel -->
+    <div class="auth-hero">
+        <div class="auth-hero-icon">
+            <i class="bi bi-briefcase-fill"></i>
+        </div>
+        <h1>OJAMS</h1>
+        <p>Online Job Application and Monitoring System in the Itawes District — track, manage, and grow your career.</p>
+        <ul class="auth-hero-features">
+            <li><i class="bi bi-check-circle-fill"></i> Browse open job listings instantly</li>
+            <li><i class="bi bi-check-circle-fill"></i> Track your application status live</li>
+            <li><i class="bi bi-check-circle-fill"></i> Manage your professional profile</li>
+            <li><i class="bi bi-shield-lock-fill"></i> Secure &amp; privacy-first platform</li>
+        </ul>
+    </div>
 
-                        <!-- Alert Box -->
-                        <?php if ($error): ?>
-                        <div class="alert alert-danger mb-3" role="alert">
-                            <i class="bi bi-exclamation-circle me-2"></i><?= htmlspecialchars($error) ?>
-                        </div>
-                        <?php endif; ?>
+    <!-- Right: Form Panel -->
+    <div class="auth-form-panel">
+        <div class="auth-card">
 
-                        <!-- Login Form -->
-                        <form id="loginForm" method="post" action="login.php">
-                            <div class="mb-3">
-                                <label class="form-label">Email Address</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                                    <input type="email" class="form-control" name="email" id="loginEmail"
-                                           placeholder="Enter your email"
-                                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Password</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                                    <input type="password" class="form-control" name="password" id="loginPassword"
-                                           placeholder="Enter your password" required>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="toggleLoginPass()">
-                                        <i class="bi bi-eye" id="loginEyeIcon"></i>
-                                    </button>
-                                </div>
-                            </div>
+            <div class="auth-card-header">
+                <h2>Welcome back</h2>
+                <p>Sign in to your OJAMS account</p>
+            </div>
 
-                            <!-- Quick Login Hints -->
-                            <div class="alert alert-info py-2 small mb-3">
-                                <strong>Demo Accounts:</strong><br>
-                                <i class="bi bi-shield-lock me-1"></i><strong>Admin:</strong> admin@ojams.com / admin123<br>
-                                <i class="bi bi-person me-1"></i><strong>User:</strong> juan@email.com / password123
-                            </div>
+            <?php if ($error): ?>
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-circle me-2"></i><?= htmlspecialchars($error) ?>
+            </div>
+            <?php endif; ?>
 
-                            <div class="d-grid mb-3">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="bi bi-box-arrow-in-right me-2"></i>Login
-                                </button>
-                            </div>
-                        </form>
-
-                        <!-- Register Link -->
-                        <div class="text-center">
-                            <p class="text-muted mb-0">
-                                Don't have an account?
-                                <a href="register.php" class="text-primary fw-semibold">Register here</a>
-                            </p>
-                            <p class="text-muted mt-2 mb-0">
-                                <a href="#" class="text-secondary small" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">
-                                    <i class="bi bi-lock me-1"></i>Forgot your password?
-                                </a>
-                            </p>
-                        </div>
+            <form id="loginForm" method="post" action="login.php">
+                <div class="mb-3">
+                    <label class="form-label" for="loginEmail">Email Address</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                        <input type="email" class="form-control" name="email" id="loginEmail"
+                               placeholder="you@example.com"
+                               value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required autofocus>
                     </div>
                 </div>
 
-                <!-- Footer Note -->
-                <div class="text-center mt-3">
-                    <small class="text-muted">&copy; 2026 OJAMS. Prototype Version</small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<?php include 'layouts/footer.php'; ?>
-
-<!-- Forgot Password Modal -->
-<div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="forgotPasswordModalLabel">
-                    <i class="bi bi-lock me-2"></i>Forgot Password
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Step 1: Enter Email -->
-                <div id="fp-step1">
-                    <p class="text-muted mb-3">Enter your registered email address and we'll send you a password reset link.</p>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Email Address</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                            <input type="email" class="form-control" id="fp-email" placeholder="Enter your email address">
-                        </div>
-                        <div class="invalid-feedback" id="fp-email-error">Please enter a valid email address.</div>
+                <div class="mb-3">
+                    <label class="form-label" for="loginPassword">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        <input type="password" class="form-control" name="password" id="loginPassword"
+                               placeholder="Enter your password" required>
+                        <button type="button" class="btn btn-outline-secondary" onclick="toggleLoginPass()">
+                            <i class="bi bi-eye" id="loginEyeIcon"></i>
+                        </button>
                     </div>
                 </div>
-                <!-- Step 2: Success Message -->
-                <div id="fp-step2" class="text-center py-3 d-none">
-                    <i class="bi bi-envelope-check-fill text-success display-4 mb-3 d-block"></i>
-                    <h5 class="fw-bold">Reset Link Sent!</h5>
-                    <p class="text-muted">A password reset link has been sent to <strong id="fp-sent-email"></strong>. Please check your inbox.</p>
-                    <p class="text-muted small">(This is a prototype — no actual email is sent.)</p>
+
+                <!-- Demo accounts hint -->
+                <div class="alert alert-info small mb-4">
+                    <strong><i class="bi bi-info-circle me-1"></i>Demo Accounts</strong><br>
+                    <span class="text-muted">Admin:</span> admin@ojams.com / admin123<br>
+                    <span class="text-muted">User:</span> juan@email.com / password123
                 </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                    </button>
+                </div>
+            </form>
+
+            <div class="auth-footer-link">
+                Don't have an account? <a href="register.php">Create one free</a>
             </div>
-            <div class="modal-footer" id="fp-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-lg me-1"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-primary" onclick="sendResetLink()">
-                    <i class="bi bi-send me-1"></i>Send Reset Link
-                </button>
+
+            <div class="back-to-jobs">
+                <a href="index.php"><i class="bi bi-arrow-left me-1"></i>Back to Job Listings</a>
             </div>
+
+            <div class="copyright-note">&copy; 2026 OJAMS &mdash; Prototype Version</div>
         </div>
     </div>
+
 </div>
 
-<script>
-function sendResetLink() {
-    const emailInput = document.getElementById('fp-email');
-    const email = emailInput.value.trim();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailRegex.test(email)) {
-        emailInput.classList.add('is-invalid');
-        return;
-    }
-    emailInput.classList.remove('is-invalid');
-    document.getElementById('fp-sent-email').textContent = email;
-    document.getElementById('fp-step1').classList.add('d-none');
-    document.getElementById('fp-step2').classList.remove('d-none');
-    document.getElementById('fp-footer').innerHTML = `
-        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-            <i class="bi bi-check-lg me-1"></i>Done
-        </button>`;
-}
-// Reset modal state when closed
-document.getElementById('forgotPasswordModal').addEventListener('hidden.bs.modal', function () {
-    document.getElementById('fp-step1').classList.remove('d-none');
-    document.getElementById('fp-step2').classList.add('d-none');
-    document.getElementById('fp-email').value = '';
-    document.getElementById('fp-email').classList.remove('is-invalid');
-    document.getElementById('fp-footer').innerHTML = `
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i>Cancel</button>
-        <button type="button" class="btn btn-primary" onclick="sendResetLink()"><i class="bi bi-send me-1"></i>Send Reset Link</button>`;
-});
-</script>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 function toggleLoginPass() {
     const inp  = document.getElementById('loginPassword');
@@ -217,3 +290,5 @@ function toggleLoginPass() {
     else                         { inp.type = 'password'; icon.className = 'bi bi-eye'; }
 }
 </script>
+</body>
+</html>
