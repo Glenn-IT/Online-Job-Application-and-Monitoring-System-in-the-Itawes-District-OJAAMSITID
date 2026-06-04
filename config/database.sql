@@ -1,5 +1,5 @@
 -- ============================================================
--- OJAMS — Online Job Application Monitoring System
+-- OJAMS — Online Job Application and Monitoring System in the Itawes District
 -- Database Schema + Seed Data
 -- ============================================================
 -- Engine  : MySQL 5.7+ / MariaDB 10.3+
@@ -85,6 +85,17 @@ CREATE TABLE IF NOT EXISTS applications (
   UNIQUE KEY uq_user_job (user_id, job_id),
   CONSTRAINT fk_applications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_applications_job  FOREIGN KEY (job_id)  REFERENCES jobs(id)  ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- TABLE: login_attempts
+-- Tracks failed login attempts per IP for brute-force protection.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS login_attempts (
+  ip              VARCHAR(45)     NOT NULL,
+  attempts        TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  last_attempt_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (ip)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
