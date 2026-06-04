@@ -30,7 +30,7 @@
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="appFullName" placeholder="e.g. Juan Dela Cruz" required>
+                            <input type="text" class="form-control" id="appFullName" placeholder="e.g. Juan Dela Cruz" maxlength="150" required>
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Birthdate <span class="text-danger">*</span></label>
@@ -44,11 +44,11 @@
                     <div class="row mb-3">
                         <div class="col-md-8 mb-3">
                             <label class="form-label">Address <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="appAddress" placeholder="e.g. 123 Main St, Quezon City" required>
+                            <input type="text" class="form-control" id="appAddress" placeholder="e.g. 123 Main St, Quezon City" maxlength="500" required>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Contact Number <span class="text-danger">*</span></label>
-                            <input type="tel" class="form-control" id="appContact" placeholder="e.g. 09171234567" required>
+                            <input type="tel" class="form-control" id="appContact" placeholder="e.g. 09171234567" maxlength="20" required>
                         </div>
                     </div>
 
@@ -59,21 +59,21 @@
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Elementary</label>
-                            <input type="text" class="form-control" id="appElementary" placeholder="School name">
+                            <input type="text" class="form-control" id="appElementary" placeholder="School name" maxlength="200">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Junior High School (JHS)</label>
-                            <input type="text" class="form-control" id="appJhs" placeholder="School name">
+                            <input type="text" class="form-control" id="appJhs" placeholder="School name" maxlength="200">
                         </div>
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Senior High School (SHS)</label>
-                            <input type="text" class="form-control" id="appShs" placeholder="School name">
+                            <input type="text" class="form-control" id="appShs" placeholder="School name" maxlength="200">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">College</label>
-                            <input type="text" class="form-control" id="appCollege" placeholder="School name &amp; Course">
+                            <input type="text" class="form-control" id="appCollege" placeholder="School name &amp; Course" maxlength="200">
                         </div>
                     </div>
 
@@ -88,11 +88,6 @@
                     <div class="mb-3">
                         <label class="form-label">Work Experience</label>
                         <textarea class="form-control" id="appExperience" rows="3" placeholder="e.g. Intern at ABC Corp (2024-2025)"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Upload Passport Size ID</label>
-                        <input type="file" class="form-control" accept="image/*">
-                        <small class="text-muted">Accepted formats: JPG, PNG (Max 2MB)</small>
                     </div>
                 </form>
             </div>
