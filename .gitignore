@@ -1,0 +1,12 @@
+# Environment — contains real credentials, never commit
+.env
+
+# Uploads directory
+uploads/
+
+# Logs
+logs/*.log
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
