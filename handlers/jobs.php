@@ -17,6 +17,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $body   = json_decode(file_get_contents('php://input'), true);
 $action = $body['action'] ?? '';
 
+// CSRF check
+if (!validateCsrfToken($body['csrf_token'] ?? null)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Invalid or missing CSRF token.']);
+    exit;
+}
+
 // ── Helper: log activity ────────────────────────────────────
 function logActivity(PDO $pdo, string $action, string $status): void {
     $userId = $_SESSION['ojams_user']['id'] ?? null;
@@ -44,13 +51,16 @@ if ($action === 'add') {
     $err = requireFields($body, ['title', 'company', 'description', 'qualification']);
     if ($err) { echo json_encode(['success' => false, 'message' => $err]); exit; }
 
-    $title         = trim($body['title']);
-    $company       = trim($body['company']);
-    $description   = trim($body['description']);
-    $qualification = trim($body['qualification']);
+    $title         = strip_tags(trim($body['title']));
+    $company       = strip_tags(trim($body['company']));
+    $description   = strip_tags(trim($body['description']));
+    $qualification = strip_tags(trim($body['qualification']));
     $date_posted   = $body['date_posted'] ?: date('Y-m-d');
     $status        = in_array($body['status'] ?? '', ['Open', 'Closed']) ? $body['status'] : 'Open';
     $created_by    = $_SESSION['ojams_user']['id'];
+
+    if (strlen($title) > 150)        { echo json_encode(['success' => false, 'message' => 'Job title must be 150 characters or fewer.']); exit; }
+    if (strlen($company) > 150)      { echo json_encode(['success' => false, 'message' => 'Company name must be 150 characters or fewer.']); exit; }
 
     $stmt = $pdo->prepare("
         INSERT INTO jobs (title, company, description, qualification, date_posted, status, created_by)
@@ -82,12 +92,15 @@ if ($action === 'edit') {
     $existing = $check->fetch();
     if (!$existing) { echo json_encode(['success' => false, 'message' => 'Job not found.']); exit; }
 
-    $title         = trim($body['title']);
-    $company       = trim($body['company']);
-    $description   = trim($body['description']);
-    $qualification = trim($body['qualification']);
+    $title         = strip_tags(trim($body['title']));
+    $company       = strip_tags(trim($body['company']));
+    $description   = strip_tags(trim($body['description']));
+    $qualification = strip_tags(trim($body['qualification']));
     $date_posted   = $body['date_posted'] ?: date('Y-m-d');
     $status        = in_array($body['status'] ?? '', ['Open', 'Closed']) ? $body['status'] : 'Open';
+
+    if (strlen($title) > 150)   { echo json_encode(['success' => false, 'message' => 'Job title must be 150 characters or fewer.']); exit; }
+    if (strlen($company) > 150) { echo json_encode(['success' => false, 'message' => 'Company name must be 150 characters or fewer.']); exit; }
 
     $stmt = $pdo->prepare("
         UPDATE jobs
@@ -126,5 +139,6 @@ if ($action === 'delete') {
 }
 
 // Unknown action
+logError('jobs.php: unknown action', ['action' => $action]);
 http_response_code(400);
 echo json_encode(['success' => false, 'message' => 'Unknown action.']);
