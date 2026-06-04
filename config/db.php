@@ -36,13 +36,18 @@ try {
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 
 } catch (PDOException $e) {
+    // Log the real error server-side before showing a safe message to the user
+    $logFile = __DIR__ . '/../logs/app.log';
+    $logLine = '[' . date('Y-m-d H:i:s') . '] DB connection failed: ' . $e->getMessage() . PHP_EOL;
+    error_log($logLine, 3, $logFile);
+
     http_response_code(500);
     die(
         '<div style="font-family:sans-serif;padding:40px;max-width:600px;margin:auto;">'
       . '<h2 style="color:#dc3545;">Database Connection Failed</h2>'
       . '<p>OJAMS could not connect to the database. Please check your configuration.</p>'
-      . '<p style="color:#6c757d;font-size:.85rem;">Error: ' . htmlspecialchars($e->getMessage()) . '</p>'
-      . '<p>Verify the credentials in <code>config/config.php</code> and ensure MySQL is running.</p>'
+      . '<p style="color:#6c757d;font-size:.85rem;">Check <code>logs/app.log</code> for details.</p>'
+      . '<p>Verify credentials in <code>.env</code> and ensure MySQL is running.</p>'
       . '</div>'
     );
 }
