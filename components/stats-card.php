@@ -2,15 +2,18 @@
      Component: Stats Card
      Usage: Pass $statTitle, $statValue, $statIcon, $statColor
      ============================================ -->
-<div class="col-md-6 col-lg-3 mb-4">
-    <div class="card border-0 shadow-sm stats-card">
-        <div class="card-body text-center">
-            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-                 style="width: 60px; height: 60px; background-color: <?php echo $statColor; ?>20;">
-                <i class="bi <?php echo $statIcon; ?> fs-3" style="color: <?php echo $statColor; ?>;"></i>
+<div class="col-sm-6 col-xl-3 mb-4">
+    <div class="stats-card" style="--stat-color: <?php echo htmlspecialchars($statColor); ?>;">
+        <div class="card-body">
+            <div class="stats-icon-wrap"
+                 style="background-color: <?php echo htmlspecialchars($statColor); ?>18;">
+                <i class="bi <?php echo htmlspecialchars($statIcon); ?>"
+                   style="color: <?php echo htmlspecialchars($statColor); ?>;"></i>
             </div>
-            <h3 class="fw-bold mb-1"><?php echo $statValue; ?></h3>
-            <p class="text-muted mb-0"><?php echo $statTitle; ?></p>
+            <div class="stats-info">
+                <div class="stats-value"><?php echo htmlspecialchars((string)$statValue); ?></div>
+                <div class="stats-label"><?php echo htmlspecialchars($statTitle); ?></div>
+            </div>
         </div>
     </div>
 </div>
