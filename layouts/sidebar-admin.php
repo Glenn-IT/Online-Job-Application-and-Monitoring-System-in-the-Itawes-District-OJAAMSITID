@@ -1,51 +1,93 @@
-<!-- ============================================
-     Admin Sidebar Navigation
-     ============================================ -->
-<div class="col-lg-2 col-md-3 bg-dark text-white min-vh-100 sidebar p-0">
-    <div class="d-flex flex-column p-3">
-        <!-- Sidebar Header -->
-        <div class="text-center py-3 mb-3 border-bottom border-secondary">
-            <i class="bi bi-person-circle display-5"></i>
-            <p class="mt-2 mb-0 fw-semibold">Admin Panel</p>
+<?php
+$adminName = htmlspecialchars($_SESSION['ojams_user']['full_name'] ?? 'Admin');
+$initials  = strtoupper(implode('', array_map(fn($w) => $w[0], array_slice(explode(' ', $adminName), 0, 2))));
+
+$links = [
+    ['page' => 'dashboard',       'icon' => 'bi-speedometer2',        'label' => 'Dashboard',        'href' => 'pages/admin/dashboard.php'],
+    ['page' => 'manage-jobs',     'icon' => 'bi-kanban',              'label' => 'Manage Jobs',       'href' => 'pages/admin/manage-jobs.php'],
+    ['page' => 'applications',    'icon' => 'bi-file-earmark-person', 'label' => 'Applications',     'href' => 'pages/admin/applications.php'],
+    ['page' => 'reports',         'icon' => 'bi-graph-up',            'label' => 'Reports',          'href' => 'pages/admin/reports.php'],
+    ['page' => 'profile-settings','icon' => 'bi-person-gear',         'label' => 'Profile Settings', 'href' => 'pages/admin/profile-settings.php'],
+];
+
+function renderSidebarLinks(array $links, string $basePath, string $currentPage): string {
+    $html = '';
+    foreach ($links as $link) {
+        $active = ($currentPage === $link['page']) ? ' active' : '';
+        $html .= '<li class="nav-item">'
+               . '<a class="nav-link' . $active . '" href="' . $basePath . $link['href'] . '">'
+               . '<i class="bi ' . $link['icon'] . '"></i>' . htmlspecialchars($link['label'])
+               . '</a></li>';
+    }
+    return $html;
+}
+
+$bp          = $basePath ?? '';
+$currentPage = $currentPage ?? '';
+$navLinksHtml = renderSidebarLinks($links, $bp, $currentPage);
+?>
+
+<!-- ════════════════════════════════════════════
+     DESKTOP SIDEBAR (hidden on mobile)
+     ════════════════════════════════════════════ -->
+<div class="sidebar-wrapper d-none d-lg-flex">
+    <!-- User Info -->
+    <div class="sidebar-user-info">
+        <div class="sidebar-avatar"><?= $initials ?></div>
+        <div>
+            <div class="user-name"><?= $adminName ?></div>
+            <div class="user-role">Administrator</div>
+        </div>
+    </div>
+
+    <!-- Nav label -->
+    <div class="sidebar-label">Main Menu</div>
+
+    <!-- Navigation -->
+    <ul class="sidebar-nav">
+        <?= $navLinksHtml ?>
+    </ul>
+
+    <!-- Footer -->
+    <div class="sidebar-footer">
+        <span class="sidebar-version">OJAMS Admin &bull; v1.0</span>
+    </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════
+     MOBILE OFFCANVAS SIDEBAR (hidden on desktop)
+     ════════════════════════════════════════════ -->
+<div class="offcanvas sidebar-offcanvas d-lg-none"
+     tabindex="-1"
+     id="adminSidebarOffcanvas"
+     aria-labelledby="adminSidebarOffcanvasLabel">
+
+    <div class="offcanvas-header">
+        <span class="offcanvas-title" id="adminSidebarOffcanvasLabel">
+            <i class="bi bi-briefcase-fill me-2"></i>OJAMS
+        </span>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+
+    <div class="offcanvas-body">
+        <!-- User Info -->
+        <div class="sidebar-user-info mb-3">
+            <div class="sidebar-avatar"><?= $initials ?></div>
+            <div>
+                <div class="user-name"><?= $adminName ?></div>
+                <div class="user-role">Administrator</div>
+            </div>
         </div>
 
-        <!-- Sidebar Links -->
-        <ul class="nav nav-pills flex-column">
-            <li class="nav-item mb-1">
-                <a class="nav-link text-white <?php echo ($currentPage ?? '') === 'dashboard' ? 'active bg-primary' : ''; ?>"
-                   href="<?php echo $basePath ?? ''; ?>pages/admin/dashboard.php">
-                    <i class="bi bi-speedometer2 me-2"></i>Dashboard
-                </a>
-            </li>
-            <li class="nav-item mb-1">
-                <a class="nav-link text-white <?php echo ($currentPage ?? '') === 'manage-jobs' ? 'active bg-primary' : ''; ?>"
-                   href="<?php echo $basePath ?? ''; ?>pages/admin/manage-jobs.php">
-                    <i class="bi bi-kanban me-2"></i>Manage Jobs
-                </a>
-            </li>
-            <li class="nav-item mb-1">
-                <a class="nav-link text-white <?php echo ($currentPage ?? '') === 'applications' ? 'active bg-primary' : ''; ?>"
-                   href="<?php echo $basePath ?? ''; ?>pages/admin/applications.php">
-                    <i class="bi bi-file-earmark-person me-2"></i>Applications
-                </a>
-            </li>
-            <li class="nav-item mb-1">
-                <a class="nav-link text-white <?php echo ($currentPage ?? '') === 'reports' ? 'active bg-primary' : ''; ?>"
-                   href="<?php echo $basePath ?? ''; ?>pages/admin/reports.php">
-                    <i class="bi bi-graph-up me-2"></i>Reports
-                </a>
-            </li>
-            <li class="nav-item mb-1">
-                <a class="nav-link text-white <?php echo ($currentPage ?? '') === 'profile-settings' ? 'active bg-primary' : ''; ?>"
-                   href="<?php echo $basePath ?? ''; ?>pages/admin/profile-settings.php">
-                    <i class="bi bi-person-gear me-2"></i>Profile Settings
-                </a>
-            </li>
+        <div class="sidebar-label">Main Menu</div>
+
+        <ul class="sidebar-nav">
+            <?= $navLinksHtml ?>
         </ul>
 
-        <!-- Sidebar Footer -->
-        <div class="mt-auto pt-4 border-top border-secondary text-center">
-            <small class="text-muted">OJAMS Admin v1.0</small>
+        <div class="sidebar-footer mt-3">
+            <span class="sidebar-version">OJAMS Admin &bull; v1.0</span>
         </div>
     </div>
 </div>
