@@ -17,11 +17,11 @@
                 <form id="addJobForm">
                     <div class="mb-3">
                         <label class="form-label">Job Title <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="jobTitle" placeholder="e.g. Web Developer" required>
+                        <input type="text" class="form-control" id="jobTitle" placeholder="e.g. Web Developer" maxlength="150" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Company <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="jobCompany" placeholder="e.g. ABC Technologies" required>
+                        <input type="text" class="form-control" id="jobCompany" placeholder="e.g. ABC Technologies" maxlength="150" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description <span class="text-danger">*</span></label>
@@ -29,7 +29,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Qualifications <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="jobQualification" placeholder="e.g. HTML, CSS, JavaScript" required>
+                        <input type="text" class="form-control" id="jobQualification" placeholder="e.g. HTML, CSS, JavaScript" maxlength="500" required>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
