@@ -22,12 +22,16 @@ if (!$job) {
     exit;
 }
 
-// ── Has the user already applied? ────────────────────────────
+// ── Has the user already applied or saved? ───────────────────
 $userId = $_SESSION['ojams_user']['id'];
 $dupStmt = $pdo->prepare("SELECT id, status FROM applications WHERE user_id = ? AND job_id = ? LIMIT 1");
 $dupStmt->execute([$userId, $jobId]);
 $existingApp = $dupStmt->fetch();
 $alreadyApplied = (bool)$existingApp;
+
+$svStmt = $pdo->prepare("SELECT id FROM saved_jobs WHERE user_id = ? AND job_id = ? LIMIT 1");
+$svStmt->execute([$userId, $jobId]);
+$isSaved = (bool)$svStmt->fetch();
 
 // ── Applicant count ──────────────────────────────────────────
 $cntStmt = $pdo->prepare("SELECT COUNT(*) FROM applications WHERE job_id = ?");
@@ -191,9 +195,15 @@ include $basePath . 'layouts/navbar-user.php';
                             <h6 class="fw-bold">Ready to Apply?</h6>
                             <p class="text-muted small mb-0">Submit your application for this position.</p>
                         </div>
-                        <button class="btn btn-primary w-100 btn-lg"
+                        <button class="btn btn-primary w-100 btn-lg mb-2"
                             onclick="openApplyModal(<?php echo $job['id']; ?>, '<?php echo htmlspecialchars($job['title'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($job['company'], ENT_QUOTES); ?>')">
                             <i class="bi bi-send me-2"></i>Apply Now
+                        </button>
+                        <button class="btn btn-outline-secondary w-100 <?php echo $isSaved ? 'text-warning' : ''; ?>"
+                                id="detailSaveBtn"
+                                onclick="toggleSaveJobDetail(<?php echo $job['id']; ?>)">
+                            <i class="bi bi-bookmark<?php echo $isSaved ? '-fill' : ''; ?> me-1"></i>
+                            <span id="detailSaveLabel"><?php echo $isSaved ? 'Saved' : 'Save Job'; ?></span>
                         </button>
 
                     <?php else: ?>
@@ -226,7 +236,35 @@ include $basePath . 'layouts/navbar-user.php';
 
 <?php include $basePath . 'modals/apply-job-modal.php'; ?>
 <script>
-const APP_HANDLER = '../../handlers/applications.php';
+const APP_HANDLER   = '../../handlers/applications.php';
+const SAVED_HANDLER = '../../handlers/saved-jobs.php';
+
+function toggleSaveJobDetail(jobId) {
+    fetch(SAVED_HANDLER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle', job_id: jobId, csrf_token: getCsrfToken() })
+    })
+    .then(r => r.json())
+    .then(res => {
+        showToast(res.message, res.success ? 'success' : 'danger');
+        if (res.success) {
+            const btn   = document.getElementById('detailSaveBtn');
+            const icon  = btn?.querySelector('i');
+            const label = document.getElementById('detailSaveLabel');
+            if (res.saved) {
+                btn?.classList.add('text-warning');
+                if (icon)  icon.className  = 'bi bi-bookmark-fill me-1';
+                if (label) label.textContent = 'Saved';
+            } else {
+                btn?.classList.remove('text-warning');
+                if (icon)  icon.className  = 'bi bi-bookmark me-1';
+                if (label) label.textContent = 'Save Job';
+            }
+        }
+    })
+    .catch(() => showToast('Request failed.', 'danger'));
+}
 
 function computeAge(birthdate) {
     if (!birthdate) return '';
@@ -275,10 +313,27 @@ function submitApplication() {
     // Field-level validation
     clearAllFieldErrors('applicationForm');
     let valid = true;
-    if (!g('appFullName'))  { showFieldError('appFullName',  'Full name is required.');       valid = false; }
-    if (!document.getElementById('appBirthdate')?.value) { showFieldError('appBirthdate', 'Birthdate is required.'); valid = false; }
-    if (!g('appAddress'))   { showFieldError('appAddress',   'Address is required.');         valid = false; }
-    if (!g('appContact'))   { showFieldError('appContact',   'Contact number is required.');  valid = false; }
+    if (!g('appFullName')) { showFieldError('appFullName', 'Full name is required.'); valid = false; }
+    if (!g('appAddress'))  { showFieldError('appAddress',  'Address is required.');   valid = false; }
+    const contactVal = g('appContact');
+    if (!contactVal) {
+        showFieldError('appContact', 'Contact number is required.'); valid = false;
+    } else if (!/^\+?[\d\s\-\(\)\.]{7,20}$/.test(contactVal)) {
+        showFieldError('appContact', 'Contact number may only contain digits, spaces, +, hyphens, or parentheses.'); valid = false;
+    }
+    const bdVal = document.getElementById('appBirthdate')?.value;
+    if (!bdVal) {
+        showFieldError('appBirthdate', 'Birthdate is required.'); valid = false;
+    } else {
+        const bd  = new Date(bdVal);
+        const now = new Date();
+        if (bd >= now) {
+            showFieldError('appBirthdate', 'Birthdate cannot be a future date.'); valid = false;
+        } else {
+            const age = Math.floor((now - bd) / (365.25 * 24 * 3600 * 1000));
+            if (age < 16 || age > 80) { showFieldError('appBirthdate', 'Age must be between 16 and 80 years old.'); valid = false; }
+        }
+    }
     if (!valid) return;
 
     const submitBtn = document.getElementById('submitAppBtn');
