@@ -2,7 +2,7 @@
 
 **Audited:** 2026-06-05  
 **System:** Online Job Application and Monitoring System (OJAMS)  
-**Total Items:** 58 | **Completed:** 0 / 58
+**Total Items:** 58 | **Completed:** 50 / 58
 
 ---
 
@@ -58,40 +58,40 @@
 
 ## Phase 4 — Validation Fixes 🟡
 
-- [ ] **Case-insensitive email uniqueness** — `test@email.com` and `TEST@EMAIL.COM` should be treated as duplicates (`register.php`, `handlers/profile.php`)
-- [ ] **Password strength requirements** — enforce uppercase, number, and special character on register (`register.php`)
-- [ ] **Phone number format validation** — `contact_number` currently accepts any string including letters (`handlers/profile.php`, `handlers/applications.php`)
-- [ ] **Birthdate reasonableness check** — reject future dates and unrealistic ages like 1900 (accept range: 16–80 years old)
-- [ ] **Frontend form validation before submit** — catch required fields client-side before sending a fetch request
+- [x] **Case-insensitive email uniqueness** — `test@email.com` and `TEST@EMAIL.COM` should be treated as duplicates (`register.php`, `handlers/profile.php`)
+- [x] **Password strength requirements** — enforce uppercase, number, and special character on register (`register.php`)
+- [x] **Phone number format validation** — `contact_number` currently accepts any string including letters (`handlers/profile.php`, `handlers/applications.php`)
+- [x] **Birthdate reasonableness check** — reject future dates and unrealistic ages like 1900 (accept range: 16–80 years old)
+- [x] **Frontend form validation before submit** — catch required fields client-side before sending a fetch request
 
 ---
 
 ## Phase 5 — Database Improvements 🟡
 
-- [ ] **Indexes on filtered columns** — add indexes on `status`, `date_posted`, `email` for faster queries (`config/database.sql`)
-- [ ] **Composite indexes** — add on `applications(user_id, job_id)`, `jobs(status, date_posted)`
-- [ ] **Application status history table** — store changelog of status transitions instead of only current status
-- [ ] **`activity_logs` foreign keys** — add `job_id` and `application_id` columns to link logs to specific records
-- [ ] **Applicant count query optimization** — replace per-job loop query with a single `GROUP BY` join (`pages/user/browse-jobs.php`)
+- [x] **Indexes on filtered columns** — add indexes on `status`, `date_posted`, `email` for faster queries (`config/database.sql`)
+- [x] **Composite indexes** — add on `applications(user_id, job_id)`, `jobs(status, date_posted)`
+- [x] **Application status history table** — store changelog of status transitions instead of only current status
+- [x] **`activity_logs` foreign keys** — add `job_id` and `application_id` columns to link logs to specific records
+- [x] **Applicant count query optimization** — replace per-job loop query with a single `GROUP BY` join (`pages/user/browse-jobs.php`)
 
 ---
 
 ## Phase 6 — Low Priority / Polish 🟢
 
-- [ ] **Password strength indicator on Register** — already exists on profile page, add it to `register.php`
-- [ ] **Empty-state CTAs** — replace "No data" with helpful buttons like "Add your first job posting"
-- [ ] **"Save Job" / Bookmark feature** — let users save jobs to review later
-- [ ] **Remove dead `comingSoon()` function** — unused code in `assets/js/script.js`
-- [ ] **Move hardcoded constants to config** — `$perPage`, `MAX_ATTEMPTS`, `LOCKOUT_MINUTES` should be in `config/config.php`
-- [ ] **`profile_photo` / avatar column** — add to `users` table for profile pictures
-- [ ] **Query result caching** — reduce repeated DB hits for static data (acceptable now, needed at scale)
-- [ ] **About / Help / FAQ page** — informational page for new visitors
-- [ ] **Contact Us / Support page** — let users reach the admin for help
-- [ ] **Terms of Service / Privacy Policy page** — required for any public deployment
-- [ ] **API documentation** — document all `handlers/*.php` endpoints
-- [ ] **ER diagram** — visual database schema diagram
-- [ ] **Deployment guide** — Apache vhost setup, environment config, HTTPS setup
-- [ ] **User guide / onboarding tutorial** — walkthrough for new applicants and admins
+- [x] **Password strength indicator on Register** — already exists on profile page, add it to `register.php`
+- [x] **Empty-state CTAs** — replace "No data" with helpful buttons like "Add your first job posting"
+- [x] **"Save Job" / Bookmark feature** — let users save jobs to review later
+- [x] **Remove dead `comingSoon()` function** — unused code in `assets/js/script.js`
+- [x] **Move hardcoded constants to config** — `$perPage`, `MAX_ATTEMPTS`, `LOCKOUT_MINUTES` should be in `config/config.php`
+- [x] **`profile_photo` / avatar column** — add to `users` table for profile pictures
+- [x] **Query result caching** — reduce repeated DB hits for static data (acceptable now, needed at scale)
+- [x] **About / Help / FAQ page** — informational page for new visitors
+- [x] **Contact Us / Support page** — let users reach the admin for help
+- [x] **Terms of Service / Privacy Policy page** — required for any public deployment
+- [x] **API documentation** — document all `handlers/*.php` endpoints
+- [x] **ER diagram** — visual database schema diagram
+- [x] **Deployment guide** — Apache vhost setup, environment config, HTTPS setup
+- [x] **User guide / onboarding tutorial** — walkthrough for new applicants and admins
 
 ---
 
@@ -102,7 +102,7 @@
 | Phase 1 — Critical         | 10     | 9      | 1         |
 | Phase 2 — Missing Features | 12     | 12     | 0         |
 | Phase 3 — UI / UX          | 5      | 5      | 0         |
-| Phase 4 — Validation       | 5      | 0      | 5         |
-| Phase 5 — Database         | 5      | 0      | 5         |
-| Phase 6 — Polish           | 14     | 0      | 14        |
-| **Total**                  | **58** | **26** | **32**    |
+| Phase 4 — Validation       | 5      | 5      | 0         |
+| Phase 5 — Database         | 5      | 5      | 0         |
+| Phase 6 — Polish           | 14     | 14     | 0         |
+| **Total**                  | **58** | **50** | **8**     |
