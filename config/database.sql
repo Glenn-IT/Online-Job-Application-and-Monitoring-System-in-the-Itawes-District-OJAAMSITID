@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
   address         TEXT            DEFAULT NULL,
   birthdate       DATE            DEFAULT NULL,
   is_active       TINYINT(1)      NOT NULL DEFAULT 1,
+  profile_photo   VARCHAR(255)    DEFAULT NULL, -- stored filename in uploads/avatars/
   created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
@@ -35,10 +36,21 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Run this if the table already exists (adds column to existing installs):
 -- ALTER TABLE users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER birthdate;
+-- ALTER TABLE users ADD COLUMN profile_photo VARCHAR(255) DEFAULT NULL AFTER is_active;
 -- ALTER TABLE jobs  ADD COLUMN deadline DATE DEFAULT NULL AFTER status;
 -- ALTER TABLE jobs  ADD COLUMN location     VARCHAR(150) DEFAULT NULL AFTER qualification;
 -- ALTER TABLE jobs  ADD COLUMN job_type     ENUM('Full-time','Part-time','Contract','Internship','Freelance') DEFAULT NULL AFTER location;
 -- ALTER TABLE jobs  ADD COLUMN salary_range VARCHAR(100) DEFAULT NULL AFTER job_type;
+-- Phase 5 — indexes and activity_logs FK columns (run on existing installs):
+-- ALTER TABLE jobs ADD INDEX idx_jobs_status (status);
+-- ALTER TABLE jobs ADD INDEX idx_jobs_date_posted (date_posted);
+-- ALTER TABLE jobs ADD INDEX idx_jobs_status_date (status, date_posted);
+-- ALTER TABLE activity_logs ADD COLUMN job_id INT UNSIGNED DEFAULT NULL AFTER performed_by;
+-- ALTER TABLE activity_logs ADD COLUMN application_id INT UNSIGNED DEFAULT NULL AFTER job_id;
+-- ALTER TABLE activity_logs ADD INDEX idx_al_created_at (created_at);
+-- ALTER TABLE activity_logs ADD INDEX idx_al_status (status);
+-- ALTER TABLE activity_logs ADD CONSTRAINT fk_activity_job FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL;
+-- ALTER TABLE activity_logs ADD CONSTRAINT fk_activity_application FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE SET NULL;
 
 -- ============================================================
 -- TABLE: jobs
@@ -60,6 +72,9 @@ CREATE TABLE IF NOT EXISTS jobs (
   created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
+  INDEX idx_jobs_status      (status),
+  INDEX idx_jobs_date_posted (date_posted),
+  INDEX idx_jobs_status_date (status, date_posted),
   CONSTRAINT fk_jobs_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -115,13 +130,19 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 -- Records system-wide events for the admin dashboard.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS activity_logs (
-  id            INT UNSIGNED    NOT NULL AUTO_INCREMENT,
-  action        VARCHAR(255)    NOT NULL,
-  status        VARCHAR(50)     NOT NULL,    -- 'New', 'Created', 'Approved', 'Rejected', etc.
-  performed_by  INT UNSIGNED    DEFAULT NULL, -- FK → users.id (nullable for system events)
-  created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  id             INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+  action         VARCHAR(255)    NOT NULL,
+  status         VARCHAR(50)     NOT NULL,    -- 'New', 'Created', 'Approved', 'Rejected', etc.
+  performed_by   INT UNSIGNED    DEFAULT NULL, -- FK → users.id (nullable for system events)
+  job_id         INT UNSIGNED    DEFAULT NULL, -- FK → jobs.id (set when action relates to a job)
+  application_id INT UNSIGNED    DEFAULT NULL, -- FK → applications.id (set when action relates to an application)
+  created_at     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  CONSTRAINT fk_activity_user FOREIGN KEY (performed_by) REFERENCES users(id) ON DELETE SET NULL
+  INDEX idx_al_created_at (created_at),
+  INDEX idx_al_status     (status),
+  CONSTRAINT fk_activity_user        FOREIGN KEY (performed_by)   REFERENCES users(id)        ON DELETE SET NULL,
+  CONSTRAINT fk_activity_job         FOREIGN KEY (job_id)         REFERENCES jobs(id)         ON DELETE SET NULL,
+  CONSTRAINT fk_activity_application FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -232,6 +253,21 @@ CREATE TABLE IF NOT EXISTS application_status_history (
   INDEX idx_ash_app (application_id),
   CONSTRAINT fk_ash_application FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE,
   CONSTRAINT fk_ash_user        FOREIGN KEY (changed_by)     REFERENCES users(id)        ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- TABLE: saved_jobs
+-- Lets users bookmark job listings to review later.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS saved_jobs (
+  id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id  INT UNSIGNED NOT NULL,
+  job_id   INT UNSIGNED NOT NULL,
+  saved_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_saved (user_id, job_id),
+  CONSTRAINT fk_sj_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_sj_job  FOREIGN KEY (job_id)  REFERENCES jobs(id)  ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
