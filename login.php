@@ -12,9 +12,8 @@ if (isLoggedIn()) {
 
 $error = '';
 
-// ── Brute-force constants ────────────────────────────────────
-const MAX_ATTEMPTS     = 5;
-const LOCKOUT_SECONDS  = 30;
+// Constants come from config/config.php via auth.php
+// LOGIN_LOGIN_MAX_ATTEMPTS and LOGIN_LOGIN_LOCKOUT_SECONDS are defined there.
 
 // Get client IP (support reverse proxies)
 $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR']
@@ -34,12 +33,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         FROM login_attempts
         WHERE ip = ? AND last_attempt_at > DATE_SUB(NOW(), INTERVAL ? SECOND)
     ");
-    $lockStmt->execute([$clientIp, LOCKOUT_SECONDS]);
+    $lockStmt->execute([$clientIp, LOGIN_LOCKOUT_SECONDS]);
     $lockRow = $lockStmt->fetch();
 
-    if ($lockRow && $lockRow['attempts'] >= MAX_ATTEMPTS) {
+    if ($lockRow && $lockRow['attempts'] >= LOGIN_MAX_ATTEMPTS) {
         $retryAfter = (new DateTime($lockRow['last_attempt_at']))
-            ->modify('+' . LOCKOUT_SECONDS . ' seconds');
+            ->modify('+' . LOGIN_LOCKOUT_SECONDS . ' seconds');
         $secsLeft = max(1, (int)ceil($retryAfter->getTimestamp() - time()));
         $error = "Too many failed attempts. Please try again in {$secsLeft} second(s).";
     } elseif ($email === '' || $password === '') {
@@ -57,19 +56,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ON DUPLICATE KEY UPDATE
                     attempts        = IF(last_attempt_at > DATE_SUB(NOW(), INTERVAL ? SECOND), attempts + 1, 1),
                     last_attempt_at = NOW()
-            ")->execute([$clientIp, LOCKOUT_SECONDS]);
+            ")->execute([$clientIp, LOGIN_LOCKOUT_SECONDS]);
 
             // Warn user how many tries remain
             $attStmt = $pdo->prepare("SELECT attempts FROM login_attempts WHERE ip = ?");
             $attStmt->execute([$clientIp]);
             $attRow   = $attStmt->fetch();
             $attempts = $attRow['attempts'] ?? 1;
-            $remaining = MAX_ATTEMPTS - $attempts;
+            $remaining = LOGIN_MAX_ATTEMPTS - $attempts;
 
             if ($remaining > 0) {
                 $error = "Invalid email or password. {$remaining} attempt(s) remaining before lockout.";
             } else {
-                $error = "Too many failed attempts. Please try again in " . LOCKOUT_SECONDS . " second(s).";
+                $error = "Too many failed attempts. Please try again in " . LOGIN_LOCKOUT_SECONDS . " second(s).";
             }
         } else {
             // ── Clear failed attempts on success ─────────────
