@@ -97,3 +97,41 @@ function validateCsrfToken(?string $token): bool {
     }
     return hash_equals($_SESSION['csrf_token'], $token);
 }
+
+// Rate-limits the current request by IP + endpoint key.
+// Exits with HTTP 429 if the caller exceeds $maxHits within $windowSec seconds.
+function rateLimit(string $endpoint, int $maxHits = 60, int $windowSec = 60): void {
+    global $pdo;
+
+    $ip  = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['HTTP_X_REAL_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $ip  = trim(explode(',', $ip)[0]);
+    $key = substr($ip . '::' . $endpoint, 0, 120);
+
+    $stmt = $pdo->prepare("SELECT hits, window_start FROM rate_limits WHERE `key` = ? LIMIT 1");
+    $stmt->execute([$key]);
+    $row = $stmt->fetch();
+
+    $now = time();
+
+    if (!$row || ($now - strtotime($row['window_start'])) >= $windowSec) {
+        // Start a fresh window
+        $pdo->prepare(
+            "INSERT INTO rate_limits (`key`, hits, window_start) VALUES (?, 1, NOW())
+             ON DUPLICATE KEY UPDATE hits = 1, window_start = NOW()"
+        )->execute([$key]);
+        return;
+    }
+
+    if ((int)$row['hits'] >= $maxHits) {
+        $retryAfter = $windowSec - ($now - strtotime($row['window_start']));
+        http_response_code(429);
+        header('Retry-After: ' . $retryAfter);
+        echo json_encode([
+            'success' => false,
+            'message' => "Too many requests. Please wait {$retryAfter} second(s) before trying again.",
+        ]);
+        exit;
+    }
+
+    $pdo->prepare("UPDATE rate_limits SET hits = hits + 1 WHERE `key` = ?")->execute([$key]);
+}
