@@ -9,7 +9,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$body   = json_decode(file_get_contents('php://input'), true);
+// Detect multipart (file upload) vs JSON request
+$contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+$isMultipart = str_contains($contentType, 'multipart/form-data');
+
+if ($isMultipart) {
+    $body = $_POST;
+} else {
+    $body = json_decode(file_get_contents('php://input'), true) ?? [];
+}
+
 $action = $body['action'] ?? '';
 $userId = $_SESSION['ojams_user']['id'];
 
@@ -19,6 +28,9 @@ if (!validateCsrfToken($body['csrf_token'] ?? null)) {
     echo json_encode(['success' => false, 'message' => 'Invalid or missing CSRF token.']);
     exit;
 }
+
+// Rate limit: 30 requests per minute per IP
+rateLimit('applications', 30, 60);
 
 // Helper: log activity
 function logActivity(PDO $pdo, string $action, string $status): void {
@@ -86,6 +98,48 @@ if ($action === 'apply') {
     if (strlen($shs) > 200)         { echo json_encode(['success' => false, 'message' => 'SHS school name must be 200 characters or fewer.']); exit; }
     if (strlen($college) > 200)     { echo json_encode(['success' => false, 'message' => 'College name must be 200 characters or fewer.']); exit; }
 
+    // ── Resume / CV upload (optional) ───────────────────────
+    $uploadedFile  = null; // holds validated file info pre-insert
+    $resumeError   = null;
+    if (isset($_FILES['resume']) && $_FILES['resume']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $file = $_FILES['resume'];
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            echo json_encode(['success' => false, 'message' => 'File upload failed (code ' . $file['error'] . ').']);
+            exit;
+        }
+        // Size limit: 5 MB
+        if ($file['size'] > 5 * 1024 * 1024) {
+            echo json_encode(['success' => false, 'message' => 'Resume must be 5 MB or smaller.']);
+            exit;
+        }
+        // MIME validation (real content check, not just extension)
+        $allowedMimes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ];
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mime  = $finfo->file($file['tmp_name']);
+        if (!in_array($mime, $allowedMimes, true)) {
+            echo json_encode(['success' => false, 'message' => 'Only PDF, DOC, and DOCX files are allowed.']);
+            exit;
+        }
+        // Extension cross-check
+        $ext         = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $allowedExts = ['pdf', 'doc', 'docx'];
+        if (!in_array($ext, $allowedExts, true)) {
+            echo json_encode(['success' => false, 'message' => 'Only PDF, DOC, and DOCX files are allowed.']);
+            exit;
+        }
+        $uploadedFile = [
+            'tmp'      => $file['tmp_name'],
+            'original' => basename($file['name']),
+            'size'     => $file['size'],
+            'mime'     => $mime,
+            'ext'      => $ext,
+        ];
+    }
+
     $stmt = $pdo->prepare("
         INSERT INTO applications
         (user_id, job_id, full_name, email, contact, address, birthdate, age,
@@ -97,6 +151,27 @@ if ($action === 'apply') {
         $birthdate ?: null, $age ?: null,
         $elementary, $jhs, $shs, $college, $skills, $experience
     ]);
+    $newAppId = (int)$pdo->lastInsertId();
+
+    // ── Move uploaded file and record it ────────────────────
+    if ($uploadedFile) {
+        $uploadDir = __DIR__ . '/../uploads/resumes/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+        $storedName = $userId . '_' . $jobId . '_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $uploadedFile['ext'];
+        if (move_uploaded_file($uploadedFile['tmp'], $uploadDir . $storedName)) {
+            $pdo->prepare("
+                INSERT INTO resumes (application_id, user_id, original_name, stored_name, file_size, mime_type)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ")->execute([
+                $newAppId, $userId,
+                $uploadedFile['original'], $storedName,
+                $uploadedFile['size'], $uploadedFile['mime'],
+            ]);
+        }
+    }
+
     $user = getCurrentUser();
     logActivity($pdo, "New application received from {$user['full_name']} for \"{$job['title']}\"", 'New');
     echo json_encode(['success' => true, 'message' => 'Application submitted successfully.']);
@@ -147,7 +222,19 @@ if ($action === 'updateStatus') {
         echo json_encode(['success' => false, 'message' => 'Application not found.']);
         exit;
     }
+    // Capture old status before overwriting
+    $oldRow = $pdo->prepare("SELECT status FROM applications WHERE id = ?");
+    $oldRow->execute([$appId]);
+    $oldStatus = $oldRow->fetchColumn();
+
     $pdo->prepare("UPDATE applications SET status = ? WHERE id = ?")->execute([$status, $appId]);
+
+    // Log the transition
+    $pdo->prepare("
+        INSERT INTO application_status_history (application_id, from_status, to_status, changed_by)
+        VALUES (?, ?, ?, ?)
+    ")->execute([$appId, $oldStatus ?: null, $status, $_SESSION['ojams_user']['id']]);
+
     logActivity($pdo, "Application of {$app['full_name']} marked as {$status} for \"{$app['title']}\"", $status);
     echo json_encode(['success' => true, 'message' => "Application {$status}."]);
     exit;
@@ -172,7 +259,71 @@ if ($action === 'getDetails') {
         echo json_encode(['success' => false, 'message' => 'Application not found.']);
         exit;
     }
-    echo json_encode(['success' => true, 'data' => $app]);
+
+    // Fetch status change history
+    $histStmt = $pdo->prepare("
+        SELECT h.from_status, h.to_status,
+               DATE_FORMAT(h.changed_at, '%M %d, %Y %h:%i %p') AS changed_at,
+               u.full_name AS changed_by
+        FROM application_status_history h
+        LEFT JOIN users u ON u.id = h.changed_by
+        WHERE h.application_id = ?
+        ORDER BY h.changed_at ASC
+    ");
+    $histStmt->execute([$appId]);
+    $history = $histStmt->fetchAll();
+
+    // Check if a resume was uploaded
+    $resumeStmt = $pdo->prepare("SELECT original_name, stored_name FROM resumes WHERE application_id = ? LIMIT 1");
+    $resumeStmt->execute([$appId]);
+    $resume = $resumeStmt->fetch();
+
+    echo json_encode(['success' => true, 'data' => $app, 'history' => $history, 'resume' => $resume ?: null]);
+    exit;
+}
+
+// ── ACTION: bulkUpdateStatus (admin only) ────────────────────
+if ($action === 'bulkUpdateStatus') {
+    if (!isAdmin()) { echo json_encode(['success' => false, 'message' => 'Unauthorized.']); exit; }
+    $ids    = array_filter(array_map('intval', (array)($body['ids'] ?? [])));
+    $status = $body['status'] ?? '';
+    if (empty($ids) || !in_array($status, ['Approved', 'Rejected'], true)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid parameters.']); exit;
+    }
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+    // Capture old statuses before overwriting
+    $oldStmt = $pdo->prepare("SELECT id, status FROM applications WHERE id IN ({$placeholders})");
+    $oldStmt->execute(array_values($ids));
+    $oldStatuses = $oldStmt->fetchAll(PDO::FETCH_KEY_PAIR); // [id => status]
+
+    $pdo->prepare("UPDATE applications SET status = ? WHERE id IN ({$placeholders})")
+        ->execute(array_merge([$status], array_values($ids)));
+
+    // Log a history row per application
+    $adminId  = $_SESSION['ojams_user']['id'];
+    $histStmt = $pdo->prepare("
+        INSERT INTO application_status_history (application_id, from_status, to_status, changed_by)
+        VALUES (?, ?, ?, ?)
+    ");
+    foreach ($ids as $id) {
+        $histStmt->execute([$id, $oldStatuses[$id] ?? null, $status, $adminId]);
+    }
+
+    logActivity($pdo, "Bulk marked " . count($ids) . " application(s) as {$status}", $status);
+    echo json_encode(['success' => true, 'message' => count($ids) . " application(s) marked as {$status}."]);
+    exit;
+}
+
+// ── ACTION: bulkDelete (admin only) ──────────────────────────
+if ($action === 'bulkDelete') {
+    if (!isAdmin()) { echo json_encode(['success' => false, 'message' => 'Unauthorized.']); exit; }
+    $ids = array_filter(array_map('intval', (array)($body['ids'] ?? [])));
+    if (empty($ids)) { echo json_encode(['success' => false, 'message' => 'No applications selected.']); exit; }
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $pdo->prepare("DELETE FROM applications WHERE id IN ({$placeholders})")->execute(array_values($ids));
+    logActivity($pdo, "Bulk deleted " . count($ids) . " application(s)", 'Deleted');
+    echo json_encode(['success' => true, 'message' => count($ids) . " application(s) deleted."]);
     exit;
 }
 
