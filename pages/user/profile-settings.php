@@ -20,13 +20,29 @@ include $basePath . "layouts/navbar-user.php";
         <div class="col-md-4 mb-4">
             <div class="card border-0 shadow-sm text-center">
                 <div class="card-body p-4">
-                    <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-3"
-                         style="width:100px;height:100px;">
-                        <i class="bi bi-person-fill text-white display-5"></i>
-                    </div>
+                    <?php $photo = $u['profile_photo'] ?? null; ?>
+                    <?php if ($photo): ?>
+                        <img src="<?php echo htmlspecialchars(BASE_URL . '/uploads/avatars/' . $photo); ?>"
+                             id="avatarImg" alt="Avatar"
+                             class="rounded-circle mb-3 object-fit-cover border"
+                             style="width:100px;height:100px;object-fit:cover;">
+                    <?php else: ?>
+                        <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-3"
+                             id="avatarPlaceholder" style="width:100px;height:100px;">
+                            <i class="bi bi-person-fill text-white display-5"></i>
+                        </div>
+                    <?php endif; ?>
                     <h5 class="fw-bold mb-1" id="cardName"><?php echo htmlspecialchars($u["full_name"]); ?></h5>
                     <p class="text-muted mb-2" id="cardEmail"><?php echo htmlspecialchars($u["email"]); ?></p>
                     <span class="badge bg-primary">Job Seeker</span>
+                    <div class="mt-3">
+                        <label for="avatarUpload" class="btn btn-sm btn-outline-secondary w-100">
+                            <i class="bi bi-camera me-1"></i>Change Photo
+                        </label>
+                        <input type="file" id="avatarUpload" accept="image/jpeg,image/png,image/gif,image/webp"
+                               class="d-none" onchange="uploadAvatar(this)">
+                        <div class="form-text">JPG, PNG, GIF, WebP — max 2 MB</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -112,7 +128,12 @@ include $basePath . "layouts/navbar-user.php";
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">New Password</label>
                                     <input type="password" class="form-control" id="editNewPassword"
-                                           placeholder="New password (min 6 chars)">
+                                           placeholder="Min 8 chars, uppercase, number, symbol"
+                                           oninput="checkUserPwStrength()">
+                                    <div class="progress mt-2" style="height:5px;">
+                                        <div class="progress-bar" id="userPwStrengthBar" role="progressbar" style="width:0%"></div>
+                                    </div>
+                                    <small class="text-muted" id="userPwStrengthText"></small>
                                 </div>
                             </div>
 
@@ -142,6 +163,30 @@ include $basePath . "layouts/navbar-user.php";
 </div>
 <script>
 const PROFILE_HANDLER = "../../handlers/profile.php";
+
+function uploadAvatar(input) {
+    if (!input.files.length) return;
+    const fd = new FormData();
+    fd.append("action",     "uploadAvatar");
+    fd.append("csrf_token", getCsrfToken());
+    fd.append("avatar",     input.files[0]);
+    fetch(PROFILE_HANDLER, { method: "POST", body: fd })
+    .then(r => r.json())
+    .then(res => {
+        showToast(res.message, res.success ? "success" : "danger");
+        if (res.success) {
+            const placeholder = document.getElementById("avatarPlaceholder");
+            let img = document.getElementById("avatarImg");
+            if (placeholder) {
+                placeholder.outerHTML = `<img src="${res.url}" id="avatarImg" alt="Avatar" class="rounded-circle mb-3 border" style="width:100px;height:100px;object-fit:cover;">`;
+            } else if (img) {
+                img.src = res.url;
+            }
+        }
+    })
+    .catch(() => showToast("Upload failed.", "danger"));
+    input.value = "";
+}
 
 let _pwLockTimer = null;
 function startPwLockdown(seconds, fieldIds, btnId, noticeId, countdownId) {
@@ -197,9 +242,24 @@ function saveProfile() {
     let editValid = true;
     if (!fullName) { showFieldError("editFullName", "Full name is required.");     editValid = false; }
     if (!email)    { showFieldError("editEmail",    "Email address is required."); editValid = false; }
-    if (currentPw && newPw && newPw.length < 6) {
-        showFieldError("editNewPassword", "New password must be at least 6 characters.");
-        editValid = false;
+    if (contact && !/^\+?[\d\s\-\(\)\.]{7,20}$/.test(contact)) {
+        showFieldError("editContact", "Contact number may only contain digits, spaces, +, hyphens, or parentheses."); editValid = false;
+    }
+    if (birthdate) {
+        const bd  = new Date(birthdate);
+        const now = new Date();
+        if (bd >= now) {
+            showFieldError("editBirthdate", "Birthdate cannot be a future date."); editValid = false;
+        } else {
+            const age = Math.floor((now - bd) / (365.25 * 24 * 3600 * 1000));
+            if (age < 16 || age > 80) { showFieldError("editBirthdate", "Age must be between 16 and 80 years."); editValid = false; }
+        }
+    }
+    if (currentPw && newPw) {
+        if (newPw.length < 8)              { showFieldError("editNewPassword", "New password must be at least 8 characters."); editValid = false; }
+        else if (!/[A-Z]/.test(newPw))    { showFieldError("editNewPassword", "New password must contain at least one uppercase letter."); editValid = false; }
+        else if (!/[0-9]/.test(newPw))    { showFieldError("editNewPassword", "New password must contain at least one number."); editValid = false; }
+        else if (!/[^A-Za-z0-9]/.test(newPw)) { showFieldError("editNewPassword", "New password must contain at least one special character."); editValid = false; }
     }
     if (!editValid) return;
 
@@ -255,6 +315,30 @@ function saveProfile() {
     })
     .catch(() => showToast("Request failed.", "danger"))
     .finally(() => btnLoading(saveBtn, false));
+}
+
+function checkUserPwStrength() {
+    const pw  = document.getElementById("editNewPassword")?.value || "";
+    const bar = document.getElementById("userPwStrengthBar");
+    const txt = document.getElementById("userPwStrengthText");
+    if (!bar || !txt) return;
+    let strength = 0;
+    if (pw.length >= 8)  strength++;
+    if (pw.length >= 12) strength++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) strength++;
+    if (/\d/.test(pw))   strength++;
+    if (/[^A-Za-z0-9]/.test(pw)) strength++;
+    const levels = [
+        { pct: "0%",   cls: "",           label: "" },
+        { pct: "25%",  cls: "bg-danger",  label: "Weak" },
+        { pct: "50%",  cls: "bg-warning", label: "Fair" },
+        { pct: "75%",  cls: "bg-info",    label: "Good" },
+        { pct: "100%", cls: "bg-success", label: "Strong" }
+    ];
+    const lvl = levels[Math.min(strength, 4)];
+    bar.style.width = lvl.pct;
+    bar.className   = "progress-bar " + lvl.cls;
+    txt.textContent = lvl.label;
 }
 </script>
 <?php include $basePath . "layouts/footer.php"; ?>
