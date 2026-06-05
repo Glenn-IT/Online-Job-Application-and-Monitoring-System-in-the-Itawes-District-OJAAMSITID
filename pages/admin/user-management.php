@@ -7,7 +7,7 @@ $basePath    = '../../';
 $currentPage = 'user-management';
 
 // ── Pagination ───────────────────────────────────────────────
-$perPage    = 15;
+$perPage    = PER_PAGE_ADMIN;
 $page       = max(1, (int)($_GET['page'] ?? 1));
 $roleFilter = $_GET['role'] ?? 'All';
 $allowed    = ['All', 'admin', 'user'];
@@ -76,8 +76,9 @@ include $basePath . 'layouts/navbar-admin.php';
                         <tbody>
                             <?php if (empty($users)): ?>
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">
-                                        <i class="bi bi-people me-2"></i>No users found.
+                                    <td colspan="8" class="text-center py-5">
+                                        <i class="bi bi-people display-5 text-muted d-block mb-3"></i>
+                                        <p class="text-muted mb-0">No users match the current filter. Try clearing the search or changing the role filter.</p>
                                     </td>
                                 </tr>
                             <?php else: $rowNum = $offset + 1; foreach ($users as $u):
