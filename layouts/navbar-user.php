@@ -32,6 +32,12 @@
                         <i class="bi bi-file-earmark-text me-1"></i>My Applications
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo ($currentPage ?? '') === 'saved-jobs' ? 'active' : ''; ?>"
+                       href="<?php echo $basePath ?? ''; ?>pages/user/saved-jobs.php">
+                        <i class="bi bi-bookmark-heart me-1"></i>Saved Jobs
+                    </a>
+                </li>
             </ul>
 
             <!-- Right: user dropdown -->
