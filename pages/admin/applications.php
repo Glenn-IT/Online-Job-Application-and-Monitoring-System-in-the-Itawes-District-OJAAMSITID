@@ -51,7 +51,7 @@ if (!array_key_exists($appSortCol, $allowedAppSorts)) $appSortCol = 'date_applie
 $appOrderSQL = $allowedAppSorts[$appSortCol] . ' ' . $appSortDir;
 
 // ── Pagination ───────────────────────────────────────────────
-$perPage = 15;
+$perPage = PER_PAGE_ADMIN;
 $page    = max(1, (int)($_GET["page"] ?? 1));
 
 $cStmt = $pdo->prepare("
