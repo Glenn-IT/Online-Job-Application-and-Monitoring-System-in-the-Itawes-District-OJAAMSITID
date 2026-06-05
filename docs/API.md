@@ -14,16 +14,17 @@ All handlers live in `handlers/`. They accept `POST` only, return JSON, and requ
 
 ## handlers/applications.php
 
-| Action | Role | Description |
-|---|---|---|
-| `apply` | user | Submit a job application (multipart, includes optional `resume` file) |
-| `cancel` | user | Cancel a pending application (`id`) |
-| `updateStatus` | admin | Set application status to `Approved` or `Rejected` (`id`, `status`) |
-| `getDetails` | admin | Return full application data + status history + resume info (`id`) |
-| `bulkUpdateStatus` | admin | Bulk approve/reject (`ids[]`, `status`) |
-| `bulkDelete` | admin | Bulk delete applications (`ids[]`) |
+| Action             | Role  | Description                                                           |
+| ------------------ | ----- | --------------------------------------------------------------------- |
+| `apply`            | user  | Submit a job application (multipart, includes optional `resume` file) |
+| `cancel`           | user  | Cancel a pending application (`id`)                                   |
+| `updateStatus`     | admin | Set application status to `Approved` or `Rejected` (`id`, `status`)   |
+| `getDetails`       | admin | Return full application data + status history + resume info (`id`)    |
+| `bulkUpdateStatus` | admin | Bulk approve/reject (`ids[]`, `status`)                               |
+| `bulkDelete`       | admin | Bulk delete applications (`ids[]`)                                    |
 
 ### apply (multipart/form-data)
+
 ```
 action, csrf_token, job_id, full_name, email, contact, address,
 birthdate, age, elementary, jhs, shs, college, skills, experience,
@@ -31,29 +32,45 @@ resume (optional file — PDF/DOC/DOCX, max 5 MB)
 ```
 
 ### cancel
+
 ```json
 { "action": "cancel", "id": 42, "csrf_token": "..." }
 ```
 
 ### updateStatus
+
 ```json
-{ "action": "updateStatus", "id": 42, "status": "Approved", "csrf_token": "..." }
+{
+  "action": "updateStatus",
+  "id": 42,
+  "status": "Approved",
+  "csrf_token": "..."
+}
 ```
 
 ### getDetails
+
 ```json
 { "action": "getDetails", "id": 42, "csrf_token": "..." }
 ```
+
 Returns: `{ "success": true, "data": {...}, "history": [...], "resume": {...}|null }`
 
 ### bulkUpdateStatus
+
 ```json
-{ "action": "bulkUpdateStatus", "ids": [1,2,3], "status": "Rejected", "csrf_token": "..." }
+{
+  "action": "bulkUpdateStatus",
+  "ids": [1, 2, 3],
+  "status": "Rejected",
+  "csrf_token": "..."
+}
 ```
 
 ### bulkDelete
+
 ```json
-{ "action": "bulkDelete", "ids": [1,2,3], "csrf_token": "..." }
+{ "action": "bulkDelete", "ids": [1, 2, 3], "csrf_token": "..." }
 ```
 
 ---
@@ -62,14 +79,15 @@ Returns: `{ "success": true, "data": {...}, "history": [...], "resume": {...}|nu
 
 Admin only.
 
-| Action | Description |
-|---|---|
-| `add` | Create a new job posting |
-| `edit` | Update an existing job (`id` required) |
-| `delete` | Delete a job (`id` required) |
-| `bulkDelete` | Delete multiple jobs (`ids[]`) |
+| Action       | Description                            |
+| ------------ | -------------------------------------- |
+| `add`        | Create a new job posting               |
+| `edit`       | Update an existing job (`id` required) |
+| `delete`     | Delete a job (`id` required)           |
+| `bulkDelete` | Delete multiple jobs (`ids[]`)         |
 
 ### add / edit (JSON)
+
 ```json
 {
   "action": "add",
@@ -93,13 +111,14 @@ Admin only.
 
 Authenticated users and admins.
 
-| Action | Description |
-|---|---|
-| `updateInfo` | Update name, email, contact, address, birthdate (JSON) |
-| `changePassword` | Change password — throttled to 3 attempts / 30 s lockout (JSON) |
-| `uploadAvatar` | Upload profile photo (multipart, `avatar` file — JPG/PNG/GIF/WebP, max 2 MB) |
+| Action           | Description                                                                  |
+| ---------------- | ---------------------------------------------------------------------------- |
+| `updateInfo`     | Update name, email, contact, address, birthdate (JSON)                       |
+| `changePassword` | Change password — throttled to 3 attempts / 30 s lockout (JSON)              |
+| `uploadAvatar`   | Upload profile photo (multipart, `avatar` file — JPG/PNG/GIF/WebP, max 2 MB) |
 
 ### updateInfo
+
 ```json
 {
   "action": "updateInfo",
@@ -113,6 +132,7 @@ Authenticated users and admins.
 ```
 
 ### changePassword
+
 ```json
 {
   "action": "changePassword",
@@ -122,12 +142,15 @@ Authenticated users and admins.
   "csrf_token": "..."
 }
 ```
+
 Returns `locked: true` and `retry_after: N` when throttled.
 
 ### uploadAvatar (multipart/form-data)
+
 ```
 action=uploadAvatar, csrf_token=..., avatar=<image file>
 ```
+
 Returns: `{ "success": true, "url": "http://..." }`
 
 ---
@@ -136,13 +159,14 @@ Returns: `{ "success": true, "url": "http://..." }`
 
 Users only.
 
-| Action | Description |
-|---|---|
+| Action   | Description                                                   |
+| -------- | ------------------------------------------------------------- |
 | `toggle` | Save or unsave a job (`job_id`) — returns `saved: true/false` |
 
 ```json
 { "action": "toggle", "job_id": 3, "csrf_token": "..." }
 ```
+
 Returns: `{ "success": true, "saved": true, "message": "..." }`
 
 ---
@@ -151,23 +175,23 @@ Returns: `{ "success": true, "saved": true, "message": "..." }`
 
 Admin only.
 
-| Action | Description |
-|---|---|
-| `deactivateUser` | Deactivate a user account (`id`) |
-| `reactivateUser` | Reactivate a user account (`id`) |
-| `changeRole` | Change a user's role (`id`, `role`: `admin`\|`user`) |
-| `clearLogs` | Delete activity logs older than N days (`days`) |
+| Action           | Description                                          |
+| ---------------- | ---------------------------------------------------- |
+| `deactivateUser` | Deactivate a user account (`id`)                     |
+| `reactivateUser` | Reactivate a user account (`id`)                     |
+| `changeRole`     | Change a user's role (`id`, `role`: `admin`\|`user`) |
+| `clearLogs`      | Delete activity logs older than N days (`days`)      |
 
 ---
 
 ## Rate Limits
 
-| Endpoint key | Limit |
-|---|---|
-| `applications` | 30 req / 60 s per IP |
-| `jobs` | 30 req / 60 s per IP |
-| `profile` | 20 req / 60 s per IP |
-| `saved_jobs` | 30 req / 60 s per IP |
-| `admin` | 20 req / 60 s per IP |
-| Login page | 5 attempts / 30 s lockout per IP (DB-backed) |
-| Password change | 3 attempts / 30 s lockout per session |
+| Endpoint key    | Limit                                        |
+| --------------- | -------------------------------------------- |
+| `applications`  | 30 req / 60 s per IP                         |
+| `jobs`          | 30 req / 60 s per IP                         |
+| `profile`       | 20 req / 60 s per IP                         |
+| `saved_jobs`    | 30 req / 60 s per IP                         |
+| `admin`         | 20 req / 60 s per IP                         |
+| Login page      | 5 attempts / 30 s lockout per IP (DB-backed) |
+| Password change | 3 attempts / 30 s lockout per session        |

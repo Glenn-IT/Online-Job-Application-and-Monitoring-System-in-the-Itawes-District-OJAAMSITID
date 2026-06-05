@@ -33,7 +33,16 @@ define('APP_NAME',    getenv('APP_NAME')  ?: 'OJAMS');
 define('APP_VERSION', '2.0.0');
 
 // ── URL / Path Helpers ──────────────────────────────────────
-define('BASE_URL', getenv('BASE_URL') ?: 'http://localhost/OJAMS');
+// Use .env BASE_URL if set; otherwise derive from the current request so the
+// redirect after login works regardless of which port XAMPP is running on.
+if (getenv('BASE_URL') !== false && getenv('BASE_URL') !== '') {
+    define('BASE_URL', getenv('BASE_URL'));
+} elseif (isset($_SERVER['HTTP_HOST'])) {
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    define('BASE_URL', $scheme . '://' . $_SERVER['HTTP_HOST'] . '/OJAMS');
+} else {
+    define('BASE_URL', 'http://localhost/OJAMS');
+}
 
 // ── Logging ─────────────────────────────────────────────────
 define('LOG_FILE', __DIR__ . '/../logs/app.log');

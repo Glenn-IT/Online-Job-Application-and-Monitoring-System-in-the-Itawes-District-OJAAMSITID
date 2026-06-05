@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -r \"echo PHP_VERSION;\")",
+      "Bash(php -l pages/user/browse-jobs.php)",
+      "Bash(php -l config/auth.php)",
+      "Bash(php -l config/db.php)",
+      "Bash(php -l layouts/header.php)",
+      "Bash(php -l layouts/navbar-user.php)"
+    ]
+  }
+}
