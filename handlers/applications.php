@@ -33,10 +33,10 @@ if (!validateCsrfToken($body['csrf_token'] ?? null)) {
 rateLimit('applications', 30, 60);
 
 // Helper: log activity
-function logActivity(PDO $pdo, string $action, string $status): void {
+function logActivity(PDO $pdo, string $action, string $status, ?int $jobId = null, ?int $appId = null): void {
     $uid  = $_SESSION['ojams_user']['id'] ?? null;
-    $stmt = $pdo->prepare("INSERT INTO activity_logs (action, status, performed_by) VALUES (?, ?, ?)");
-    $stmt->execute([$action, $status, $uid]);
+    $stmt = $pdo->prepare("INSERT INTO activity_logs (action, status, performed_by, job_id, application_id) VALUES (?, ?, ?, ?, ?)");
+    $stmt->execute([$action, $status, $uid, $jobId, $appId]);
 }
 
 // ── ACTION: apply ────────────────────────────────────────────
@@ -74,10 +74,24 @@ if ($action === 'apply') {
     $contact    = strip_tags(trim($body['contact']    ?? ''));
     $address    = strip_tags(trim($body['address']    ?? ''));
     $birthdate  = $body['birthdate']       ?? null;
-    // Always compute age server-side — never trust the submitted value
+    // Validate and compute age server-side — never trust the submitted value
     $age = null;
     if ($birthdate) {
-        $age = (int)(new DateTime())->diff(new DateTime($birthdate))->y;
+        $bd = DateTime::createFromFormat('Y-m-d', $birthdate);
+        if (!$bd || $bd->format('Y-m-d') !== $birthdate) {
+            echo json_encode(['success' => false, 'message' => 'Invalid birthdate format.']);
+            exit;
+        }
+        $now = new DateTime();
+        if ($bd >= $now) {
+            echo json_encode(['success' => false, 'message' => 'Birthdate cannot be a future date.']);
+            exit;
+        }
+        $age = (int)$now->diff($bd)->y;
+        if ($age < 16 || $age > 80) {
+            echo json_encode(['success' => false, 'message' => 'Age must be between 16 and 80 years old.']);
+            exit;
+        }
     }
     $elementary = strip_tags(trim($body['elementary'] ?? ''));
     $jhs        = strip_tags(trim($body['jhs']        ?? ''));
@@ -93,6 +107,10 @@ if ($action === 'apply') {
     if (strlen($fullName) > 150)    { echo json_encode(['success' => false, 'message' => 'Full name must be 150 characters or fewer.']); exit; }
     if (strlen($email) > 150)       { echo json_encode(['success' => false, 'message' => 'Email must be 150 characters or fewer.']); exit; }
     if (strlen($contact) > 20)      { echo json_encode(['success' => false, 'message' => 'Contact number must be 20 characters or fewer.']); exit; }
+    if ($contact !== '' && !preg_match('/^\+?[\d\s\-\(\)\.]{7,20}$/', $contact)) {
+        echo json_encode(['success' => false, 'message' => 'Contact number may only contain digits, spaces, +, hyphens, or parentheses.']);
+        exit;
+    }
     if (strlen($elementary) > 200)  { echo json_encode(['success' => false, 'message' => 'Elementary school name must be 200 characters or fewer.']); exit; }
     if (strlen($jhs) > 200)         { echo json_encode(['success' => false, 'message' => 'JHS school name must be 200 characters or fewer.']); exit; }
     if (strlen($shs) > 200)         { echo json_encode(['success' => false, 'message' => 'SHS school name must be 200 characters or fewer.']); exit; }
@@ -173,7 +191,7 @@ if ($action === 'apply') {
     }
 
     $user = getCurrentUser();
-    logActivity($pdo, "New application received from {$user['full_name']} for \"{$job['title']}\"", 'New');
+    logActivity($pdo, "New application received from {$user['full_name']} for \"{$job['title']}\"", 'New', $jobId, $newAppId);
     echo json_encode(['success' => true, 'message' => 'Application submitted successfully.']);
     exit;
 }
@@ -185,15 +203,16 @@ if ($action === 'cancel') {
         echo json_encode(['success' => false, 'message' => 'Invalid application ID.']);
         exit;
     }
-    $check = $pdo->prepare("SELECT id FROM applications WHERE id = ? AND user_id = ? AND status = 'Pending'");
+    $check = $pdo->prepare("SELECT id, job_id FROM applications WHERE id = ? AND user_id = ? AND status = 'Pending'");
     $check->execute([$appId, $userId]);
-    if (!$check->fetch()) {
+    $cancelledApp = $check->fetch();
+    if (!$cancelledApp) {
         echo json_encode(['success' => false, 'message' => 'Application not found or cannot be cancelled.']);
         exit;
     }
     $pdo->prepare("DELETE FROM applications WHERE id = ?")->execute([$appId]);
     $user = getCurrentUser();
-    logActivity($pdo, "Application cancelled by {$user['full_name']}", 'Cancelled');
+    logActivity($pdo, "Application cancelled by {$user['full_name']}", 'Cancelled', (int)$cancelledApp['job_id'], $appId);
     echo json_encode(['success' => true, 'message' => 'Application cancelled.']);
     exit;
 }
@@ -211,7 +230,7 @@ if ($action === 'updateStatus') {
         exit;
     }
     $check = $pdo->prepare("
-        SELECT a.id, a.full_name, j.title
+        SELECT a.id, a.full_name, a.job_id, j.title
         FROM applications a
         JOIN jobs j ON j.id = a.job_id
         WHERE a.id = ?
@@ -235,7 +254,7 @@ if ($action === 'updateStatus') {
         VALUES (?, ?, ?, ?)
     ")->execute([$appId, $oldStatus ?: null, $status, $_SESSION['ojams_user']['id']]);
 
-    logActivity($pdo, "Application of {$app['full_name']} marked as {$status} for \"{$app['title']}\"", $status);
+    logActivity($pdo, "Application of {$app['full_name']} marked as {$status} for \"{$app['title']}\"", $status, (int)$app['job_id'], $appId);
     echo json_encode(['success' => true, 'message' => "Application {$status}."]);
     exit;
 }
