@@ -34,7 +34,7 @@ if ($jobTypeFilter !== '') {
 $whereSQL = $where ? "WHERE " . implode(" AND ", $where) : "";
 
 // ── Pagination ───────────────────────────────────────────────
-$perPage    = 12;
+$perPage    = PER_PAGE_USER;
 $page       = max(1, (int)($_GET['page'] ?? 1));
 
 $countStmt = $pdo->prepare("SELECT COUNT(*) FROM jobs j {$whereSQL}");
@@ -53,16 +53,26 @@ $jobsStmt = $pdo->prepare("
 $jobsStmt->execute(array_merge($params, [$perPage, $offset]));
 $jobs = $jobsStmt->fetchAll();
 
-// Applied job IDs for this user
+// Applied and saved job IDs for this user
 $appliedStmt = $pdo->prepare("SELECT job_id FROM applications WHERE user_id = ?");
 $appliedStmt->execute([$_SESSION["ojams_user"]["id"]]);
 $appliedJobIds = array_column($appliedStmt->fetchAll(), "job_id");
 
-// Applicant counts (single query)
-$countRows = $pdo->query("SELECT job_id, COUNT(*) as cnt FROM applications GROUP BY job_id")->fetchAll();
-$appCounts = [];
-foreach ($countRows as $row) {
-    $appCounts[$row["job_id"]] = $row["cnt"];
+$savedStmt = $pdo->prepare("SELECT job_id FROM saved_jobs WHERE user_id = ?");
+$savedStmt->execute([$_SESSION["ojams_user"]["id"]]);
+$savedJobIds = array_column($savedStmt->fetchAll(), "job_id");
+
+// Applicant counts — cached in session for 5 minutes to reduce DB hits
+$cacheKey = 'browse_app_counts';
+$cacheTtl = 300;
+if (empty($_SESSION[$cacheKey]) || (time() - ($_SESSION[$cacheKey . '_ts'] ?? 0)) > $cacheTtl) {
+    $countRows = $pdo->query("SELECT job_id, COUNT(*) as cnt FROM applications GROUP BY job_id")->fetchAll();
+    $appCounts = [];
+    foreach ($countRows as $row) { $appCounts[$row["job_id"]] = $row["cnt"]; }
+    $_SESSION[$cacheKey]        = $appCounts;
+    $_SESSION[$cacheKey . '_ts'] = time();
+} else {
+    $appCounts = $_SESSION[$cacheKey];
 }
 
 $totalJobs = (int)$pdo->query("SELECT COUNT(*) FROM jobs")->fetchColumn();
@@ -137,6 +147,7 @@ include $basePath . "layouts/navbar-user.php";
         <?php else: ?>
         <?php foreach ($jobs as $job):
             $alreadyApplied = in_array($job["id"], $appliedJobIds);
+            $isSaved        = in_array($job["id"], $savedJobIds);
             $isOpen         = $job["status"] === "Open";
             $cnt            = $appCounts[$job["id"]] ?? 0;
         ?>
@@ -221,6 +232,12 @@ include $basePath . "layouts/navbar-user.php";
                                 <i class="bi bi-lock me-1"></i>Closed
                             </button>
                         <?php endif; ?>
+                        <button class="btn btn-outline-secondary <?php echo $isSaved ? 'text-warning' : ''; ?>"
+                                id="save-btn-<?php echo $job['id']; ?>"
+                                onclick="toggleSaveJob(<?php echo $job['id']; ?>)"
+                                title="<?php echo $isSaved ? 'Remove from saved' : 'Save job'; ?>">
+                            <i class="bi bi-bookmark<?php echo $isSaved ? '-fill' : ''; ?>"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -263,7 +280,34 @@ include $basePath . "layouts/navbar-user.php";
 </div>
 <?php include $basePath . "modals/apply-job-modal.php"; ?>
 <script>
-const APP_HANDLER = "../../handlers/applications.php";
+const APP_HANDLER   = "../../handlers/applications.php";
+const SAVED_HANDLER = "../../handlers/saved-jobs.php";
+
+function toggleSaveJob(jobId) {
+    fetch(SAVED_HANDLER, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "toggle", job_id: jobId, csrf_token: getCsrfToken() })
+    })
+    .then(r => r.json())
+    .then(res => {
+        showToast(res.message, res.success ? "success" : "danger");
+        if (res.success) {
+            const btn  = document.getElementById("save-btn-" + jobId);
+            const icon = btn?.querySelector("i");
+            if (res.saved) {
+                btn?.classList.add("text-warning");
+                btn?.setAttribute("title", "Remove from saved");
+                if (icon) icon.className = "bi bi-bookmark-fill";
+            } else {
+                btn?.classList.remove("text-warning");
+                btn?.setAttribute("title", "Save job");
+                if (icon) icon.className = "bi bi-bookmark";
+            }
+        }
+    })
+    .catch(() => showToast("Request failed.", "danger"));
+}
 
 function computeAge(birthdate) {
     if (!birthdate) return "";
@@ -317,10 +361,27 @@ function submitApplication() {
     // Field-level validation
     clearAllFieldErrors("applicationForm");
     let valid = true;
-    if (!g("appFullName"))  { showFieldError("appFullName",  "Full name is required.");       valid = false; }
-    if (!document.getElementById("appBirthdate")?.value) { showFieldError("appBirthdate", "Birthdate is required."); valid = false; }
-    if (!g("appAddress"))   { showFieldError("appAddress",   "Address is required.");         valid = false; }
-    if (!g("appContact"))   { showFieldError("appContact",   "Contact number is required.");  valid = false; }
+    if (!g("appFullName")) { showFieldError("appFullName", "Full name is required."); valid = false; }
+    if (!g("appAddress"))  { showFieldError("appAddress",  "Address is required.");   valid = false; }
+    const contactVal = g("appContact");
+    if (!contactVal) {
+        showFieldError("appContact", "Contact number is required."); valid = false;
+    } else if (!/^\+?[\d\s\-\(\)\.]{7,20}$/.test(contactVal)) {
+        showFieldError("appContact", "Contact number may only contain digits, spaces, +, hyphens, or parentheses."); valid = false;
+    }
+    const bdVal = document.getElementById("appBirthdate")?.value;
+    if (!bdVal) {
+        showFieldError("appBirthdate", "Birthdate is required."); valid = false;
+    } else {
+        const bd  = new Date(bdVal);
+        const now = new Date();
+        if (bd >= now) {
+            showFieldError("appBirthdate", "Birthdate cannot be a future date."); valid = false;
+        } else {
+            const age = Math.floor((now - bd) / (365.25 * 24 * 3600 * 1000));
+            if (age < 16 || age > 80) { showFieldError("appBirthdate", "Age must be between 16 and 80 years old."); valid = false; }
+        }
+    }
     if (!valid) return;
 
     const submitBtn = document.getElementById("submitAppBtn");
