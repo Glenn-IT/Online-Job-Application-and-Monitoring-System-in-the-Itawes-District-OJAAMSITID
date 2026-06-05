@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $full_name = trim($_POST['full_name'] ?? '');
-    $email     = trim($_POST['email']     ?? '');
+    $email     = strtolower(trim($_POST['email'] ?? ''));
     $contact   = trim($_POST['contact']   ?? '');
     $password  = $_POST['password']  ?? '';
     $confirm   = $_POST['confirm']   ?? '';
@@ -59,13 +59,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'All fields are required.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Please enter a valid email address.';
-    } elseif (strlen($password) < 6) {
-        $error = 'Password must be at least 6 characters.';
+    } elseif (!preg_match('/^\+?[\d\s\-\(\)\.]{7,20}$/', $contact)) {
+        $error = 'Contact number may only contain digits, spaces, +, hyphens, or parentheses (7–20 characters).';
+    } elseif (strlen($password) < 8) {
+        $error = 'Password must be at least 8 characters.';
+    } elseif (!preg_match('/[A-Z]/', $password)) {
+        $error = 'Password must contain at least one uppercase letter.';
+    } elseif (!preg_match('/[0-9]/', $password)) {
+        $error = 'Password must contain at least one number.';
+    } elseif (!preg_match('/[^A-Za-z0-9]/', $password)) {
+        $error = 'Password must contain at least one special character (e.g. !@#$%^&*).';
     } elseif ($password !== $confirm) {
         $error = 'Passwords do not match.';
     } else {
-        // Check duplicate email
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+        // Check duplicate email (case-insensitive)
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE LOWER(email) = ? LIMIT 1");
         $stmt->execute([$email]);
         if ($stmt->fetch()) {
             $error = 'That email address is already registered.';
@@ -262,11 +270,16 @@ $pageTitle = "OJAMS - Register";
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
                         <input type="password" class="form-control" name="password" id="regPassword"
-                               placeholder="At least 6 characters" required minlength="6">
+                               placeholder="Min 8 chars, uppercase, number, symbol" required minlength="8"
+                               oninput="checkRegPasswordStrength()">
                         <button type="button" class="btn btn-outline-secondary" onclick="toggleRegPass()">
                             <i class="bi bi-eye" id="regEyeIcon"></i>
                         </button>
                     </div>
+                    <div class="progress mt-2" style="height:5px;">
+                        <div class="progress-bar" id="regPwStrengthBar" role="progressbar" style="width:0%"></div>
+                    </div>
+                    <small class="text-muted" id="regPwStrengthText"></small>
                 </div>
 
                 <div class="mb-4">
@@ -323,6 +336,29 @@ function toggleRegPass() {
     if (inp.type === 'password') { inp.type = 'text'; icon.className = 'bi bi-eye-slash'; }
     else                         { inp.type = 'password'; icon.className = 'bi bi-eye'; }
 }
+function checkRegPasswordStrength() {
+    const pw  = document.getElementById('regPassword')?.value || '';
+    const bar = document.getElementById('regPwStrengthBar');
+    const txt = document.getElementById('regPwStrengthText');
+    if (!bar || !txt) return;
+    let strength = 0;
+    if (pw.length >= 8)  strength++;
+    if (pw.length >= 12) strength++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) strength++;
+    if (/\d/.test(pw))   strength++;
+    if (/[^A-Za-z0-9]/.test(pw)) strength++;
+    const levels = [
+        { pct: '0%',   cls: '',           label: '' },
+        { pct: '25%',  cls: 'bg-danger',  label: 'Weak' },
+        { pct: '50%',  cls: 'bg-warning', label: 'Fair' },
+        { pct: '75%',  cls: 'bg-info',    label: 'Good' },
+        { pct: '100%', cls: 'bg-success', label: 'Strong' }
+    ];
+    const lvl = levels[Math.min(strength, 4)];
+    bar.style.width = lvl.pct;
+    bar.className   = 'progress-bar ' + lvl.cls;
+    txt.textContent = lvl.label;
+}
 document.getElementById('registerForm')?.addEventListener('submit', function (e) {
     // Clear previous field errors
     this.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
@@ -350,8 +386,11 @@ document.getElementById('registerForm')?.addEventListener('submit', function (e)
     if (!name)    { showErr('regName',     'Full name is required.');                    valid = false; }
     if (!email)   { showErr('regEmail',    'Email address is required.');                valid = false; }
     if (!contact) { showErr('regContact',  'Contact number is required.');               valid = false; }
-    if (!pw)      { showErr('regPassword', 'Password is required.');                     valid = false; }
-    else if (pw.length < 6) { showErr('regPassword', 'Password must be at least 6 characters.'); valid = false; }
+    if (!pw) { showErr('regPassword', 'Password is required.'); valid = false; }
+    else if (pw.length < 8)              { showErr('regPassword', 'Password must be at least 8 characters.'); valid = false; }
+    else if (!/[A-Z]/.test(pw))         { showErr('regPassword', 'Password must contain at least one uppercase letter.'); valid = false; }
+    else if (!/[0-9]/.test(pw))         { showErr('regPassword', 'Password must contain at least one number.'); valid = false; }
+    else if (!/[^A-Za-z0-9]/.test(pw)) { showErr('regPassword', 'Password must contain at least one special character.'); valid = false; }
     if (pw && confirm && pw !== confirm) { showErr('regConfirm', 'Passwords do not match.'); valid = false; }
 
     if (!valid) { e.preventDefault(); return; }
