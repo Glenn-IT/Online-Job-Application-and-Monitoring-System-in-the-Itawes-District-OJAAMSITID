@@ -47,6 +47,24 @@
                         <div class="mb-2"><strong>Skills:</strong> <span id="viewAppSkills">—</span></div>
                         <div><strong>Experience:</strong> <span id="viewAppExperience">—</span></div>
                     </div>
+
+                    <!-- Resume -->
+                    <div class="col-12" id="viewAppResumeRow" style="display:none;">
+                        <h6 class="fw-bold text-primary border-bottom pb-2">Resume / CV</h6>
+                        <div id="viewAppResume"></div>
+                    </div>
+
+                    <!-- Status History -->
+                    <div class="col-12">
+                        <h6 class="fw-bold text-primary border-bottom pb-2">
+                            <i class="bi bi-clock-history me-1"></i>Status History
+                        </h6>
+                        <div id="viewAppHistory">
+                            <p class="text-muted small fst-italic mb-0">
+                                <i class="bi bi-info-circle me-1"></i>No status changes recorded yet.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
