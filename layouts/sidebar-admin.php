@@ -6,6 +6,7 @@ $links = [
     ['page' => 'dashboard',       'icon' => 'bi-speedometer2',        'label' => 'Dashboard',        'href' => 'pages/admin/dashboard.php'],
     ['page' => 'manage-jobs',     'icon' => 'bi-kanban',              'label' => 'Manage Jobs',       'href' => 'pages/admin/manage-jobs.php'],
     ['page' => 'applications',    'icon' => 'bi-file-earmark-person', 'label' => 'Applications',     'href' => 'pages/admin/applications.php'],
+    ['page' => 'user-management',  'icon' => 'bi-people-fill',         'label' => 'User Management',  'href' => 'pages/admin/user-management.php'],
     ['page' => 'reports',         'icon' => 'bi-graph-up',            'label' => 'Reports',          'href' => 'pages/admin/reports.php'],
     ['page' => 'profile-settings','icon' => 'bi-person-gear',         'label' => 'Profile Settings', 'href' => 'pages/admin/profile-settings.php'],
 ];
@@ -91,3 +92,17 @@ $navLinksHtml = renderSidebarLinks($links, $bp, $currentPage);
         </div>
     </div>
 </div>
+<script>
+// Close the offcanvas immediately when a nav link is tapped on mobile
+// (the page reload would close it anyway, but this avoids a visible flash)
+document.addEventListener('DOMContentLoaded', function () {
+    const offcanvasEl = document.getElementById('adminSidebarOffcanvas');
+    if (!offcanvasEl) return;
+    offcanvasEl.querySelectorAll('.sidebar-nav .nav-link').forEach(link => {
+        link.addEventListener('click', function () {
+            const oc = bootstrap.Offcanvas.getInstance(offcanvasEl);
+            if (oc) oc.hide();
+        });
+    });
+});
+</script>
