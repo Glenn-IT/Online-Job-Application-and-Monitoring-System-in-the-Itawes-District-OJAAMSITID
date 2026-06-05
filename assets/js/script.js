@@ -136,8 +136,4 @@ function btnLoading(btn, loading, loadingText = "Please wait…") {
   }
 }
 
-// ── Misc ────────────────────────────────────────────────────
-function comingSoon() {
-  alert("Feature Coming Soon");
-}
 
