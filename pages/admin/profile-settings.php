@@ -22,13 +22,29 @@ include $basePath . "layouts/navbar-admin.php";
             <div class="col-md-4 mb-4">
                 <div class="card border-0 shadow-sm text-center">
                     <div class="card-body p-4">
-                        <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-3"
-                             style="width:100px;height:100px;">
-                            <i class="bi bi-person-fill text-white display-5"></i>
-                        </div>
+                        <?php $photo = $u['profile_photo'] ?? null; ?>
+                        <?php if ($photo): ?>
+                            <img src="<?php echo htmlspecialchars(BASE_URL . '/uploads/avatars/' . $photo); ?>"
+                                 id="avatarImg" alt="Avatar"
+                                 class="rounded-circle mb-3 border"
+                                 style="width:100px;height:100px;object-fit:cover;">
+                        <?php else: ?>
+                            <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-3"
+                                 id="avatarPlaceholder" style="width:100px;height:100px;">
+                                <i class="bi bi-person-fill text-white display-5"></i>
+                            </div>
+                        <?php endif; ?>
                         <h5 class="fw-bold mb-1" id="cardName"><?php echo htmlspecialchars($u["full_name"]); ?></h5>
                         <p class="text-muted mb-2" id="cardEmail"><?php echo htmlspecialchars($u["email"]); ?></p>
                         <span class="badge bg-danger">Administrator</span>
+                        <div class="mt-3">
+                            <label for="avatarUpload" class="btn btn-sm btn-outline-secondary w-100">
+                                <i class="bi bi-camera me-1"></i>Change Photo
+                            </label>
+                            <input type="file" id="avatarUpload" accept="image/jpeg,image/png,image/gif,image/webp"
+                                   class="d-none" onchange="uploadAvatar(this)">
+                            <div class="form-text">JPG, PNG, GIF, WebP — max 2 MB</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -125,6 +141,30 @@ include $basePath . "layouts/navbar-admin.php";
 </div>
 <script>
 const PROFILE_HANDLER = "../../handlers/profile.php";
+
+function uploadAvatar(input) {
+    if (!input.files.length) return;
+    const fd = new FormData();
+    fd.append("action",     "uploadAvatar");
+    fd.append("csrf_token", getCsrfToken());
+    fd.append("avatar",     input.files[0]);
+    fetch(PROFILE_HANDLER, { method: "POST", body: fd })
+    .then(r => r.json())
+    .then(res => {
+        showToast(res.message, res.success ? "success" : "danger");
+        if (res.success) {
+            const placeholder = document.getElementById("avatarPlaceholder");
+            let img = document.getElementById("avatarImg");
+            if (placeholder) {
+                placeholder.outerHTML = `<img src="${res.url}" id="avatarImg" alt="Avatar" class="rounded-circle mb-3 border" style="width:100px;height:100px;object-fit:cover;">`;
+            } else if (img) {
+                img.src = res.url;
+            }
+        }
+    })
+    .catch(() => showToast("Upload failed.", "danger"));
+    input.value = "";
+}
 
 function savePersonalInfo() {
     const fullName  = document.getElementById("adminFullName")?.value.trim();
