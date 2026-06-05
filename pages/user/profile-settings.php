@@ -115,8 +115,18 @@ include $basePath . "layouts/navbar-user.php";
                                            placeholder="New password (min 6 chars)">
                                 </div>
                             </div>
+
+                            <!-- Lockdown notice -->
+                            <div id="pwLockNoticeUser" class="d-none alert alert-warning d-flex align-items-center gap-2 mb-3 py-2">
+                                <i class="bi bi-lock-fill fs-5 flex-shrink-0"></i>
+                                <div class="small">
+                                    Too many failed attempts. Fields re-enable in
+                                    <strong id="pwCountdownUser">30</strong>s.
+                                </div>
+                            </div>
+
                             <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-primary" onclick="saveProfile()">
+                                <button type="button" class="btn btn-primary" id="saveProfileBtn" onclick="saveProfile()">
                                     <i class="bi bi-save me-1"></i>Save Changes
                                 </button>
                                 <button type="button" class="btn btn-secondary" onclick="toggleEditProfile()">
@@ -132,6 +142,29 @@ include $basePath . "layouts/navbar-user.php";
 </div>
 <script>
 const PROFILE_HANDLER = "../../handlers/profile.php";
+
+let _pwLockTimer = null;
+function startPwLockdown(seconds, fieldIds, btnId, noticeId, countdownId) {
+    const notice    = document.getElementById(noticeId);
+    const countdown = document.getElementById(countdownId);
+    const btn       = document.getElementById(btnId);
+    fieldIds.forEach(id => { const el = document.getElementById(id); if (el) { el.disabled = true; el.value = ""; } });
+    if (btn) btn.disabled = true;
+    notice?.classList.remove("d-none");
+    if (countdown) countdown.textContent = seconds;
+    let remaining = seconds;
+    clearInterval(_pwLockTimer);
+    _pwLockTimer = setInterval(() => {
+        remaining--;
+        if (countdown) countdown.textContent = remaining;
+        if (remaining <= 0) {
+            clearInterval(_pwLockTimer);
+            fieldIds.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = false; });
+            if (btn) btn.disabled = false;
+            notice?.classList.add("d-none");
+        }
+    }, 1000);
+}
 
 function toggleEditProfile() {
     const viewEl = document.getElementById("profileView");
@@ -160,9 +193,20 @@ function saveProfile() {
     const currentPw = document.getElementById("editCurrentPassword")?.value;
     const newPw     = document.getElementById("editNewPassword")?.value;
 
-    if (!fullName || !email) { showToast("Full name and email are required.", "warning"); return; }
+    clearAllFieldErrors("editProfileForm");
+    let editValid = true;
+    if (!fullName) { showFieldError("editFullName", "Full name is required.");     editValid = false; }
+    if (!email)    { showFieldError("editEmail",    "Email address is required."); editValid = false; }
+    if (currentPw && newPw && newPw.length < 6) {
+        showFieldError("editNewPassword", "New password must be at least 6 characters.");
+        editValid = false;
+    }
+    if (!editValid) return;
 
     const doPasswordChange = currentPw && newPw;
+
+    const saveBtn = document.getElementById("saveProfileBtn");
+    btnLoading(saveBtn, true, "Saving…");
 
     const updateInfo = () => fetch(PROFILE_HANDLER, {
         method: "POST",
@@ -187,17 +231,30 @@ function saveProfile() {
         document.getElementById("cardEmail").textContent   = email;
         if (doPasswordChange) {
             changePass().then(r2 => {
+                if (r2.locked) {
+                    startPwLockdown(
+                        r2.retry_after,
+                        ["editCurrentPassword", "editNewPassword"],
+                        "saveProfileBtn",
+                        "pwLockNoticeUser",
+                        "pwCountdownUser"
+                    );
+                    showToast(r2.message, "warning");
+                    return;
+                }
                 showToast(r2.success ? "Profile & password updated!" : r2.message, r2.success ? "success" : "danger");
                 if (r2.success) {
                     document.getElementById("editCurrentPassword").value = "";
-                    document.getElementById("editNewPassword").value = "";
+                    document.getElementById("editNewPassword").value     = "";
                 }
             });
         } else {
             showToast("Profile updated successfully!", "success");
         }
         toggleEditProfile();
-    }).catch(() => showToast("Request failed.", "danger"));
+    })
+    .catch(() => showToast("Request failed.", "danger"))
+    .finally(() => btnLoading(saveBtn, false));
 }
 </script>
 <?php include $basePath . "layouts/footer.php"; ?>
