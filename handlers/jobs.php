@@ -28,12 +28,12 @@ if (!validateCsrfToken($body['csrf_token'] ?? null)) {
 rateLimit('jobs', 30, 60);
 
 // ── Helper: log activity ────────────────────────────────────
-function logActivity(PDO $pdo, string $action, string $status): void {
+function logActivity(PDO $pdo, string $action, string $status, ?int $jobId = null, ?int $appId = null): void {
     $userId = $_SESSION['ojams_user']['id'] ?? null;
     $stmt   = $pdo->prepare(
-        "INSERT INTO activity_logs (action, status, performed_by) VALUES (?, ?, ?)"
+        "INSERT INTO activity_logs (action, status, performed_by, job_id, application_id) VALUES (?, ?, ?, ?, ?)"
     );
-    $stmt->execute([$action, $status, $userId]);
+    $stmt->execute([$action, $status, $userId, $jobId, $appId]);
 }
 
 // ── Helper: validate required string fields ─────────────────
@@ -78,7 +78,7 @@ if ($action === 'add') {
     $stmt->execute([$title, $company, $description, $qualification, $location, $jobType, $salaryRange, $date_posted, $status, $deadline, $created_by]);
     $newId = $pdo->lastInsertId();
 
-    logActivity($pdo, "New job posted: \"{$title}\" at {$company}", 'Created');
+    logActivity($pdo, "New job posted: \"{$title}\" at {$company}", 'Created', (int)$newId);
 
     echo json_encode(['success' => true, 'message' => 'Job added successfully.', 'id' => $newId]);
     exit;
@@ -126,7 +126,7 @@ if ($action === 'edit') {
     ");
     $stmt->execute([$title, $company, $description, $qualification, $location, $jobType, $salaryRange, $date_posted, $status, $deadline, $id]);
 
-    logActivity($pdo, "Job updated: \"{$title}\"", 'Updated');
+    logActivity($pdo, "Job updated: \"{$title}\"", 'Updated', $id);
 
     echo json_encode(['success' => true, 'message' => 'Job updated successfully.']);
     exit;
@@ -149,7 +149,7 @@ if ($action === 'delete') {
     $stmt = $pdo->prepare("DELETE FROM jobs WHERE id = ?");
     $stmt->execute([$id]);
 
-    logActivity($pdo, "Job deleted: \"{$existing['title']}\"", 'Deleted');
+    logActivity($pdo, "Job deleted: \"{$existing['title']}\"", 'Deleted', $id);
 
     echo json_encode(['success' => true, 'message' => 'Job deleted successfully.']);
     exit;
