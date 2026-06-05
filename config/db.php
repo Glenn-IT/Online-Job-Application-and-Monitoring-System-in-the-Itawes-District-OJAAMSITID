@@ -35,6 +35,10 @@ try {
 
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 
+    // Sync MySQL session timezone with PHP so NOW(), CURRENT_TIMESTAMP,
+    // and DATE_FORMAT() all agree with date() / new DateTime() in PHP.
+    $pdo->exec("SET time_zone = '" . APP_TIMEZONE_OFFSET . "'");
+
 } catch (PDOException $e) {
     // Log the real error server-side before showing a safe message to the user
     $logFile = __DIR__ . '/../logs/app.log';
