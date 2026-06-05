@@ -13,8 +13,8 @@ if (isLoggedIn()) {
 $error = '';
 
 // ── Brute-force constants ────────────────────────────────────
-const MAX_ATTEMPTS    = 5;
-const LOCKOUT_MINUTES = 15;
+const MAX_ATTEMPTS     = 5;
+const LOCKOUT_SECONDS  = 30;
 
 // Get client IP (support reverse proxies)
 $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR']
@@ -32,16 +32,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $lockStmt = $pdo->prepare("
         SELECT attempts, last_attempt_at
         FROM login_attempts
-        WHERE ip = ? AND last_attempt_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)
+        WHERE ip = ? AND last_attempt_at > DATE_SUB(NOW(), INTERVAL ? SECOND)
     ");
-    $lockStmt->execute([$clientIp, LOCKOUT_MINUTES]);
+    $lockStmt->execute([$clientIp, LOCKOUT_SECONDS]);
     $lockRow = $lockStmt->fetch();
 
     if ($lockRow && $lockRow['attempts'] >= MAX_ATTEMPTS) {
         $retryAfter = (new DateTime($lockRow['last_attempt_at']))
-            ->modify('+' . LOCKOUT_MINUTES . ' minutes');
-        $minsLeft = (int)ceil((($retryAfter->getTimestamp() - time()) / 60));
-        $error = "Too many failed attempts. Please try again in {$minsLeft} minute(s).";
+            ->modify('+' . LOCKOUT_SECONDS . ' seconds');
+        $secsLeft = max(1, (int)ceil($retryAfter->getTimestamp() - time()));
+        $error = "Too many failed attempts. Please try again in {$secsLeft} second(s).";
     } elseif ($email === '' || $password === '') {
         $error = 'Please enter both email and password.';
     } else {
@@ -49,15 +49,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
-        if (!$user || !password_verify($password, $user['password_hash'])) {
+        if (!$user || !password_verify($password, $user['password_hash']) || (isset($user['is_active']) && !$user['is_active'])) {
             // ── Record failed attempt ────────────────────────
             $pdo->prepare("
                 INSERT INTO login_attempts (ip, attempts)
                 VALUES (?, 1)
                 ON DUPLICATE KEY UPDATE
-                    attempts        = IF(last_attempt_at > DATE_SUB(NOW(), INTERVAL ? MINUTE), attempts + 1, 1),
+                    attempts        = IF(last_attempt_at > DATE_SUB(NOW(), INTERVAL ? SECOND), attempts + 1, 1),
                     last_attempt_at = NOW()
-            ")->execute([$clientIp, LOCKOUT_MINUTES]);
+            ")->execute([$clientIp, LOCKOUT_SECONDS]);
 
             // Warn user how many tries remain
             $attStmt = $pdo->prepare("SELECT attempts FROM login_attempts WHERE ip = ?");
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($remaining > 0) {
                 $error = "Invalid email or password. {$remaining} attempt(s) remaining before lockout.";
             } else {
-                $error = "Too many failed attempts. Please try again in " . LOCKOUT_MINUTES . " minute(s).";
+                $error = "Too many failed attempts. Please try again in " . LOCKOUT_SECONDS . " second(s).";
             }
         } else {
             // ── Clear failed attempts on success ─────────────
@@ -242,8 +242,11 @@ $pageTitle = "OJAMS - Login";
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label" for="loginPassword">Password</label>
-                    <div class="input-group">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label mb-0" for="loginPassword">Password</label>
+                        <a href="forgot-password.php" class="small text-primary text-decoration-none">Forgot password?</a>
+                    </div>
+                    <div class="input-group mt-1">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
                         <input type="password" class="form-control" name="password" id="loginPassword"
                                placeholder="Enter your password" required>
@@ -289,6 +292,13 @@ function toggleLoginPass() {
     if (inp.type === 'password') { inp.type = 'text'; icon.className = 'bi bi-eye-slash'; }
     else                         { inp.type = 'password'; icon.className = 'bi bi-eye'; }
 }
+document.getElementById('loginForm')?.addEventListener('submit', function () {
+    const btn = this.querySelector('[type="submit"]');
+    if (btn) {
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Signing in…';
+        btn.disabled = true;
+    }
+});
 </script>
 </body>
 </html>
