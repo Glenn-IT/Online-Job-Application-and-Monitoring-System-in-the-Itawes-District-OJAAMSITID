@@ -59,7 +59,7 @@ if (!array_key_exists($jobSortCol, $allowedJobSorts)) $jobSortCol = 'date_posted
 $jobOrderSQL = $allowedJobSorts[$jobSortCol] . ' ' . $jobSortDir;
 
 // ── Pagination ────────────────────────────────────────────────
-$perPage    = 15;
+$perPage    = PER_PAGE_ADMIN;
 $page       = max(1, (int)($_GET['page'] ?? 1));
 $countStmt  = $pdo->prepare("SELECT COUNT(*) FROM jobs j {$whereSQL}");
 $countStmt->execute($params);
