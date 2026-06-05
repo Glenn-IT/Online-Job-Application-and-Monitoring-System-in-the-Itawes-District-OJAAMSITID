@@ -171,12 +171,10 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--text); }
 /* ── Sidebar ──────────────────────────────────── */
 .sidebar-wrapper {
     width: var(--sidebar-w);
-    min-height: calc(100vh - var(--navbar-h));
     background: linear-gradient(180deg, var(--sidebar-bg) 0%, #0f0c29 100%);
     position: sticky;
     top: var(--navbar-h);
-    height: calc(100vh - var(--navbar-h));
-    overflow-y: auto;
+    align-self: flex-start;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -281,7 +279,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--text); }
 .sidebar-nav .nav-link.active i { color: var(--primary-light); }
 
 .sidebar-footer {
-    margin-top: auto;
+    margin-top: 1.5rem;
     padding-top: 1rem;
     border-top: 1px solid var(--sidebar-border);
 }
@@ -957,3 +955,59 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--text); }
     0%   { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
+
+/* ══════════════════════════════════════════════
+   Mobile / Responsive Improvements
+   ══════════════════════════════════════════════ */
+
+/* Prevent horizontal overflow on all viewports */
+html, body { overflow-x: hidden; }
+
+.admin-main { overflow-x: hidden; }
+
+/* ── Sidebar: larger touch targets on mobile ── */
+@media (max-width: 991.98px) {
+    .offcanvas.sidebar-offcanvas .sidebar-nav .nav-link {
+        padding: 0.8rem 1rem;
+        font-size: 0.9rem;
+    }
+    .offcanvas.sidebar-offcanvas .sidebar-user-info {
+        padding: 1rem;
+    }
+    /* Tighter admin page headings on small screens */
+    .admin-main h2 { font-size: 1.2rem; }
+    /* Bulk toolbars wrap cleanly on small screens */
+    #bulkToolbarApps,
+    #bulkToolbarJobs { flex-wrap: wrap; }
+}
+
+/* ── Stats cards: 2-up on all mobile, 4-up on lg+ ── */
+/* (handled by col-6 col-lg-3 in stats-card.php)      */
+
+/* ── Tables: enforce horizontal scroll inside card ── */
+.card .table-responsive { -webkit-overflow-scrolling: touch; }
+
+/* ── Filter bars: stack cleanly on xs (<576px) ───── */
+@media (max-width: 575.98px) {
+    /* Force filter form selects to be 50% on xs so they don't stretch full-width */
+    .filter-form .col-md-2 { flex: 0 0 50%; max-width: 50%; }
+    /* Search/date inputs stay full width */
+    .filter-form .col-md-4,
+    .filter-form .col-md-5 { flex: 0 0 100%; max-width: 100%; }
+}
+
+/* ── Pagination: hide middle page numbers on xs ── */
+@media (max-width: 575.98px) {
+    .pagination .page-item:not(.active):not(:first-child):not(:last-child) {
+        display: none;
+    }
+    .pagination .page-item.active { display: list-item; }
+}
+
+/* ── Job detail sticky panel: un-stick on mobile ── */
+@media (max-width: 991.98px) {
+    .sticky-top { position: relative !important; top: auto !important; }
+}
+
+/* ── Offcanvas overlay backdrop: darker on mobile ── */
+.offcanvas-backdrop { background: rgba(15, 12, 41, 0.7); }
