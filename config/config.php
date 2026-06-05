@@ -45,4 +45,8 @@ define('SESSION_NAME', 'ojams_session');
 define('BCRYPT_COST', 12);
 
 // ── Timezone ────────────────────────────────────────────────
-date_default_timezone_set('Asia/Manila');
+// Single source of truth — used by both PHP and MySQL (via db.php).
+define('APP_TIMEZONE',        'Asia/Manila');
+define('APP_TIMEZONE_OFFSET', '+08:00');       // MySQL SET time_zone format
+
+date_default_timezone_set(APP_TIMEZONE);
