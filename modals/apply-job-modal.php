@@ -89,6 +89,29 @@
                         <label class="form-label">Work Experience</label>
                         <textarea class="form-control" id="appExperience" rows="3" placeholder="e.g. Intern at ABC Corp (2024-2025)"></textarea>
                     </div>
+
+                    <!-- ── Section: Resume / CV Upload ── -->
+                    <h6 class="fw-bold text-primary border-bottom pb-2 mb-3 mt-4">
+                        <i class="bi bi-paperclip me-1"></i>Resume / CV
+                    </h6>
+                    <div class="mb-3">
+                        <label class="form-label" for="appResume">
+                            Upload Resume <span class="text-muted fw-normal">(optional)</span>
+                        </label>
+                        <input type="file" class="form-control" id="appResume" name="resume"
+                               accept=".pdf,.doc,.docx">
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Accepted formats: PDF, DOC, DOCX &mdash; Max size: 5 MB
+                        </div>
+                        <div id="resumeFileInfo" class="mt-2 d-none">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                <i class="bi bi-file-earmark-check me-1"></i>
+                                <span id="resumeFileName"></span>
+                                <span id="resumeFileSize" class="ms-1 text-muted"></span>
+                            </span>
+                        </div>
+                    </div>
                 </form>
             </div>
 
@@ -97,7 +120,7 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-lg me-1"></i>Cancel
                 </button>
-                <button type="button" class="btn btn-primary" onclick="submitApplication()">
+                <button type="button" class="btn btn-primary" id="submitAppBtn" onclick="submitApplication()">
                     <i class="bi bi-send me-1"></i>Submit Application
                 </button>
             </div>
