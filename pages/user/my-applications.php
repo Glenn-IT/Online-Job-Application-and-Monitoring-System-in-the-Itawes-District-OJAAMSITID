@@ -43,9 +43,12 @@ include $basePath . "layouts/navbar-user.php";
                     <tbody id="myAppsTbody">
                         <?php if (empty($myApps)): ?>
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
-                                    <i class="bi bi-inbox display-6 d-block mb-2"></i>
-                                    No applications submitted yet.
+                                <td colspan="6" class="text-center py-5">
+                                    <i class="bi bi-inbox display-5 text-muted d-block mb-3"></i>
+                                    <p class="text-muted mb-3">You haven't submitted any applications yet.</p>
+                                    <a href="browse-jobs.php" class="btn btn-primary">
+                                        <i class="bi bi-search me-1"></i>Browse Job Listings
+                                    </a>
                                 </td>
                             </tr>
                         <?php else: $count = 1; foreach ($myApps as $app):
