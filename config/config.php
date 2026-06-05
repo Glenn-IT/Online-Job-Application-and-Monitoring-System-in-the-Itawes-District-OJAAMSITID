@@ -50,3 +50,15 @@ define('APP_TIMEZONE',        'Asia/Manila');
 define('APP_TIMEZONE_OFFSET', '+08:00');       // MySQL SET time_zone format
 
 date_default_timezone_set(APP_TIMEZONE);
+
+// ── Pagination ──────────────────────────────────────────────
+define('PER_PAGE_USER',  12);   // Job cards per page on Browse Jobs
+define('PER_PAGE_ADMIN', 15);   // Rows per page on admin tables
+
+// ── Login brute-force protection ────────────────────────────
+define('LOGIN_MAX_ATTEMPTS',    5);
+define('LOGIN_LOCKOUT_SECONDS', 30);
+
+// ── Password-change throttle ────────────────────────────────
+define('PW_MAX_ATTEMPTS',    3);
+define('PW_LOCKOUT_SECONDS', 30);
