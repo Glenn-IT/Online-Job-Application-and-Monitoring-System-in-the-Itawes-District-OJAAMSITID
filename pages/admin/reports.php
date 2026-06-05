@@ -48,19 +48,60 @@ include $basePath . "layouts/navbar-admin.php";
                 </h2>
                 <p class="text-muted mb-0">View analytics and generate system reports.</p>
             </div>
-            <button class="btn btn-primary" onclick="window.print()">
-                <i class="bi bi-download me-1"></i>Download Report
-            </button>
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-download me-1"></i>Export
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item"
+                           href="export-report.php?type=applicants_csv" download>
+                            <i class="bi bi-filetype-csv me-2 text-success"></i>Applicants per Job — CSV
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item"
+                           href="export-report.php?type=monthly_csv" download>
+                            <i class="bi bi-filetype-csv me-2 text-success"></i>Monthly Report — CSV
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item"
+                           href="export-report.php?type=print"
+                           target="_blank" rel="noopener">
+                            <i class="bi bi-printer me-2 text-primary"></i>Print / Save as PDF
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
 
         <!-- Applicants per Job -->
         <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold">
                     <i class="bi bi-bar-chart me-2 text-primary"></i>Total Applicants per Job
                 </h5>
+                <div class="btn-group btn-group-sm" role="group" id="jobChartToggle">
+                    <button type="button" class="btn btn-primary active" onclick="showJobView('chart')">
+                        <i class="bi bi-bar-chart-horizontal"></i> Chart
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" onclick="showJobView('table')">
+                        <i class="bi bi-table"></i> Table
+                    </button>
+                </div>
             </div>
-            <div class="card-body p-0">
+
+            <!-- Chart View -->
+            <div id="jobChartView" class="card-body">
+                <div style="position:relative; height:<?php echo max(200, count($applicants_per_job) * 38); ?>px;">
+                    <canvas id="jobChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Table View (hidden by default) -->
+            <div id="jobTableView" class="card-body p-0 d-none">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <?php
@@ -99,7 +140,7 @@ include $basePath . "layouts/navbar-admin.php";
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </div><!-- /jobTableView -->
         </div>
 
         <!-- Monthly Application Report -->
@@ -150,16 +191,169 @@ include $basePath . "layouts/navbar-admin.php";
                     </table>
                 </div>
 
-                <!-- Chart Placeholder -->
-                <div class="border rounded p-5 text-center bg-light">
-                    <i class="bi bi-bar-chart-line display-1 text-muted"></i>
-                    <p class="text-muted mt-3 mb-0">
-                        <strong>Chart Placeholder</strong><br>
-                        A visual chart (e.g., Chart.js) would be rendered here in the full implementation.
-                    </p>
+                <!-- Chart — rendered by Chart.js below -->
+                <div class="mt-3">
+                    <canvas id="monthlyChart" height="100"></canvas>
                 </div>
             </div>
         </div>
     </main>
 </div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+// ── PHP data → JS ─────────────────────────────────────────────
+const jobLabels    = <?php echo json_encode(array_column($applicants_per_job, 'job_title')); ?>;
+const jobCounts    = <?php echo json_encode(array_map('intval', array_column($applicants_per_job, 'applicants'))); ?>;
+
+// Monthly data comes DESC — reverse for chronological (left → right)
+const monthlyRaw   = <?php echo json_encode(array_reverse($monthly_report)); ?>;
+const monthLabels  = monthlyRaw.map(r => r.month);
+const monthTotal   = monthlyRaw.map(r => parseInt(r.applications));
+const monthApproved= monthlyRaw.map(r => parseInt(r.approved));
+const monthRejected= monthlyRaw.map(r => parseInt(r.rejected));
+const monthPending = monthlyRaw.map(r => parseInt(r.pending));
+
+// ── Shared defaults ───────────────────────────────────────────
+Chart.defaults.font.family = "'Inter', 'Segoe UI', system-ui, sans-serif";
+Chart.defaults.font.size   = 12;
+Chart.defaults.color       = '#64748b';
+
+// ── Chart 1: Applicants per Job (horizontal bar) ─────────────
+const jobCtx = document.getElementById('jobChart');
+if (jobCtx) {
+    new Chart(jobCtx, {
+        type: 'bar',
+        data: {
+            labels: jobLabels,
+            datasets: [{
+                label: 'Applicants',
+                data: jobCounts,
+                backgroundColor: 'rgba(79, 70, 229, 0.75)',
+                borderColor: 'rgba(79, 70, 229, 1)',
+                borderWidth: 1,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${ctx.parsed.x} applicant${ctx.parsed.x !== 1 ? 's' : ''}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    grid: { color: 'rgba(0,0,0,0.05)' }
+                },
+                y: {
+                    grid: { display: false },
+                    ticks: {
+                        callback: function(val) {
+                            const label = this.getLabelForValue(val);
+                            return label.length > 28 ? label.substring(0, 26) + '…' : label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ── Chart 2: Monthly Applications (grouped bar) ──────────────
+const monthCtx = document.getElementById('monthlyChart');
+if (monthCtx) {
+    new Chart(monthCtx, {
+        type: 'bar',
+        data: {
+            labels: monthLabels,
+            datasets: [
+                {
+                    label: 'Approved',
+                    data: monthApproved,
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Rejected',
+                    data: monthRejected,
+                    backgroundColor: 'rgba(239, 68, 68, 0.75)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Pending',
+                    data: monthPending,
+                    backgroundColor: 'rgba(245, 158, 11, 0.75)',
+                    borderColor: 'rgba(245, 158, 11, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Total',
+                    data: monthTotal,
+                    type: 'line',
+                    borderColor: 'rgba(79, 70, 229, 1)',
+                    backgroundColor: 'rgba(79, 70, 229, 0.08)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(79, 70, 229, 1)',
+                    pointRadius: 4,
+                    fill: true,
+                    tension: 0.3,
+                    yAxisID: 'y',
+                },
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { usePointStyle: true, padding: 16 }
+                },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: { grid: { color: 'rgba(0,0,0,0.04)' } },
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    grid: { color: 'rgba(0,0,0,0.05)' }
+                }
+            }
+        }
+    });
+}
+
+// ── Toggle: Chart ↔ Table ─────────────────────────────────────
+function showJobView(view) {
+    const chartView = document.getElementById('jobChartView');
+    const tableView = document.getElementById('jobTableView');
+    const btns = document.querySelectorAll('#jobChartToggle button');
+    if (view === 'chart') {
+        chartView.classList.remove('d-none');
+        tableView.classList.add('d-none');
+        btns[0].classList.add('active'); btns[0].classList.replace('btn-outline-primary','btn-primary');
+        btns[1].classList.remove('active'); btns[1].classList.replace('btn-primary','btn-outline-primary');
+    } else {
+        chartView.classList.add('d-none');
+        tableView.classList.remove('d-none');
+        btns[1].classList.add('active'); btns[1].classList.replace('btn-outline-primary','btn-primary');
+        btns[0].classList.remove('active'); btns[0].classList.replace('btn-primary','btn-outline-primary');
+    }
+}
+</script>
 <?php include $basePath . "layouts/footer.php"; ?>
