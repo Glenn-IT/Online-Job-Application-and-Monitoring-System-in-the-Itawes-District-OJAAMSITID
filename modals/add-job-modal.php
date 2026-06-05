@@ -32,11 +32,50 @@
                         <input type="text" class="form-control" id="jobQualification" placeholder="e.g. HTML, CSS, JavaScript" maxlength="500" required>
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-5 mb-3">
+                            <label class="form-label">
+                                Location <span class="text-muted fw-normal small">(optional)</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                                <input type="text" class="form-control" id="jobLocation"
+                                       placeholder="e.g. Tuguegarao City" maxlength="150">
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">
+                                Job Type <span class="text-muted fw-normal small">(optional)</span>
+                            </label>
+                            <select class="form-select" id="jobType">
+                                <option value="">— Select —</option>
+                                <option value="Full-time">Full-time</option>
+                                <option value="Part-time">Part-time</option>
+                                <option value="Contract">Contract</option>
+                                <option value="Internship">Internship</option>
+                                <option value="Freelance">Freelance</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">
+                                Salary Range <span class="text-muted fw-normal small">(optional)</span>
+                            </label>
+                            <input type="text" class="form-control" id="jobSalaryRange"
+                                   placeholder="e.g. ₱25,000 – ₱35,000" maxlength="100">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Date Posted</label>
                             <input type="date" class="form-control" id="jobDatePosted">
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">
+                                Application Deadline
+                                <span class="text-muted fw-normal small">(optional)</span>
+                            </label>
+                            <input type="date" class="form-control" id="jobDeadline">
+                        </div>
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Status</label>
                             <select class="form-select" id="jobStatus">
                                 <option value="Open" selected>Open</option>
@@ -52,7 +91,7 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-lg me-1"></i>Cancel
                 </button>
-                <button type="button" class="btn btn-success" onclick="saveJob()">
+                <button type="button" class="btn btn-success" id="saveJobBtn" onclick="saveJob()">
                     <i class="bi bi-save me-1"></i>Save Job
                 </button>
             </div>
