@@ -68,7 +68,7 @@ include $basePath . "layouts/navbar-admin.php";
                             <input type="text" class="form-control" id="adminAddress"
                                    value="<?php echo htmlspecialchars($u['address'] ?? ''); ?>" maxlength="500">
                         </div>
-                        <button type="button" class="btn btn-primary" onclick="savePersonalInfo()">
+                        <button type="button" class="btn btn-primary" id="saveInfoBtn" onclick="savePersonalInfo()">
                             <i class="bi bi-save me-1"></i>Save Information
                         </button>
                     </div>
@@ -104,7 +104,17 @@ include $basePath . "layouts/navbar-admin.php";
                             <input type="password" class="form-control" id="confirmPassword"
                                    placeholder="Confirm new password">
                         </div>
-                        <button type="button" class="btn btn-warning" onclick="changeAdminPassword()">
+
+                        <!-- Lockdown notice -->
+                        <div id="pwLockNotice" class="d-none alert alert-warning d-flex align-items-center gap-2 mb-3 py-2">
+                            <i class="bi bi-lock-fill fs-5 flex-shrink-0"></i>
+                            <div class="small">
+                                Too many failed attempts. Fields re-enable in
+                                <strong id="pwCountdown">30</strong>s.
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-warning" id="changePwBtn" onclick="changeAdminPassword()">
                             <i class="bi bi-key me-1"></i>Update Password
                         </button>
                     </div>
@@ -122,7 +132,12 @@ function savePersonalInfo() {
     const contact   = document.getElementById("adminContact")?.value.trim();
     const address   = document.getElementById("adminAddress")?.value.trim();
     const birthdate = document.getElementById("adminBirthdate")?.value;
-    if (!fullName || !email) { showToast("Full name and email are required.", "warning"); return; }
+    let infoValid = true;
+    if (!fullName) { showFieldError("adminFullName", "Full name is required.");    infoValid = false; }
+    if (!email)    { showFieldError("adminEmail",    "Email address is required."); infoValid = false; }
+    if (!infoValid) return;
+    const btn = document.getElementById("saveInfoBtn");
+    btnLoading(btn, true, "Saving…");
     fetch(PROFILE_HANDLER, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -136,14 +151,29 @@ function savePersonalInfo() {
             document.getElementById("cardEmail").textContent = email;
         }
     })
-    .catch(() => showToast("Request failed.", "danger"));
+    .catch(() => showToast("Request failed.", "danger"))
+    .finally(() => btnLoading(btn, false));
 }
 
+const PW_FIELDS_ADMIN = ["currentPassword", "newPassword", "confirmPassword"];
+
 function changeAdminPassword() {
-    const current  = document.getElementById("currentPassword")?.value;
-    const newPw    = document.getElementById("newPassword")?.value;
-    const confirm  = document.getElementById("confirmPassword")?.value;
-    if (!current || !newPw || !confirm) { showToast("All password fields are required.", "warning"); return; }
+    if (document.getElementById("currentPassword")?.disabled) {
+        showToast("Please wait for the lockout to expire.", "warning"); return;
+    }
+    const current = document.getElementById("currentPassword")?.value;
+    const newPw   = document.getElementById("newPassword")?.value;
+    const confirm = document.getElementById("confirmPassword")?.value;
+    let pwValid = true;
+    if (!current) { showFieldError("currentPassword", "Current password is required.");  pwValid = false; }
+    if (!newPw)   { showFieldError("newPassword",     "New password is required.");      pwValid = false; }
+    else if (newPw.length < 6) { showFieldError("newPassword", "Password must be at least 6 characters."); pwValid = false; }
+    if (!confirm) { showFieldError("confirmPassword", "Please confirm your new password."); pwValid = false; }
+    else if (newPw && confirm && newPw !== confirm) { showFieldError("confirmPassword", "Passwords do not match."); pwValid = false; }
+    if (!pwValid) return;
+
+    const changePwBtnEl = document.getElementById("changePwBtn");
+    btnLoading(changePwBtnEl, true, "Updating…");
     fetch(PROFILE_HANDLER, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -152,15 +182,43 @@ function changeAdminPassword() {
     .then(r => r.json())
     .then(res => {
         showToast(res.message, res.success ? "success" : "danger");
+        if (res.locked) {
+            startPwLockdown(res.retry_after, PW_FIELDS_ADMIN, "changePwBtn", "pwLockNotice", "pwCountdown");
+            return;
+        }
         if (res.success) {
-            document.getElementById("currentPassword").value = "";
-            document.getElementById("newPassword").value     = "";
-            document.getElementById("confirmPassword").value = "";
+            PW_FIELDS_ADMIN.forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
             document.getElementById("pwStrengthBar").style.width = "0%";
             document.getElementById("pwStrengthText").textContent = "";
         }
     })
-    .catch(() => showToast("Request failed.", "danger"));
+    .catch(() => showToast("Request failed.", "danger"))
+    .finally(() => { if (!document.getElementById("currentPassword")?.disabled) btnLoading(changePwBtnEl, false); });
+}
+
+let _pwLockTimer = null;
+function startPwLockdown(seconds, fieldIds, btnId, noticeId, countdownId) {
+    const notice    = document.getElementById(noticeId);
+    const countdown = document.getElementById(countdownId);
+    const btn       = document.getElementById(btnId);
+
+    fieldIds.forEach(id => { const el = document.getElementById(id); if (el) { el.disabled = true; el.value = ""; } });
+    if (btn) btn.disabled = true;
+    notice?.classList.remove("d-none");
+    if (countdown) countdown.textContent = seconds;
+
+    let remaining = seconds;
+    clearInterval(_pwLockTimer);
+    _pwLockTimer = setInterval(() => {
+        remaining--;
+        if (countdown) countdown.textContent = remaining;
+        if (remaining <= 0) {
+            clearInterval(_pwLockTimer);
+            fieldIds.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = false; });
+            if (btn) btn.disabled = false;
+            notice?.classList.add("d-none");
+        }
+    }, 1000);
 }
 
 function checkPasswordStrength() {
