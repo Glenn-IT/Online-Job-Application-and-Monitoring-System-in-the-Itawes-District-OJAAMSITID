@@ -27,10 +27,18 @@ CREATE TABLE IF NOT EXISTS users (
   contact_number  VARCHAR(20)     DEFAULT NULL,
   address         TEXT            DEFAULT NULL,
   birthdate       DATE            DEFAULT NULL,
+  is_active       TINYINT(1)      NOT NULL DEFAULT 1,
   created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Run this if the table already exists (adds column to existing installs):
+-- ALTER TABLE users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER birthdate;
+-- ALTER TABLE jobs  ADD COLUMN deadline DATE DEFAULT NULL AFTER status;
+-- ALTER TABLE jobs  ADD COLUMN location     VARCHAR(150) DEFAULT NULL AFTER qualification;
+-- ALTER TABLE jobs  ADD COLUMN job_type     ENUM('Full-time','Part-time','Contract','Internship','Freelance') DEFAULT NULL AFTER location;
+-- ALTER TABLE jobs  ADD COLUMN salary_range VARCHAR(100) DEFAULT NULL AFTER job_type;
 
 -- ============================================================
 -- TABLE: jobs
@@ -43,7 +51,11 @@ CREATE TABLE IF NOT EXISTS jobs (
   description   TEXT            NOT NULL,
   qualification TEXT            NOT NULL,
   date_posted   DATE            NOT NULL,
+  location      VARCHAR(150)    DEFAULT NULL,  -- e.g. "Tuguegarao City", "Remote"
+  job_type      ENUM('Full-time','Part-time','Contract','Internship','Freelance') DEFAULT NULL,
+  salary_range  VARCHAR(100)    DEFAULT NULL,  -- e.g. "₱25,000 – ₱35,000" or "Negotiable"
   status        ENUM('Open','Closed') NOT NULL DEFAULT 'Open',
+  deadline      DATE            DEFAULT NULL,  -- Application closing date (optional)
   created_by    INT UNSIGNED    DEFAULT NULL,  -- FK → users.id (admin)
   created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -186,6 +198,67 @@ INSERT INTO activity_logs (action, status, performed_by, created_at) VALUES
 ('Application of Juan Dela Cruz submitted for "Web Developer"',            'New',      2, '2026-03-22 08:45:00'),
 ('Application of Maria Santos marked as Approved',                         'Approved', 1, '2026-03-21 15:45:00'),
 ('Application of Carlos Reyes marked as Rejected',                         'Rejected', 1, '2026-03-20 11:20:00');
+
+-- ============================================================
+-- TABLE: resumes
+-- Stores uploaded resume/CV files linked to applications.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS resumes (
+  id              INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  application_id  INT UNSIGNED  NOT NULL,
+  user_id         INT UNSIGNED  NOT NULL,
+  original_name   VARCHAR(255)  NOT NULL,
+  stored_name     VARCHAR(255)  NOT NULL,
+  file_size       INT UNSIGNED  NOT NULL,
+  mime_type       VARCHAR(100)  NOT NULL,
+  uploaded_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  CONSTRAINT fk_resumes_application FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE,
+  CONSTRAINT fk_resumes_user        FOREIGN KEY (user_id)        REFERENCES users(id)        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- TABLE: application_status_history
+-- Logs every status transition (Pending → Approved, etc.)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS application_status_history (
+  id             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  application_id INT UNSIGNED NOT NULL,
+  from_status    ENUM('Pending','Approved','Rejected') DEFAULT NULL,
+  to_status      ENUM('Pending','Approved','Rejected') NOT NULL,
+  changed_by     INT UNSIGNED DEFAULT NULL,
+  changed_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  INDEX idx_ash_app (application_id),
+  CONSTRAINT fk_ash_application FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ash_user        FOREIGN KEY (changed_by)     REFERENCES users(id)        ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- TABLE: rate_limits
+-- Tracks per-IP request counts per endpoint for rate limiting.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS rate_limits (
+  `key`        VARCHAR(120)      NOT NULL,
+  hits         SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  window_start DATETIME          NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- TABLE: password_resets
+-- One-time tokens for the Forgot Password flow.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS password_resets (
+  id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  email      VARCHAR(150) NOT NULL,
+  token      VARCHAR(64)  NOT NULL,
+  expires_at DATETIME     NOT NULL,
+  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_token (token),
+  INDEX idx_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
 -- END OF SCHEMA
