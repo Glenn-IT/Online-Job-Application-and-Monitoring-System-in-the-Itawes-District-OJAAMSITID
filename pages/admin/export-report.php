@@ -152,7 +152,7 @@ if ($type === 'print') {
         </thead>
         <tbody>
             <?php if (empty($perJob)): ?>
-            <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:16px;">No data.</td></tr>
+            <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:16px;">No job postings found. Add jobs to see applicant data here.</td></tr>
             <?php else:
             $maxA = max(array_column($perJob, 'applicants')) ?: 1;
             foreach ($perJob as $i => $r):
@@ -179,7 +179,7 @@ if ($type === 'print') {
         </thead>
         <tbody>
             <?php if (empty($monthly)): ?>
-            <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:16px;">No data.</td></tr>
+            <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:16px;">No applications submitted yet. Monthly trends will appear here once applicants start applying.</td></tr>
             <?php else: foreach ($monthly as $i => $r): ?>
             <tr>
                 <td><?php echo $i+1; ?></td>
