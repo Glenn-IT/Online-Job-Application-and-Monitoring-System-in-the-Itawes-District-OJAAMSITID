@@ -2,7 +2,7 @@
      Component: Stats Card
      Usage: Pass $statTitle, $statValue, $statIcon, $statColor
      ============================================ -->
-<div class="col-sm-6 col-xl-3 mb-4">
+<div class="col-6 col-lg-3 mb-4">
     <div class="stats-card" style="--stat-color: <?php echo htmlspecialchars($statColor); ?>;">
         <div class="card-body">
             <div class="stats-icon-wrap"
