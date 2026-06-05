@@ -12,12 +12,47 @@ if (isLoggedIn()) {
 $error   = '';
 $success = '';
 
+// ── Generate math CAPTCHA question ──────────────────────────
+// Always refresh the question so each page load has a new one.
+// On POST we validate against the stored answer, then regenerate.
+function generateCaptcha(): void {
+    $a = random_int(1, 9);
+    $b = random_int(1, 9);
+    $_SESSION['captcha_answer'] = $a + $b;
+    $_SESSION['captcha_question'] = "What is {$a} + {$b}?";
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    generateCaptcha();
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $full_name = trim($_POST['full_name'] ?? '');
     $email     = trim($_POST['email']     ?? '');
     $contact   = trim($_POST['contact']   ?? '');
     $password  = $_POST['password']  ?? '';
     $confirm   = $_POST['confirm']   ?? '';
+
+    // ── Bot check 1: Honeypot ────────────────────────────────
+    // The `website` field is hidden from real users via CSS.
+    // Bots that fill every field will populate it; humans won't.
+    if (trim($_POST['website'] ?? '') !== '') {
+        // Silently reject — don't reveal the trap
+        $success = 'Account created! Redirecting to login...';
+        header('Refresh: 1.5; url=' . BASE_URL . '/login.php');
+        generateCaptcha();
+        goto render;
+    }
+
+    // ── Bot check 2: Math CAPTCHA ────────────────────────────
+    $captchaInput  = (int)trim($_POST['captcha'] ?? '');
+    $captchaAnswer = (int)($_SESSION['captcha_answer'] ?? -1);
+    generateCaptcha(); // always regenerate after a submission attempt
+
+    if ($captchaInput !== $captchaAnswer) {
+        $error = 'Incorrect answer to the security question. Please try again.';
+        goto render;
+    }
 
     // Basic validation
     if (!$full_name || !$email || !$contact || !$password || !$confirm) {
@@ -47,6 +82,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+render:
 
 $pageTitle = "OJAMS - Register";
 ?>
@@ -184,6 +221,11 @@ $pageTitle = "OJAMS - Register";
             <?php endif; ?>
 
             <form id="registerForm" method="post" action="register.php">
+                <!-- Honeypot: hidden from humans via CSS; bots fill it in -->
+                <div style="position:absolute;left:-9999px;top:-9999px;opacity:0;" aria-hidden="true" tabindex="-1">
+                    <label for="website">Leave this blank</label>
+                    <input type="text" name="website" id="website" tabindex="-1" autocomplete="off">
+                </div>
 
                 <div class="mb-3">
                     <label class="form-label" for="regName">Full Name <span class="text-danger">*</span></label>
@@ -236,6 +278,22 @@ $pageTitle = "OJAMS - Register";
                     </div>
                 </div>
 
+                <!-- Math CAPTCHA -->
+                <div class="mb-4">
+                    <label class="form-label" for="captcha">
+                        <i class="bi bi-shield-check me-1 text-primary"></i>
+                        Security Check <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text fw-semibold text-primary">
+                            <?php echo htmlspecialchars($_SESSION['captcha_question'] ?? 'What is 1 + 1?'); ?>
+                        </span>
+                        <input type="number" class="form-control" name="captcha" id="captcha"
+                               placeholder="Your answer" required autocomplete="off">
+                    </div>
+                    <div class="form-text text-muted">Answer the simple math question to prove you're human.</div>
+                </div>
+
                 <div class="d-grid">
                     <button type="submit" class="btn btn-primary btn-lg">
                         <i class="bi bi-person-plus me-2"></i>Create Account
@@ -265,6 +323,45 @@ function toggleRegPass() {
     if (inp.type === 'password') { inp.type = 'text'; icon.className = 'bi bi-eye-slash'; }
     else                         { inp.type = 'password'; icon.className = 'bi bi-eye'; }
 }
+document.getElementById('registerForm')?.addEventListener('submit', function (e) {
+    // Clear previous field errors
+    this.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    this.querySelectorAll('.invalid-feedback.d-block').forEach(el => el.remove());
+
+    const showErr = (id, msg) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.add('is-invalid');
+        const wrapper = el.closest('.input-group') || el;
+        const fb = document.createElement('div');
+        fb.className = 'invalid-feedback d-block';
+        fb.textContent = msg;
+        wrapper.insertAdjacentElement('afterend', fb);
+        el.addEventListener('input', () => { el.classList.remove('is-invalid'); fb.remove(); }, { once: true });
+    };
+
+    const name    = document.getElementById('regName')?.value.trim();
+    const email   = document.getElementById('regEmail')?.value.trim();
+    const contact = document.getElementById('regContact')?.value.trim();
+    const pw      = document.getElementById('regPassword')?.value;
+    const confirm = document.getElementById('regConfirm')?.value;
+    let valid = true;
+
+    if (!name)    { showErr('regName',     'Full name is required.');                    valid = false; }
+    if (!email)   { showErr('regEmail',    'Email address is required.');                valid = false; }
+    if (!contact) { showErr('regContact',  'Contact number is required.');               valid = false; }
+    if (!pw)      { showErr('regPassword', 'Password is required.');                     valid = false; }
+    else if (pw.length < 6) { showErr('regPassword', 'Password must be at least 6 characters.'); valid = false; }
+    if (pw && confirm && pw !== confirm) { showErr('regConfirm', 'Passwords do not match.'); valid = false; }
+
+    if (!valid) { e.preventDefault(); return; }
+
+    const btn = this.querySelector('[type="submit"]');
+    if (btn) {
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Creating account…';
+        btn.disabled = true;
+    }
+});
 </script>
 </body>
 </html>
