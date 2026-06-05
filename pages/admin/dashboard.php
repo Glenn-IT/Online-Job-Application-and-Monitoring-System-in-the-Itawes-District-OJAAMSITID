@@ -187,8 +187,12 @@ include $basePath . "layouts/navbar-admin.php";
                         <tbody>
                             <?php if (empty($activity_history)): ?>
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted py-4">
-                                        <i class="bi bi-inbox me-2"></i>No activity found.
+                                    <td colspan="4" class="text-center py-5">
+                                        <i class="bi bi-activity display-5 text-muted d-block mb-3"></i>
+                                        <p class="text-muted mb-3">No activity logged yet. Actions like posting jobs and reviewing applications will appear here.</p>
+                                        <a href="manage-jobs.php" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-plus-circle me-1"></i>Add Your First Job
+                                        </a>
                                     </td>
                                 </tr>
                             <?php else: foreach ($activity_history as $a):
