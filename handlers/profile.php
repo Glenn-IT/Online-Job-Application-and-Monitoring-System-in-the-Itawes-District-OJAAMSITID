@@ -20,6 +20,9 @@ if (!validateCsrfToken($body['csrf_token'] ?? null)) {
     exit;
 }
 
+// Rate limit: 20 requests per minute per IP
+rateLimit('profile', 20, 60);
+
 // ── ACTION: updateInfo ───────────────────────────────────────
 if ($action === 'updateInfo') {
     $fullName = trim($body['full_name']      ?? '');
@@ -68,33 +71,81 @@ if ($action === 'updateInfo') {
 
 // ── ACTION: changePassword ───────────────────────────────────
 if ($action === 'changePassword') {
+    // ── Throttle: 3 attempts → 30-second lockout ─────────────
+    $pwMaxAttempts = 3;
+    $pwLockoutSecs = 30;
+    $pwAttempts    = (int)($_SESSION['pw_attempts']     ?? 0);
+    $pwLockedUtil  = (int)($_SESSION['pw_locked_until'] ?? 0);
+
+    if ($pwLockedUtil > time()) {
+        $retryAfter = $pwLockedUtil - time();
+        echo json_encode([
+            'success'     => false,
+            'locked'      => true,
+            'retry_after' => $retryAfter,
+            'message'     => "Too many failed attempts. Please wait {$retryAfter} second(s).",
+        ]);
+        exit;
+    }
+
+    // Lock window expired — reset counter
+    if ($pwLockedUtil > 0 && $pwLockedUtil <= time()) {
+        $_SESSION['pw_attempts']     = 0;
+        $_SESSION['pw_locked_until'] = 0;
+        $pwAttempts = 0;
+    }
+
     $current = $body['current_password'] ?? '';
     $newPw   = $body['new_password']     ?? '';
     $confirm = $body['confirm_password'] ?? '';
 
     if (!$current || !$newPw || !$confirm) {
-        echo json_encode(['success' => false, 'message' => 'All password fields are required.']);
+        echo json_encode(['success' => false, 'locked' => false, 'message' => 'All password fields are required.']);
         exit;
     }
     if (strlen($newPw) < 6) {
-        echo json_encode(['success' => false, 'message' => 'New password must be at least 6 characters.']);
+        echo json_encode(['success' => false, 'locked' => false, 'message' => 'New password must be at least 6 characters.']);
         exit;
     }
     if ($newPw !== $confirm) {
-        echo json_encode(['success' => false, 'message' => 'New passwords do not match.']);
+        echo json_encode(['success' => false, 'locked' => false, 'message' => 'New passwords do not match.']);
         exit;
     }
+
     // Verify current password
     $row = $pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
     $row->execute([$userId]);
     $user = $row->fetch();
+
     if (!$user || !password_verify($current, $user['password_hash'])) {
-        echo json_encode(['success' => false, 'message' => 'Current password is incorrect.']);
+        $pwAttempts++;
+        $_SESSION['pw_attempts'] = $pwAttempts;
+
+        if ($pwAttempts >= $pwMaxAttempts) {
+            $_SESSION['pw_locked_until'] = time() + $pwLockoutSecs;
+            echo json_encode([
+                'success'     => false,
+                'locked'      => true,
+                'retry_after' => $pwLockoutSecs,
+                'message'     => "Too many failed attempts. Please wait {$pwLockoutSecs} seconds.",
+            ]);
+        } else {
+            $left = $pwMaxAttempts - $pwAttempts;
+            echo json_encode([
+                'success' => false,
+                'locked'  => false,
+                'message' => "Current password is incorrect. {$left} attempt(s) remaining before lockout.",
+            ]);
+        }
         exit;
     }
-    $newHash = password_hash($newPw, PASSWORD_BCRYPT, ['cost' => 12]);
+
+    // Success — reset throttle
+    $_SESSION['pw_attempts']     = 0;
+    $_SESSION['pw_locked_until'] = 0;
+    $newHash = password_hash($newPw, PASSWORD_BCRYPT, ['cost' => BCRYPT_COST]);
     $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$newHash, $userId]);
-    echo json_encode(['success' => true, 'message' => 'Password changed successfully.']);
+    echo json_encode(['success' => true, 'locked' => false, 'message' => 'Password changed successfully.']);
     exit;
 }
 
