@@ -9,7 +9,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$body   = json_decode(file_get_contents('php://input'), true);
+$contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+$isMultipart = str_contains($contentType, 'multipart/form-data');
+
+if ($isMultipart) {
+    $body = $_POST;
+} else {
+    $body = json_decode(file_get_contents('php://input'), true) ?? [];
+}
+
 $action = $body['action'] ?? '';
 $userId = $_SESSION['ojams_user']['id'];
 
@@ -23,10 +31,56 @@ if (!validateCsrfToken($body['csrf_token'] ?? null)) {
 // Rate limit: 20 requests per minute per IP
 rateLimit('profile', 20, 60);
 
+// ── ACTION: uploadAvatar ─────────────────────────────────────
+if ($action === 'uploadAvatar') {
+    if (!isset($_FILES['avatar']) || $_FILES['avatar']['error'] === UPLOAD_ERR_NO_FILE) {
+        echo json_encode(['success' => false, 'message' => 'No file uploaded.']);
+        exit;
+    }
+    $file = $_FILES['avatar'];
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        echo json_encode(['success' => false, 'message' => 'Upload failed (code ' . $file['error'] . ').']);
+        exit;
+    }
+    if ($file['size'] > 2 * 1024 * 1024) {
+        echo json_encode(['success' => false, 'message' => 'Avatar must be 2 MB or smaller.']);
+        exit;
+    }
+    $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime  = $finfo->file($file['tmp_name']);
+    if (!in_array($mime, $allowedMimes, true)) {
+        echo json_encode(['success' => false, 'message' => 'Only JPG, PNG, GIF, and WebP images are allowed.']);
+        exit;
+    }
+    $ext       = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'][$mime];
+    $uploadDir = __DIR__ . '/../uploads/avatars/';
+    if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+    // Remove previous avatar if exists
+    $prev = $pdo->prepare("SELECT profile_photo FROM users WHERE id = ?");
+    $prev->execute([$userId]);
+    $oldPhoto = $prev->fetchColumn();
+    if ($oldPhoto && file_exists($uploadDir . $oldPhoto)) {
+        unlink($uploadDir . $oldPhoto);
+    }
+
+    $stored = $userId . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    if (!move_uploaded_file($file['tmp_name'], $uploadDir . $stored)) {
+        echo json_encode(['success' => false, 'message' => 'Failed to save file.']);
+        exit;
+    }
+    $pdo->prepare("UPDATE users SET profile_photo = ? WHERE id = ?")->execute([$stored, $userId]);
+    $_SESSION['ojams_user']['profile_photo'] = $stored;
+    $url = BASE_URL . '/uploads/avatars/' . $stored;
+    echo json_encode(['success' => true, 'message' => 'Avatar updated.', 'url' => $url]);
+    exit;
+}
+
 // ── ACTION: updateInfo ───────────────────────────────────────
 if ($action === 'updateInfo') {
     $fullName = trim($body['full_name']      ?? '');
-    $email    = trim($body['email']          ?? '');
+    $email    = strtolower(trim($body['email'] ?? ''));
     $contact  = trim($body['contact_number'] ?? '');
     $address  = trim($body['address']        ?? '');
     $birthdate = $body['birthdate']          ?? null;
@@ -38,12 +92,33 @@ if ($action === 'updateInfo') {
     if (strlen($fullName) > 150) { echo json_encode(['success' => false, 'message' => 'Full name must be 150 characters or fewer.']); exit; }
     if (strlen($email) > 150)    { echo json_encode(['success' => false, 'message' => 'Email must be 150 characters or fewer.']); exit; }
     if (strlen($contact) > 20)   { echo json_encode(['success' => false, 'message' => 'Contact number must be 20 characters or fewer.']); exit; }
+    if ($contact !== '' && !preg_match('/^\+?[\d\s\-\(\)\.]{7,20}$/', $contact)) {
+        echo json_encode(['success' => false, 'message' => 'Contact number may only contain digits, spaces, +, hyphens, or parentheses.']);
+        exit;
+    }
+    if ($birthdate) {
+        $bd = DateTime::createFromFormat('Y-m-d', $birthdate);
+        if (!$bd || $bd->format('Y-m-d') !== $birthdate) {
+            echo json_encode(['success' => false, 'message' => 'Invalid birthdate format.']);
+            exit;
+        }
+        $now = new DateTime();
+        if ($bd >= $now) {
+            echo json_encode(['success' => false, 'message' => 'Birthdate cannot be a future date.']);
+            exit;
+        }
+        $age = (int)$now->diff($bd)->y;
+        if ($age < 16 || $age > 80) {
+            echo json_encode(['success' => false, 'message' => 'Age must be between 16 and 80 years.']);
+            exit;
+        }
+    }
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         echo json_encode(['success' => false, 'message' => 'Invalid email address.']);
         exit;
     }
-    // Check email uniqueness (excluding self)
-    $check = $pdo->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
+    // Check email uniqueness (case-insensitive, excluding self)
+    $check = $pdo->prepare("SELECT id FROM users WHERE LOWER(email) = ? AND id != ?");
     $check->execute([$email, $userId]);
     if ($check->fetch()) {
         echo json_encode(['success' => false, 'message' => 'That email is already in use by another account.']);
@@ -71,9 +146,9 @@ if ($action === 'updateInfo') {
 
 // ── ACTION: changePassword ───────────────────────────────────
 if ($action === 'changePassword') {
-    // ── Throttle: 3 attempts → 30-second lockout ─────────────
-    $pwMaxAttempts = 3;
-    $pwLockoutSecs = 30;
+    // ── Throttle: uses constants from config/config.php ──────
+    $pwMaxAttempts = PW_MAX_ATTEMPTS;
+    $pwLockoutSecs = PW_LOCKOUT_SECONDS;
     $pwAttempts    = (int)($_SESSION['pw_attempts']     ?? 0);
     $pwLockedUtil  = (int)($_SESSION['pw_locked_until'] ?? 0);
 
@@ -103,8 +178,20 @@ if ($action === 'changePassword') {
         echo json_encode(['success' => false, 'locked' => false, 'message' => 'All password fields are required.']);
         exit;
     }
-    if (strlen($newPw) < 6) {
-        echo json_encode(['success' => false, 'locked' => false, 'message' => 'New password must be at least 6 characters.']);
+    if (strlen($newPw) < 8) {
+        echo json_encode(['success' => false, 'locked' => false, 'message' => 'New password must be at least 8 characters.']);
+        exit;
+    }
+    if (!preg_match('/[A-Z]/', $newPw)) {
+        echo json_encode(['success' => false, 'locked' => false, 'message' => 'New password must contain at least one uppercase letter.']);
+        exit;
+    }
+    if (!preg_match('/[0-9]/', $newPw)) {
+        echo json_encode(['success' => false, 'locked' => false, 'message' => 'New password must contain at least one number.']);
+        exit;
+    }
+    if (!preg_match('/[^A-Za-z0-9]/', $newPw)) {
+        echo json_encode(['success' => false, 'locked' => false, 'message' => 'New password must contain at least one special character.']);
         exit;
     }
     if ($newPw !== $confirm) {
