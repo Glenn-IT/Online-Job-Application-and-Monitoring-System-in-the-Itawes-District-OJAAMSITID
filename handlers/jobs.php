@@ -24,6 +24,9 @@ if (!validateCsrfToken($body['csrf_token'] ?? null)) {
     exit;
 }
 
+// Rate limit: 30 requests per minute per IP
+rateLimit('jobs', 30, 60);
+
 // ── Helper: log activity ────────────────────────────────────
 function logActivity(PDO $pdo, string $action, string $status): void {
     $userId = $_SESSION['ojams_user']['id'] ?? null;
@@ -55,18 +58,24 @@ if ($action === 'add') {
     $company       = strip_tags(trim($body['company']));
     $description   = strip_tags(trim($body['description']));
     $qualification = strip_tags(trim($body['qualification']));
+    $location      = strip_tags(trim($body['location']    ?? '')) ?: null;
+    $jobType       = in_array($body['job_type'] ?? '', ['Full-time','Part-time','Contract','Internship','Freelance'])
+                        ? $body['job_type'] : null;
+    $salaryRange   = strip_tags(trim($body['salary_range'] ?? '')) ?: null;
     $date_posted   = $body['date_posted'] ?: date('Y-m-d');
     $status        = in_array($body['status'] ?? '', ['Open', 'Closed']) ? $body['status'] : 'Open';
+    $deadline      = !empty($body['deadline']) ? $body['deadline'] : null;
     $created_by    = $_SESSION['ojams_user']['id'];
 
-    if (strlen($title) > 150)        { echo json_encode(['success' => false, 'message' => 'Job title must be 150 characters or fewer.']); exit; }
-    if (strlen($company) > 150)      { echo json_encode(['success' => false, 'message' => 'Company name must be 150 characters or fewer.']); exit; }
+    if (strlen($title) > 150)      { echo json_encode(['success' => false, 'message' => 'Job title must be 150 characters or fewer.']); exit; }
+    if (strlen($company) > 150)    { echo json_encode(['success' => false, 'message' => 'Company name must be 150 characters or fewer.']); exit; }
+    if ($location && strlen($location) > 150) { echo json_encode(['success' => false, 'message' => 'Location must be 150 characters or fewer.']); exit; }
 
     $stmt = $pdo->prepare("
-        INSERT INTO jobs (title, company, description, qualification, date_posted, status, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO jobs (title, company, description, qualification, location, job_type, salary_range, date_posted, status, deadline, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$title, $company, $description, $qualification, $date_posted, $status, $created_by]);
+    $stmt->execute([$title, $company, $description, $qualification, $location, $jobType, $salaryRange, $date_posted, $status, $deadline, $created_by]);
     $newId = $pdo->lastInsertId();
 
     logActivity($pdo, "New job posted: \"{$title}\" at {$company}", 'Created');
@@ -96,18 +105,26 @@ if ($action === 'edit') {
     $company       = strip_tags(trim($body['company']));
     $description   = strip_tags(trim($body['description']));
     $qualification = strip_tags(trim($body['qualification']));
+    $location      = strip_tags(trim($body['location']    ?? '')) ?: null;
+    $jobType       = in_array($body['job_type'] ?? '', ['Full-time','Part-time','Contract','Internship','Freelance'])
+                        ? $body['job_type'] : null;
+    $salaryRange   = strip_tags(trim($body['salary_range'] ?? '')) ?: null;
     $date_posted   = $body['date_posted'] ?: date('Y-m-d');
     $status        = in_array($body['status'] ?? '', ['Open', 'Closed']) ? $body['status'] : 'Open';
+    $deadline      = !empty($body['deadline']) ? $body['deadline'] : null;
 
-    if (strlen($title) > 150)   { echo json_encode(['success' => false, 'message' => 'Job title must be 150 characters or fewer.']); exit; }
-    if (strlen($company) > 150) { echo json_encode(['success' => false, 'message' => 'Company name must be 150 characters or fewer.']); exit; }
+    if (strlen($title) > 150)      { echo json_encode(['success' => false, 'message' => 'Job title must be 150 characters or fewer.']); exit; }
+    if (strlen($company) > 150)    { echo json_encode(['success' => false, 'message' => 'Company name must be 150 characters or fewer.']); exit; }
+    if ($location && strlen($location) > 150) { echo json_encode(['success' => false, 'message' => 'Location must be 150 characters or fewer.']); exit; }
 
     $stmt = $pdo->prepare("
         UPDATE jobs
-        SET title = ?, company = ?, description = ?, qualification = ?, date_posted = ?, status = ?
+        SET title = ?, company = ?, description = ?, qualification = ?,
+            location = ?, job_type = ?, salary_range = ?,
+            date_posted = ?, status = ?, deadline = ?
         WHERE id = ?
     ");
-    $stmt->execute([$title, $company, $description, $qualification, $date_posted, $status, $id]);
+    $stmt->execute([$title, $company, $description, $qualification, $location, $jobType, $salaryRange, $date_posted, $status, $deadline, $id]);
 
     logActivity($pdo, "Job updated: \"{$title}\"", 'Updated');
 
@@ -135,6 +152,17 @@ if ($action === 'delete') {
     logActivity($pdo, "Job deleted: \"{$existing['title']}\"", 'Deleted');
 
     echo json_encode(['success' => true, 'message' => 'Job deleted successfully.']);
+    exit;
+}
+
+// ── ACTION: bulkDelete ───────────────────────────────────────
+if ($action === 'bulkDelete') {
+    $ids = array_filter(array_map('intval', (array)($body['ids'] ?? [])));
+    if (empty($ids)) { echo json_encode(['success' => false, 'message' => 'No jobs selected.']); exit; }
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $pdo->prepare("DELETE FROM jobs WHERE id IN ({$placeholders})")->execute(array_values($ids));
+    logActivity($pdo, "Bulk deleted " . count($ids) . " job post(s)", 'Deleted');
+    echo json_encode(['success' => true, 'message' => count($ids) . " job(s) deleted."]);
     exit;
 }
 
