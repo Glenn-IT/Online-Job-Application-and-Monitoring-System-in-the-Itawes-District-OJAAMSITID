@@ -1,5 +1,5 @@
 # Project Progress
 
-progress: 86
+progress: 83
 status: Ongoing
 note: Set up project structure and installed dependencies.
