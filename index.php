@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/components/under-construction.php';
 require_once __DIR__ . '/config/db.php';
 
 // Redirect logged-in users straight to their dashboard
