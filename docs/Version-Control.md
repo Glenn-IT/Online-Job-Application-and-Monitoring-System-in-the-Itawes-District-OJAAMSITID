@@ -8,15 +8,17 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 ## Rollout Schedule
 
 ### Week 1 — v1.01 | Authentication
+
 **Present:** Login & Register
 **Under Construction:** All other pages
 
 - `login.php` — Login page
 - `register.php` — Register page
-
+- `index.php` — indexi page
 ---
 
 ### Week 2 — v1.02 | Admin Dashboard
+
 **Present:** Login, Register + Admin Dashboard (layout/shell, no live data yet)
 **Under Construction:** All remaining pages
 
@@ -25,6 +27,7 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 ---
 
 ### Week 3 — v1.03 | User Management
+
 **Present:** All previous + User Management
 **Under Construction:** All remaining pages
 
@@ -33,6 +36,7 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 ---
 
 ### Week 4 — v1.04 | Job Management (Admin)
+
 **Present:** All previous + Manage Jobs
 **Under Construction:** All remaining pages
 
@@ -41,6 +45,7 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 ---
 
 ### Week 5 — v1.05 | Job Browsing (User)
+
 **Present:** All previous + Browse Jobs & Job Detail
 **Under Construction:** All remaining pages
 
@@ -50,6 +55,7 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 ---
 
 ### Week 6 — v1.06 | Job Applications
+
 **Present:** All previous + Apply for Jobs, My Applications, Admin Applications view
 **Under Construction:** All remaining pages
 
@@ -61,6 +67,7 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 ---
 
 ### Week 7 — v1.07 | Saved Jobs
+
 **Present:** All previous + Saved Jobs
 **Under Construction:** All remaining pages
 
@@ -69,6 +76,7 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 ---
 
 ### Week 8 — v1.08 | Reports & Export
+
 **Present:** All previous + Reports and Export
 **Under Construction:** All remaining pages
 
@@ -78,6 +86,7 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 ---
 
 ### Week 9 — v1.09 | Profile Settings
+
 **Present:** All previous + Profile Settings (both roles)
 **Under Construction:** All remaining pages
 
@@ -87,6 +96,7 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 ---
 
 ### Week 10 — v1.10 | Final Polish & Full System Demo
+
 **Present:** Complete system — all pages live
 
 - `forgot-password.php` — Forgot password page
@@ -97,18 +107,18 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 
 ## GitHub Release Tags
 
-| Version | Tag        | Branch/Commit |
-|---------|------------|---------------|
-| v1.01   | `v1.01`    |               |
-| v1.02   | `v1.02`    |               |
-| v1.03   | `v1.03`    |               |
-| v1.04   | `v1.04`    |               |
-| v1.05   | `v1.05`    |               |
-| v1.06   | `v1.06`    |               |
-| v1.07   | `v1.07`    |               |
-| v1.08   | `v1.08`    |               |
-| v1.09   | `v1.09`    |               |
-| v1.10   | `v1.10`    |               |
+| Version | Tag     | Branch/Commit |
+| ------- | ------- | ------------- |
+| v1.01   | `v1.01` |               |
+| v1.02   | `v1.02` |               |
+| v1.03   | `v1.03` |               |
+| v1.04   | `v1.04` |               |
+| v1.05   | `v1.05` |               |
+| v1.06   | `v1.06` |               |
+| v1.07   | `v1.07` |               |
+| v1.08   | `v1.08` |               |
+| v1.09   | `v1.09` |               |
+| v1.10   | `v1.10` |               |
 
 > Fill in the commit hash or branch name after each GitHub release is published.
 
@@ -119,27 +129,32 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 Do this at the end of each week when you are ready to tag a version for presentation.
 
 ### Step 1 — Stage and commit your changes
+
 ```bash
 git add .
 git commit -m "feat: Week 1 - Login and Register (v1.01)"
 ```
 
 ### Step 2 — Push your commits to GitHub
+
 ```bash
 git push origin main
 ```
 
 ### Step 3 — Create a version tag
+
 ```bash
 git tag v1.01
 ```
 
 ### Step 4 — Push the tag to GitHub
+
 ```bash
 git push origin v1.01
 ```
 
 ### Step 5 — Create a GitHub Release (optional but recommended)
+
 1. Go to your GitHub repository
 2. Click **Releases** → **Draft a new release**
 3. Under **Choose a tag**, select `v1.01`
@@ -180,6 +195,7 @@ main branch (keeps growing with new commits)
   ```
 
 ### If you refactor something that affects a previous version's feature:
+
 - You do **not** need to update the old tag.
 - Just note it in the release description (e.g., "Login page refactored for better UI — original version was v1.01").
 - The old tag still shows what was presented at that time. That is the point of tagging.
