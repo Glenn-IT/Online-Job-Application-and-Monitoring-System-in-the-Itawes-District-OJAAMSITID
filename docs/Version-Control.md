@@ -203,6 +203,56 @@ main branch (keeps growing with new commits)
 
 ---
 
+## What To Do When Your Prof Requests Changes
+
+### The Situation
+- You already presented **v1.01** (e.g., Login & Register)
+- Your prof wants changes or new content added to Login/Register
+- Your next presentation is **v1.02** which should include v1.01 content + the new feature
+
+### Best Approach: Fix on `main`, then re-tag v1.02
+
+**Step 1 — Make the changes on main**
+```bash
+git checkout main
+# edit the affected page (e.g., login.php or register.php)
+git add .
+git commit -m "feat: update login page per prof feedback"
+git push origin main
+```
+
+**Step 2 — Delete the old v1.02 tag and re-create it on the latest commit**
+```bash
+# delete old v1.02 tag locally
+git tag -d v1.02
+
+# delete old v1.02 tag on GitHub
+git push origin :refs/tags/v1.02
+
+# create new v1.02 tag pointing to the latest commit
+git tag v1.02
+git push origin v1.02
+```
+
+Now v1.02 includes both the prof's requested fix AND the new feature for that week.
+
+### Why this works
+
+- `main` always has the latest and most correct code
+- The old v1.01 tag stays as the original snapshot — what was shown before feedback
+- The updated v1.02 tag now reflects the improved version you will present next week
+- No extra branches, no complicated history
+
+### Rule of Thumb
+
+| Scenario | What to do |
+| -------- | ---------- |
+| Prof gives feedback before your next presentation | Fix on `main`, re-tag the upcoming version |
+| Prof gives feedback after you already presented the next version | Fix on `main`, the fix lives in the next tag naturally |
+| Never | Edit directly on an old tag |
+
+---
+
 ## Under Construction Page Strategy
 
 Pages not yet part of the current version will show:
