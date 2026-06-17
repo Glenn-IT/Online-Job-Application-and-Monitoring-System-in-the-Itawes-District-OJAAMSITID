@@ -90,7 +90,7 @@
             <i class="bi bi-cone-striped"></i>
         </div>
         <h1>Under Construction</h1>
-        <div class="badge-version">Version 1.08</div>
+        <div class="badge-version">Version 1.09</div>
         <p class="desc">
             This page is not yet available in the current version.<br>
             It will be unlocked in an upcoming presentation.
