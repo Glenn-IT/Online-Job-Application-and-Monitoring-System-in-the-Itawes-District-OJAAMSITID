@@ -29,6 +29,12 @@ $jobs = $stmt->fetchAll();
 $totalOpen  = (int)$pdo->query("SELECT COUNT(*) FROM jobs WHERE status='Open'")->fetchColumn();
 $totalJobs  = (int)$pdo->query("SELECT COUNT(*) FROM jobs")->fetchColumn();
 $totalApps  = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn();
+
+// v1.05 gate — hide job listings until Browse Jobs is presented
+$jobs      = [];
+$totalOpen = 0;
+$totalJobs = 0;
+$totalApps = 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -365,14 +371,9 @@ $totalApps  = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn
 
         <?php if (empty($jobs)): ?>
         <div class="empty-state text-center">
-            <div class="empty-icon"><i class="bi bi-briefcase"></i></div>
-            <h5 class="fw-bold text-dark mb-2">No jobs found</h5>
-            <p class="text-muted mb-3">
-                <?php echo $search !== '' ? 'Try a different search term.' : 'No open positions right now. Check back soon!'; ?>
-            </p>
-            <?php if ($search !== ''): ?>
-            <a href="index.php" class="btn btn-outline-primary px-4">View All Jobs</a>
-            <?php endif; ?>
+            <div class="empty-icon"><i class="bi bi-cone-striped"></i></div>
+            <h5 class="fw-bold text-dark mb-2">Under Construction</h5>
+            <p class="text-muted mb-3">No records to show. Job listings will be available in an upcoming version.</p>
         </div>
 
         <?php else: ?>
