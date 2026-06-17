@@ -4,16 +4,6 @@
 <nav class="navbar ojams-navbar admin-bar sticky-top">
     <div class="container-fluid d-flex align-items-center gap-2">
 
-        <!-- Mobile: sidebar toggle -->
-        <button class="sidebar-toggle-btn d-lg-none"
-                type="button"
-                data-bs-toggle="offcanvas"
-                data-bs-target="#adminSidebarOffcanvas"
-                aria-controls="adminSidebarOffcanvas"
-                title="Open navigation">
-            <i class="bi bi-list"></i>
-        </button>
-
         <!-- Brand -->
         <a class="navbar-brand me-auto" href="<?php echo $basePath ?? ''; ?>pages/admin/dashboard.php">
             <i class="bi bi-briefcase-fill me-2"></i>OJAMS
