@@ -255,13 +255,6 @@ $pageTitle = "OJAMS - Login";
                     </div>
                 </div>
 
-                <!-- Demo accounts hint -->
-                <div class="alert alert-info small mb-4">
-                    <strong><i class="bi bi-info-circle me-1"></i>Demo Accounts</strong><br>
-                    <span class="text-muted">Admin:</span> admin@ojams.com / admin123<br>
-                    <span class="text-muted">User:</span> juan@email.com / password123
-                </div>
-
                 <div class="d-grid">
                     <button type="submit" class="btn btn-primary btn-lg">
                         <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
