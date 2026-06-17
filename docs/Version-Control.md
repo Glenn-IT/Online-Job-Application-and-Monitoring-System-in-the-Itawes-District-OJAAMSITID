@@ -15,6 +15,7 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 - `login.php` — Login page
 - `register.php` — Register page
 - `index.php` — indexi page
+
 ---
 
 ### Week 2 — v1.02 | Admin Dashboard
@@ -107,18 +108,18 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 
 ## GitHub Release Tags
 
-| Version | Tag     | Branch/Commit |
-| ------- | ------- | ------------- |
-| v1.01   | `v1.01` |               |
-| v1.02   | `v1.02` |               |
-| v1.03   | `v1.03` |               |
-| v1.04   | `v1.04` |               |
-| v1.05   | `v1.05` |               |
-| v1.06   | `v1.06` |               |
-| v1.07   | `v1.07` |               |
-| v1.08   | `v1.08` |               |
-| v1.09   | `v1.09` |               |
-| v1.10   | `v1.10` |               |
+| Version | Tag     | Commit                                   |
+| ------- | ------- | ---------------------------------------- |
+| v1.01   | `v1.01` | `22f6ca1636d4f4bee627d728ff7ce605d9bec2ea` |
+| v1.02   | `v1.02` | `a42bfdd1f486dc6bfb42d0604a9eb775c687550b` |
+| v1.03   | `v1.03` | `3d1d46d6dcec3144d32eafca3659f97d0eaa0a5f` |
+| v1.04   | `v1.04` | `73ab789ce50842a15769b24b09faffc51ff3dab9` |
+| v1.05   | `v1.05` | `af09c37f13a3d6f66f6677f2fe52d0819cee59f6` |
+| v1.06   | `v1.06` | `57d95b677696672e0391a91cfc8fccf654747562` |
+| v1.07   | `v1.07` | `be77342d1eaa8b6e71144210bb9726e4b8b779e1` |
+| v1.08   | `v1.08` | `20691803c8bf8676264b7421a098e445ac7fdf4c` |
+| v1.09   | `v1.09` | `8a6f878936722c3316a249354f9045121b722eff` |
+| v1.10   | `v1.10` | `b69d2b404ddca723bd7f63bc1a95c1484555259d` |
 
 > Fill in the commit hash or branch name after each GitHub release is published.
 
