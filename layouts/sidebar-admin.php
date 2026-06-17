@@ -31,7 +31,7 @@ $navLinksHtml = renderSidebarLinks($links, $bp, $currentPage);
 <!-- ════════════════════════════════════════════
      DESKTOP SIDEBAR (hidden on mobile)
      ════════════════════════════════════════════ -->
-<div class="sidebar-wrapper d-none d-lg-flex">
+<div class="sidebar-wrapper">
     <!-- User Info -->
     <div class="sidebar-user-info">
         <div class="sidebar-avatar"><?= $initials ?></div>
@@ -56,53 +56,3 @@ $navLinksHtml = renderSidebarLinks($links, $bp, $currentPage);
 </div>
 
 
-<!-- ════════════════════════════════════════════
-     MOBILE OFFCANVAS SIDEBAR (hidden on desktop)
-     ════════════════════════════════════════════ -->
-<div class="offcanvas sidebar-offcanvas d-lg-none"
-     tabindex="-1"
-     id="adminSidebarOffcanvas"
-     aria-labelledby="adminSidebarOffcanvasLabel">
-
-    <div class="offcanvas-header">
-        <span class="offcanvas-title" id="adminSidebarOffcanvasLabel">
-            <i class="bi bi-briefcase-fill me-2"></i>OJAMS
-        </span>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-
-    <div class="offcanvas-body">
-        <!-- User Info -->
-        <div class="sidebar-user-info mb-3">
-            <div class="sidebar-avatar"><?= $initials ?></div>
-            <div>
-                <div class="user-name"><?= $adminName ?></div>
-                <div class="user-role">Administrator</div>
-            </div>
-        </div>
-
-        <div class="sidebar-label">Main Menu</div>
-
-        <ul class="sidebar-nav">
-            <?= $navLinksHtml ?>
-        </ul>
-
-        <div class="sidebar-footer mt-3">
-            <span class="sidebar-version">OJAMS Admin &bull; v1.0</span>
-        </div>
-    </div>
-</div>
-<script>
-// Close the offcanvas immediately when a nav link is tapped on mobile
-// (the page reload would close it anyway, but this avoids a visible flash)
-document.addEventListener('DOMContentLoaded', function () {
-    const offcanvasEl = document.getElementById('adminSidebarOffcanvas');
-    if (!offcanvasEl) return;
-    offcanvasEl.querySelectorAll('.sidebar-nav .nav-link').forEach(link => {
-        link.addEventListener('click', function () {
-            const oc = bootstrap.Offcanvas.getInstance(offcanvasEl);
-            if (oc) oc.hide();
-        });
-    });
-});
-</script>
