@@ -1,6 +1,9 @@
 <?php
 // v1.01 gate — outputs a full page and exits.
 // Remove this file's require_once from a page when that page is ready to present.
+if (!defined('BASE_URL')) {
+    require_once __DIR__ . '/../config/config.php';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
