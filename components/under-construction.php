@@ -95,8 +95,8 @@
             This page is not yet available in the current version.<br>
             It will be unlocked in an upcoming presentation.
         </p>
-        <a href="<?= BASE_URL ?>/login.php" class="btn-login">
-            <i class="bi bi-box-arrow-in-right"></i> Go to Login
+        <a href="<?= BASE_URL ?>/logout.php" class="btn-login">
+            <i class="bi bi-box-arrow-left"></i> Log Out
         </a>
         <div class="footer-note">&copy; 2026 OJAMS &mdash; Prototype v1.02</div>
     </div>
