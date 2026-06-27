@@ -95,7 +95,7 @@
             This page is not yet available in the current version.<br>
             It will be unlocked in an upcoming presentation.
         </p>
-        <a href="<?php echo str_repeat('../', substr_count($_SERVER['PHP_SELF'], '/', strpos($_SERVER['PHP_SELF'], '/OJAMS/') + 7)); ?>login.php" class="btn-login">
+        <a href="<?= BASE_URL ?>/login.php" class="btn-login">
             <i class="bi bi-box-arrow-in-right"></i> Go to Login
         </a>
         <div class="footer-note">&copy; 2026 OJAMS &mdash; Prototype v1.02</div>
