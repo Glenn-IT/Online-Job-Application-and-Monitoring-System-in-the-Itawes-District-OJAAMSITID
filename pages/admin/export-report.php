@@ -71,7 +71,6 @@ if ($type === 'monthly_csv') {
 
 // ── Print / PDF view ──────────────────────────────────────────
 if ($type === 'print') {
-    // Fetch both datasets
     $perJob = $pdo->query("
         SELECT j.title AS job_title, j.company, j.status AS job_status,
                j.date_posted, COUNT(a.id) AS applicants

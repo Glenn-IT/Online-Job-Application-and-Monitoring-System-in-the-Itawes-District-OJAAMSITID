@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/config/db.php';
 
-// Redirect logged-in users straight to their dashboard
 if (isset($_SESSION['ojams_user'])) {
     $role = $_SESSION['ojams_user']['role'] ?? 'user';
     header('Location: ' . ($role === 'admin'

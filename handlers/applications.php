@@ -32,7 +32,6 @@ if (!validateCsrfToken($body['csrf_token'] ?? null)) {
 // Rate limit: 30 requests per minute per IP
 rateLimit('applications', 30, 60);
 
-// Helper: log activity
 function logActivity(PDO $pdo, string $action, string $status, ?int $jobId = null, ?int $appId = null): void {
     $uid  = $_SESSION['ojams_user']['id'] ?? null;
     $stmt = $pdo->prepare("INSERT INTO activity_logs (action, status, performed_by, job_id, application_id) VALUES (?, ?, ?, ?, ?)");
@@ -50,7 +49,6 @@ if ($action === 'apply') {
         echo json_encode(['success' => false, 'message' => 'Invalid job ID.']);
         exit;
     }
-    // Check job exists and is open
     $jStmt = $pdo->prepare("SELECT id, title, company, status FROM jobs WHERE id = ?");
     $jStmt->execute([$jobId]);
     $job = $jStmt->fetch();
@@ -62,7 +60,6 @@ if ($action === 'apply') {
         echo json_encode(['success' => false, 'message' => 'This job is no longer accepting applications.']);
         exit;
     }
-    // Check duplicate
     $dup = $pdo->prepare("SELECT id FROM applications WHERE user_id = ? AND job_id = ?");
     $dup->execute([$userId, $jobId]);
     if ($dup->fetch()) {
@@ -248,7 +245,6 @@ if ($action === 'updateStatus') {
 
     $pdo->prepare("UPDATE applications SET status = ? WHERE id = ?")->execute([$status, $appId]);
 
-    // Log the transition
     $pdo->prepare("
         INSERT INTO application_status_history (application_id, from_status, to_status, changed_by)
         VALUES (?, ?, ?, ?)
@@ -279,7 +275,6 @@ if ($action === 'getDetails') {
         exit;
     }
 
-    // Fetch status change history
     $histStmt = $pdo->prepare("
         SELECT h.from_status, h.to_status,
                DATE_FORMAT(h.changed_at, '%M %d, %Y %h:%i %p') AS changed_at,
@@ -292,7 +287,6 @@ if ($action === 'getDetails') {
     $histStmt->execute([$appId]);
     $history = $histStmt->fetchAll();
 
-    // Check if a resume was uploaded
     $resumeStmt = $pdo->prepare("SELECT original_name, stored_name FROM resumes WHERE application_id = ? LIMIT 1");
     $resumeStmt->execute([$appId]);
     $resume = $resumeStmt->fetch();
@@ -319,7 +313,6 @@ if ($action === 'bulkUpdateStatus') {
     $pdo->prepare("UPDATE applications SET status = ? WHERE id IN ({$placeholders})")
         ->execute(array_merge([$status], array_values($ids)));
 
-    // Log a history row per application
     $adminId  = $_SESSION['ojams_user']['id'];
     $histStmt = $pdo->prepare("
         INSERT INTO application_status_history (application_id, from_status, to_status, changed_by)

@@ -437,6 +437,5 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
-// Filtering is now fully server-side via form GET — no client-side filterJobs needed.
 </script>
 <?php include $basePath . "layouts/footer.php"; ?>

@@ -57,7 +57,6 @@ if ($action === 'uploadAvatar') {
     $uploadDir = __DIR__ . '/../uploads/avatars/';
     if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
 
-    // Remove previous avatar if exists
     $prev = $pdo->prepare("SELECT profile_photo FROM users WHERE id = ?");
     $prev->execute([$userId]);
     $oldPhoto = $prev->fetchColumn();
@@ -117,7 +116,6 @@ if ($action === 'updateInfo') {
         echo json_encode(['success' => false, 'message' => 'Invalid email address.']);
         exit;
     }
-    // Check email uniqueness (case-insensitive, excluding self)
     $check = $pdo->prepare("SELECT id FROM users WHERE LOWER(email) = ? AND id != ?");
     $check->execute([$email, $userId]);
     if ($check->fetch()) {
@@ -134,7 +132,6 @@ if ($action === 'updateInfo') {
         $address  ?: null, $birthdate ?: null,
         $userId
     ]);
-    // Refresh session
     $_SESSION['ojams_user']['full_name']      = $fullName;
     $_SESSION['ojams_user']['email']          = $email;
     $_SESSION['ojams_user']['contact_number'] = $contact;
@@ -199,7 +196,6 @@ if ($action === 'changePassword') {
         exit;
     }
 
-    // Verify current password
     $row = $pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
     $row->execute([$userId]);
     $user = $row->fetch();
@@ -227,7 +223,6 @@ if ($action === 'changePassword') {
         exit;
     }
 
-    // Success — reset throttle
     $_SESSION['pw_attempts']     = 0;
     $_SESSION['pw_locked_until'] = 0;
     $newHash = password_hash($newPw, PASSWORD_BCRYPT, ['cost' => BCRYPT_COST]);

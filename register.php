@@ -72,7 +72,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($password !== $confirm) {
         $error = 'Passwords do not match.';
     } else {
-        // Check duplicate email (case-insensitive)
         $stmt = $pdo->prepare("SELECT id FROM users WHERE LOWER(email) = ? LIMIT 1");
         $stmt->execute([$email]);
         if ($stmt->fetch()) {
@@ -360,7 +359,6 @@ function checkRegPasswordStrength() {
     txt.textContent = lvl.label;
 }
 document.getElementById('registerForm')?.addEventListener('submit', function (e) {
-    // Clear previous field errors
     this.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
     this.querySelectorAll('.invalid-feedback.d-block').forEach(el => el.remove());
 

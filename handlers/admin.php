@@ -92,7 +92,6 @@ if ($action === 'clearLogs') {
     $stmt->execute([$days]);
     $deleted = $stmt->rowCount();
 
-    // Log the cleanup itself
     $uid = $_SESSION['ojams_user']['id'];
     $pdo->prepare("INSERT INTO activity_logs (action, status, performed_by) VALUES (?, ?, ?)")
         ->execute(["Cleared {$deleted} activity log entries older than {$days} days", 'Deleted', $uid]);

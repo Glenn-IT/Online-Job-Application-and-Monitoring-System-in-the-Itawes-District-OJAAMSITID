@@ -6,14 +6,12 @@ requireAdmin();   // Must be a logged-in admin — hard stop otherwise
 
 header('Content-Type: application/json');
 
-// Only accept POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'Method not allowed.']);
     exit;
 }
 
-// Decode JSON body
 $body   = json_decode(file_get_contents('php://input'), true);
 $action = $body['action'] ?? '';
 
@@ -95,7 +93,6 @@ if ($action === 'edit') {
     $err = requireFields($body, ['title', 'company', 'description', 'qualification']);
     if ($err) { echo json_encode(['success' => false, 'message' => $err]); exit; }
 
-    // Confirm job exists
     $check = $pdo->prepare("SELECT id, title FROM jobs WHERE id = ?");
     $check->execute([$id]);
     $existing = $check->fetch();
@@ -140,7 +137,6 @@ if ($action === 'delete') {
     $id = (int)($body['id'] ?? 0);
     if ($id <= 0) { echo json_encode(['success' => false, 'message' => 'Invalid job ID.']); exit; }
 
-    // Confirm job exists
     $check = $pdo->prepare("SELECT id, title FROM jobs WHERE id = ?");
     $check->execute([$id]);
     $existing = $check->fetch();

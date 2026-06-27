@@ -15,7 +15,6 @@ $validToken = false;
 $tokenEmail = '';
 $done       = false;
 
-// Validate token from URL
 if ($token !== '') {
     $stmt = $pdo->prepare(
         "SELECT email FROM password_resets WHERE token = ? AND expires_at > NOW() LIMIT 1"
@@ -35,7 +34,6 @@ if ($token !== '') {
     $isError  = true;
 }
 
-// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $validToken) {
     $newPw   = $_POST['password']  ?? '';
     $confirm = $_POST['confirm']   ?? '';

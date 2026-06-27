@@ -3,7 +3,6 @@
 $configPath = __DIR__ . '/config/db.php';
 require_once $configPath;
 
-// Destroy PHP session
 $_SESSION = [];
 if (ini_get('session.use_cookies')) {
     $p = session_get_cookie_params();
@@ -12,6 +11,5 @@ if (ini_get('session.use_cookies')) {
 }
 session_destroy();
 
-// Redirect to login
 header('Location: ' . BASE_URL . '/login.php');
 exit;

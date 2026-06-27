@@ -385,11 +385,9 @@ function bulkAppDelete() {
 }
 
 function viewAppDetails(appId) {
-    // Show modal immediately with loading state
     const histEl = document.getElementById("viewAppHistory");
     if (histEl) histEl.innerHTML = '<p class="text-muted small"><i class="bi bi-hourglass-split me-1"></i>Loading…</p>';
 
-    // Fetch full details + history from API
     fetch(APP_HANDLER_ADMIN, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

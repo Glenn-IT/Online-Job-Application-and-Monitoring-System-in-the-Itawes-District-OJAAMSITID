@@ -12,7 +12,6 @@
 
 require_once __DIR__ . '/config.php';
 
-// Start the named session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_name(SESSION_NAME);
     session_start();

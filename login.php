@@ -12,15 +12,10 @@ if (isLoggedIn()) {
 
 $error = '';
 
-// Constants come from config/config.php via auth.php
-// LOGIN_LOGIN_MAX_ATTEMPTS and LOGIN_LOGIN_LOCKOUT_SECONDS are defined there.
-
-// Get client IP (support reverse proxies)
 $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR']
     ?? $_SERVER['HTTP_X_REAL_IP']
     ?? $_SERVER['REMOTE_ADDR']
     ?? '0.0.0.0';
-// Use only the first IP if a comma-separated list is forwarded
 $clientIp = trim(explode(',', $clientIp)[0]);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -58,7 +53,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     last_attempt_at = NOW()
             ")->execute([$clientIp, LOGIN_LOCKOUT_SECONDS]);
 
-            // Warn user how many tries remain
             $attStmt = $pdo->prepare("SELECT attempts FROM login_attempts WHERE ip = ?");
             $attStmt->execute([$clientIp]);
             $attRow   = $attStmt->fetch();
@@ -78,7 +72,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             session_regenerate_id(true);
             unset($_SESSION['csrf_token']); // force fresh CSRF token for new session
 
-            // Build a clean session payload (never store password_hash)
             $_SESSION['ojams_user'] = [
                 'id'             => $user['id'],
                 'role'           => $user['role'],
@@ -89,7 +82,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'birthdate'      => $user['birthdate'],
             ];
 
-            // Role-based redirect
             header('Location: ' . ($user['role'] === 'admin'
                 ? BASE_URL . '/pages/admin/dashboard.php'
                 : BASE_URL . '/pages/user/browse-jobs.php'));
