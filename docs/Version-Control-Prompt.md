@@ -104,3 +104,41 @@ git push origin :refs/tags/vX.XX
 git tag vX.XX
 git push origin vX.XX
 ```
+
+---
+
+## Quick Reference: Re-tag an Existing Version After a Code Update
+
+Use this when you updated code that belongs to an already-tagged version
+(e.g. you cleaned up login.php and want v1.01 to reflect that).
+
+```bash
+# 1. Make sure your changes are committed on main
+git add .
+git commit -m "refactor: describe what you changed"
+git push origin main
+
+# 2. Delete the old tag locally and on GitHub
+git tag -d vX.XX
+git push origin :refs/tags/vX.XX
+
+# 3. Re-create the tag on the latest commit and push
+git tag vX.XX
+git push origin vX.XX
+```
+
+Then update the commit hash in `docs/Version-Control.md`:
+
+```bash
+# Get the new commit hash
+git rev-parse HEAD
+```
+
+Paste that hash into the GitHub Release Tags table for the version you re-tagged,
+then commit and push the docs update:
+
+```bash
+git add docs/Version-Control.md
+git commit -m "docs: update vX.XX tag commit hash after re-tag"
+git push origin main
+```
