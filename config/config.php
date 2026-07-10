@@ -71,3 +71,19 @@ define('LOGIN_LOCKOUT_SECONDS', 30);
 // ── Password-change throttle ────────────────────────────────
 define('PW_MAX_ATTEMPTS',    3);
 define('PW_LOCKOUT_SECONDS', 30);
+
+// ── Forgot-password security questions ──────────────────────
+// Users pick one at registration (or in Profile Settings) and must
+// select the correct question AND answer it to reset their password.
+define('SECURITY_QUESTIONS', [
+    'What is the name of your first pet?',
+    'What is your mother\'s maiden name?',
+    'What city were you born in?',
+    'What is the name of your elementary school?',
+    'What was the name of your childhood best friend?',
+    'What is your favorite food?',
+]);
+
+// Forgot-password attempt throttle (per session)
+define('SQ_MAX_ATTEMPTS',    5);
+define('SQ_LOCKOUT_SECONDS', 60);

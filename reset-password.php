@@ -231,6 +231,15 @@ $pageTitle = 'OJAMS - Reset Password';
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// Security: passwords cannot be copied out of, or pasted into, these fields.
+['rpPassword', 'rpConfirm'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    ['copy', 'cut', 'paste', 'drop'].forEach(evt =>
+        el.addEventListener(evt, e => e.preventDefault())
+    );
+});
+
 function togglePass(inputId, iconId) {
     const inp  = document.getElementById(inputId);
     const icon = document.getElementById(iconId);

@@ -91,8 +91,8 @@ if ($action === 'updateInfo') {
     if (strlen($fullName) > 150) { echo json_encode(['success' => false, 'message' => 'Full name must be 150 characters or fewer.']); exit; }
     if (strlen($email) > 150)    { echo json_encode(['success' => false, 'message' => 'Email must be 150 characters or fewer.']); exit; }
     if (strlen($contact) > 20)   { echo json_encode(['success' => false, 'message' => 'Contact number must be 20 characters or fewer.']); exit; }
-    if ($contact !== '' && !preg_match('/^\+?[\d\s\-\(\)\.]{7,20}$/', $contact)) {
-        echo json_encode(['success' => false, 'message' => 'Contact number may only contain digits, spaces, +, hyphens, or parentheses.']);
+    if ($contact !== '' && !preg_match('/^\d{11}$/', $contact)) {
+        echo json_encode(['success' => false, 'message' => 'Contact number must be exactly 11 digits (numbers only).']);
         exit;
     }
     if ($birthdate) {
@@ -228,6 +228,42 @@ if ($action === 'changePassword') {
     $newHash = password_hash($newPw, PASSWORD_BCRYPT, ['cost' => BCRYPT_COST]);
     $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$newHash, $userId]);
     echo json_encode(['success' => true, 'locked' => false, 'message' => 'Password changed successfully.']);
+    exit;
+}
+
+// ── ACTION: updateSecurityQuestion ───────────────────────────
+if ($action === 'updateSecurityQuestion') {
+    $question = trim($body['question'] ?? '');
+    $answer   = trim($body['answer']   ?? '');
+    $current  = $body['current_password'] ?? '';
+
+    if (!$current) {
+        echo json_encode(['success' => false, 'message' => 'Your current password is required to change the security question.']);
+        exit;
+    }
+    if (!in_array($question, SECURITY_QUESTIONS, true)) {
+        echo json_encode(['success' => false, 'message' => 'Please choose a security question from the list.']);
+        exit;
+    }
+    if (mb_strlen($answer) < 2) {
+        echo json_encode(['success' => false, 'message' => 'Security answer must be at least 2 characters.']);
+        exit;
+    }
+
+    $row = $pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
+    $row->execute([$userId]);
+    $user = $row->fetch();
+    if (!$user || !password_verify($current, $user['password_hash'])) {
+        echo json_encode(['success' => false, 'message' => 'Current password is incorrect.']);
+        exit;
+    }
+
+    // Answer is normalized (trimmed, lowercased) to match forgot-password verification
+    $sqHash = password_hash(mb_strtolower($answer), PASSWORD_BCRYPT, ['cost' => BCRYPT_COST]);
+    $pdo->prepare("UPDATE users SET security_question = ?, security_answer_hash = ? WHERE id = ?")
+        ->execute([$question, $sqHash, $userId]);
+    $_SESSION['ojams_user']['security_question'] = $question;
+    echo json_encode(['success' => true, 'message' => 'Security question updated.', 'question' => $question]);
     exit;
 }
 

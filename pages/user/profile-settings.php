@@ -7,6 +7,11 @@ $currentPage = "profile-settings";
 
 $u = $_SESSION["ojams_user"];
 
+// Current security question (read from DB — older sessions won't have it)
+$sqStmt = $pdo->prepare("SELECT security_question FROM users WHERE id = ?");
+$sqStmt->execute([$u["id"]]);
+$currentSecQuestion = $sqStmt->fetchColumn() ?: null;
+
 include $basePath . "layouts/header.php";
 include $basePath . "layouts/navbar-user.php";
 ?>
@@ -34,7 +39,11 @@ include $basePath . "layouts/navbar-user.php";
                     <?php endif; ?>
                     <h5 class="fw-bold mb-1" id="cardName"><?php echo htmlspecialchars($u["full_name"]); ?></h5>
                     <p class="text-muted mb-2" id="cardEmail"><?php echo htmlspecialchars($u["email"]); ?></p>
-                    <span class="badge bg-primary">Job Seeker</span>
+                    <?php if (($u['role'] ?? 'user') === 'staff'): ?>
+                        <span class="badge bg-warning text-dark">Staff</span>
+                    <?php else: ?>
+                        <span class="badge bg-primary">Job Seeker</span>
+                    <?php endif; ?>
                     <div class="mt-3">
                         <label for="avatarUpload" class="btn btn-sm btn-outline-secondary w-100">
                             <i class="bi bi-camera me-1"></i>Change Photo
@@ -83,6 +92,12 @@ include $basePath . "layouts/navbar-user.php";
                                 <th class="text-muted"><i class="bi bi-lock me-2"></i>Password</th>
                                 <td>••••••••••</td>
                             </tr>
+                            <tr>
+                                <th class="text-muted"><i class="bi bi-patch-question me-2"></i>Security Question</th>
+                                <td id="pvSecQuestion"><?php echo $currentSecQuestion
+                                    ? htmlspecialchars($currentSecQuestion)
+                                    : '<span class="text-warning">Not set — edit your profile to add one</span>'; ?></td>
+                            </tr>
                         </table>
                     </div>
                     <!-- Edit Mode -->
@@ -104,7 +119,10 @@ include $basePath . "layouts/navbar-user.php";
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Contact Number</label>
                                     <input type="tel" class="form-control" id="editContact"
-                                           value="<?php echo htmlspecialchars($u['contact_number'] ?? ''); ?>" maxlength="20">
+                                           inputmode="numeric" maxlength="11" pattern="\d{11}"
+                                           oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11)"
+                                           placeholder="11 digits, e.g. 09171234567"
+                                           value="<?php echo htmlspecialchars($u['contact_number'] ?? ''); ?>">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Birthdate</label>
@@ -137,6 +155,29 @@ include $basePath . "layouts/navbar-user.php";
                                 </div>
                             </div>
 
+                            <hr>
+                            <p class="text-muted small mb-3">
+                                <i class="bi bi-patch-question me-1"></i>
+                                Security question — used to verify you on Forgot Password.
+                                Leave blank to keep your current one. Requires your current password.
+                            </p>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Security Question</label>
+                                    <select class="form-select" id="editSecQuestion">
+                                        <option value="" selected>— Keep current —</option>
+                                        <?php foreach (SECURITY_QUESTIONS as $q): ?>
+                                        <option value="<?php echo htmlspecialchars($q); ?>"><?php echo htmlspecialchars($q); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Security Answer</label>
+                                    <input type="text" class="form-control" id="editSecAnswer"
+                                           placeholder="Your answer (not case-sensitive)" maxlength="150" autocomplete="off">
+                                </div>
+                            </div>
+
                             <!-- Lockdown notice -->
                             <div id="pwLockNoticeUser" class="d-none alert alert-warning d-flex align-items-center gap-2 mb-3 py-2">
                                 <i class="bi bi-lock-fill fs-5 flex-shrink-0"></i>
@@ -163,6 +204,15 @@ include $basePath . "layouts/navbar-user.php";
 </div>
 <script>
 const PROFILE_HANDLER = "../../handlers/profile.php";
+
+// Security: passwords cannot be copied out of, or pasted into, these fields.
+["editCurrentPassword", "editNewPassword"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    ["copy", "cut", "paste", "drop"].forEach(evt =>
+        el.addEventListener(evt, e => e.preventDefault())
+    );
+});
 
 function uploadAvatar(input) {
     if (!input.files.length) return;
@@ -237,13 +287,15 @@ function saveProfile() {
     const birthdate = document.getElementById("editBirthdate")?.value;
     const currentPw = document.getElementById("editCurrentPassword")?.value;
     const newPw     = document.getElementById("editNewPassword")?.value;
+    const secQ      = document.getElementById("editSecQuestion")?.value;
+    const secA      = document.getElementById("editSecAnswer")?.value.trim();
 
     clearAllFieldErrors("editProfileForm");
     let editValid = true;
     if (!fullName) { showFieldError("editFullName", "Full name is required.");     editValid = false; }
     if (!email)    { showFieldError("editEmail",    "Email address is required."); editValid = false; }
-    if (contact && !/^\+?[\d\s\-\(\)\.]{7,20}$/.test(contact)) {
-        showFieldError("editContact", "Contact number may only contain digits, spaces, +, hyphens, or parentheses."); editValid = false;
+    if (contact && !/^\d{11}$/.test(contact)) {
+        showFieldError("editContact", "Contact number must be exactly 11 digits (numbers only)."); editValid = false;
     }
     if (birthdate) {
         const bd  = new Date(birthdate);
@@ -261,9 +313,16 @@ function saveProfile() {
         else if (!/[0-9]/.test(newPw))    { showFieldError("editNewPassword", "New password must contain at least one number."); editValid = false; }
         else if (!/[^A-Za-z0-9]/.test(newPw)) { showFieldError("editNewPassword", "New password must contain at least one special character."); editValid = false; }
     }
+    if (secQ || secA) {
+        if (!secQ)      { showFieldError("editSecQuestion", "Choose a security question.");            editValid = false; }
+        if (!secA)      { showFieldError("editSecAnswer",   "Security answer is required.");           editValid = false; }
+        else if (secA.length < 2) { showFieldError("editSecAnswer", "Answer must be at least 2 characters."); editValid = false; }
+        if (!currentPw) { showFieldError("editCurrentPassword", "Current password is required to change your security question."); editValid = false; }
+    }
     if (!editValid) return;
 
-    const doPasswordChange = currentPw && newPw;
+    const doPasswordChange   = currentPw && newPw;
+    const doSecurityQuestion = secQ && secA && currentPw;
 
     const saveBtn = document.getElementById("saveProfileBtn");
     btnLoading(saveBtn, true, "Saving…");
@@ -280,6 +339,12 @@ function saveProfile() {
         body: JSON.stringify({ action: "changePassword", current_password: currentPw, new_password: newPw, confirm_password: newPw, csrf_token: getCsrfToken() })
     }).then(r => r.json());
 
+    const updateSecurity = () => fetch(PROFILE_HANDLER, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "updateSecurityQuestion", question: secQ, answer: secA, current_password: currentPw, csrf_token: getCsrfToken() })
+    }).then(r => r.json());
+
     updateInfo().then(res => {
         if (!res.success) { showToast(res.message, "danger"); return; }
         document.getElementById("pvFullName").textContent  = fullName;
@@ -289,6 +354,21 @@ function saveProfile() {
         document.getElementById("pvBirthdate").textContent = birthdate || "—";
         document.getElementById("cardName").textContent    = fullName;
         document.getElementById("cardEmail").textContent   = email;
+        if (doSecurityQuestion) {
+            updateSecurity().then(r3 => {
+                if (r3.success) {
+                    document.getElementById("pvSecQuestion").textContent = r3.question;
+                    document.getElementById("editSecQuestion").value = "";
+                    document.getElementById("editSecAnswer").value   = "";
+                    if (!doPasswordChange) {
+                        showToast("Profile & security question updated!", "success");
+                        document.getElementById("editCurrentPassword").value = "";
+                    }
+                } else {
+                    showToast(r3.message, "danger");
+                }
+            });
+        }
         if (doPasswordChange) {
             changePass().then(r2 => {
                 if (r2.locked) {
@@ -308,7 +388,7 @@ function saveProfile() {
                     document.getElementById("editNewPassword").value     = "";
                 }
             });
-        } else {
+        } else if (!doSecurityQuestion) {
             showToast("Profile updated successfully!", "success");
         }
         toggleEditProfile();

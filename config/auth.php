@@ -26,7 +26,14 @@ function isAdmin(): bool {
 
 function isUser(): bool {
     $user = getCurrentUser();
-    return $user && $user['role'] === 'user';
+    // TEMPORARY: staff have no module of their own yet (see docs/STAFF-ROLE-DRAFT.md),
+    // so approved staff use the applicant pages until the staff module ships.
+    return $user && in_array($user['role'], ['user', 'staff'], true);
+}
+
+function isStaff(): bool {
+    $user = getCurrentUser();
+    return $user && $user['role'] === 'staff';
 }
 
 function requireAdmin(

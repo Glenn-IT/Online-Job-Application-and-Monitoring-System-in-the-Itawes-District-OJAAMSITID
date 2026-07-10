@@ -27,11 +27,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $full_name = trim($_POST['full_name'] ?? '');
-    $email     = strtolower(trim($_POST['email'] ?? ''));
-    $contact   = trim($_POST['contact']   ?? '');
-    $password  = $_POST['password']  ?? '';
-    $confirm   = $_POST['confirm']   ?? '';
+    $full_name   = trim($_POST['full_name'] ?? '');
+    $email       = strtolower(trim($_POST['email'] ?? ''));
+    $contact     = trim($_POST['contact']   ?? '');
+    $password    = $_POST['password']  ?? '';
+    $confirm     = $_POST['confirm']   ?? '';
+    $sq_question = trim($_POST['security_question'] ?? '');
+    $sq_answer   = trim($_POST['security_answer']   ?? '');
+    $reg_role    = $_POST['reg_role'] ?? 'user';
 
     // ── Bot check 1: Honeypot ────────────────────────────────
     // The `website` field is hidden from real users via CSS.
@@ -59,8 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'All fields are required.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Please enter a valid email address.';
-    } elseif (!preg_match('/^\+?[\d\s\-\(\)\.]{7,20}$/', $contact)) {
-        $error = 'Contact number may only contain digits, spaces, +, hyphens, or parentheses (7–20 characters).';
+    } elseif (!preg_match('/^\d{11}$/', $contact)) {
+        $error = 'Contact number must be exactly 11 digits (numbers only, e.g. 09171234567).';
     } elseif (strlen($password) < 8) {
         $error = 'Password must be at least 8 characters.';
     } elseif (!preg_match('/[A-Z]/', $password)) {
@@ -71,6 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Password must contain at least one special character (e.g. !@#$%^&*).';
     } elseif ($password !== $confirm) {
         $error = 'Passwords do not match.';
+    } elseif (!in_array($sq_question, SECURITY_QUESTIONS, true)) {
+        $error = 'Please choose a security question from the list.';
+    } elseif (mb_strlen($sq_answer) < 2) {
+        $error = 'Security answer must be at least 2 characters.';
+    } elseif (!in_array($reg_role, ['user', 'staff'], true)) {
+        $error = 'Please choose a valid account type.';
     } else {
         $stmt = $pdo->prepare("SELECT id FROM users WHERE LOWER(email) = ? LIMIT 1");
         $stmt->execute([$email]);
@@ -79,13 +88,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // Insert new user
             $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => BCRYPT_COST]);
+            // Answer is normalized (trimmed, lowercased) so "Rex" == "rex" at reset time
+            $sqHash = password_hash(mb_strtolower($sq_answer), PASSWORD_BCRYPT, ['cost' => BCRYPT_COST]);
+            // Staff accounts must be approved by an admin before they can log in
+            $isApproved = $reg_role === 'staff' ? 0 : 1;
             $stmt = $pdo->prepare("
-                INSERT INTO users (role, full_name, email, password_hash, contact_number)
-                VALUES ('user', ?, ?, ?, ?)
+                INSERT INTO users (role, full_name, email, password_hash, contact_number, security_question, security_answer_hash, is_approved)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$full_name, $email, $hash, $contact]);
-            $success = 'Account created! Redirecting to login...';
-            header('Refresh: 1.5; url=' . BASE_URL . '/login.php');
+            $stmt->execute([$reg_role, $full_name, $email, $hash, $contact, $sq_question, $sqHash, $isApproved]);
+            if ($reg_role === 'staff') {
+                $success = 'Staff account created! An administrator must approve your account before you can sign in.';
+            } else {
+                $success = 'Account created! Redirecting to login...';
+                header('Refresh: 1.5; url=' . BASE_URL . '/login.php');
+            }
         }
     }
 }
@@ -234,6 +251,28 @@ $pageTitle = "OJAMS - Register";
                     <input type="text" name="website" id="website" tabindex="-1" autocomplete="off">
                 </div>
 
+                <!-- Account type (staff role is temporary — module drafted in docs/STAFF-ROLE-DRAFT.md) -->
+                <div class="mb-3">
+                    <label class="form-label d-block">Register as <span class="text-danger">*</span></label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <input type="radio" class="btn-check" name="reg_role" id="roleApplicant" value="user"
+                                   <?= (($_POST['reg_role'] ?? 'user') === 'user') ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-primary w-100" for="roleApplicant">
+                                <i class="bi bi-person-badge me-1"></i>Applicant
+                            </label>
+                        </div>
+                        <div class="col-6">
+                            <input type="radio" class="btn-check" name="reg_role" id="roleStaff" value="staff"
+                                   <?= (($_POST['reg_role'] ?? '') === 'staff') ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-warning w-100" for="roleStaff">
+                                <i class="bi bi-person-workspace me-1"></i>Staff
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-text text-muted" id="roleHint">Applicants can browse and apply for jobs right away.</div>
+                </div>
+
                 <div class="mb-3">
                     <label class="form-label" for="regName">Full Name <span class="text-danger">*</span></label>
                     <div class="input-group">
@@ -260,8 +299,11 @@ $pageTitle = "OJAMS - Register";
                         <span class="input-group-text"><i class="bi bi-phone"></i></span>
                         <input type="tel" class="form-control" name="contact" id="regContact"
                                placeholder="e.g. 09171234567"
+                               inputmode="numeric" maxlength="11" pattern="\d{11}"
+                               oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11)"
                                value="<?= htmlspecialchars($_POST['contact'] ?? '') ?>" required>
                     </div>
+                    <div class="form-text text-muted">Numbers only — exactly 11 digits.</div>
                 </div>
 
                 <div class="mb-3">
@@ -287,6 +329,33 @@ $pageTitle = "OJAMS - Register";
                         <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
                         <input type="password" class="form-control" name="confirm" id="regConfirm"
                                placeholder="Repeat your password" required>
+                    </div>
+                </div>
+
+                <!-- Security Question (used for Forgot Password) -->
+                <div class="mb-3">
+                    <label class="form-label" for="regSecQuestion">Security Question <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-patch-question"></i></span>
+                        <select class="form-select" name="security_question" id="regSecQuestion" required>
+                            <option value="" disabled <?= empty($_POST['security_question']) ? 'selected' : '' ?>>Choose a question…</option>
+                            <?php foreach (SECURITY_QUESTIONS as $q): ?>
+                            <option value="<?= htmlspecialchars($q) ?>" <?= (($_POST['security_question'] ?? '') === $q) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($q) ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-text text-muted">You'll answer this if you ever forget your password.</div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" for="regSecAnswer">Security Answer <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-chat-left-text"></i></span>
+                        <input type="text" class="form-control" name="security_answer" id="regSecAnswer"
+                               placeholder="Your answer" maxlength="150" autocomplete="off"
+                               value="<?= htmlspecialchars($_POST['security_answer'] ?? '') ?>" required>
                     </div>
                 </div>
 
@@ -329,6 +398,28 @@ $pageTitle = "OJAMS - Register";
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// Explain what each account type means as the user switches
+const roleHints = {
+    user:  'Applicants can browse and apply for jobs right away.',
+    staff: 'Staff accounts need administrator approval before you can sign in.'
+};
+document.querySelectorAll('input[name="reg_role"]').forEach(r => {
+    r.addEventListener('change', () => {
+        const hint = document.getElementById('roleHint');
+        if (hint) hint.textContent = roleHints[r.value] || '';
+    });
+});
+
+// Security: passwords cannot be copied out of, or pasted into, these fields.
+// Forces the user to actually retype the password in Confirm Password.
+['regPassword', 'regConfirm'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    ['copy', 'cut', 'paste', 'drop'].forEach(evt =>
+        el.addEventListener(evt, e => e.preventDefault())
+    );
+});
+
 function toggleRegPass() {
     const inp  = document.getElementById('regPassword');
     const icon = document.getElementById('regEyeIcon');
@@ -384,12 +475,18 @@ document.getElementById('registerForm')?.addEventListener('submit', function (e)
     if (!name)    { showErr('regName',     'Full name is required.');                    valid = false; }
     if (!email)   { showErr('regEmail',    'Email address is required.');                valid = false; }
     if (!contact) { showErr('regContact',  'Contact number is required.');               valid = false; }
+    else if (!/^\d{11}$/.test(contact)) { showErr('regContact', 'Contact number must be exactly 11 digits.'); valid = false; }
     if (!pw) { showErr('regPassword', 'Password is required.'); valid = false; }
     else if (pw.length < 8)              { showErr('regPassword', 'Password must be at least 8 characters.'); valid = false; }
     else if (!/[A-Z]/.test(pw))         { showErr('regPassword', 'Password must contain at least one uppercase letter.'); valid = false; }
     else if (!/[0-9]/.test(pw))         { showErr('regPassword', 'Password must contain at least one number.'); valid = false; }
     else if (!/[^A-Za-z0-9]/.test(pw)) { showErr('regPassword', 'Password must contain at least one special character.'); valid = false; }
     if (pw && confirm && pw !== confirm) { showErr('regConfirm', 'Passwords do not match.'); valid = false; }
+    const secQ = document.getElementById('regSecQuestion')?.value;
+    const secA = document.getElementById('regSecAnswer')?.value.trim();
+    if (!secQ) { showErr('regSecQuestion', 'Please choose a security question.'); valid = false; }
+    if (!secA) { showErr('regSecAnswer', 'Security answer is required.'); valid = false; }
+    else if (secA.length < 2) { showErr('regSecAnswer', 'Security answer must be at least 2 characters.'); valid = false; }
 
     if (!valid) { e.preventDefault(); return; }
 

@@ -318,8 +318,8 @@ function submitApplication() {
     const contactVal = g('appContact');
     if (!contactVal) {
         showFieldError('appContact', 'Contact number is required.'); valid = false;
-    } else if (!/^\+?[\d\s\-\(\)\.]{7,20}$/.test(contactVal)) {
-        showFieldError('appContact', 'Contact number may only contain digits, spaces, +, hyphens, or parentheses.'); valid = false;
+    } else if (!/^\d{11}$/.test(contactVal)) {
+        showFieldError('appContact', 'Contact number must be exactly 11 digits (numbers only).'); valid = false;
     }
     const bdVal = document.getElementById('appBirthdate')?.value;
     if (!bdVal) {

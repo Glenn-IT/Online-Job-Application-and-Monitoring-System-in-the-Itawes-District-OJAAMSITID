@@ -193,7 +193,7 @@ CREATE TABLE `saved_jobs` (
 
 CREATE TABLE `users` (
   `id` int(10) UNSIGNED NOT NULL,
-  `role` enum('admin','user') NOT NULL DEFAULT 'user',
+  `role` enum('admin','staff','user') NOT NULL DEFAULT 'user',
   `full_name` varchar(150) NOT NULL,
   `email` varchar(150) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
@@ -201,7 +201,10 @@ CREATE TABLE `users` (
   `address` text DEFAULT NULL,
   `birthdate` date DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `is_approved` tinyint(1) NOT NULL DEFAULT 1,
   `profile_photo` varchar(255) DEFAULT NULL,
+  `security_question` varchar(255) DEFAULT NULL,
+  `security_answer_hash` varchar(255) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -210,8 +213,8 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `role`, `full_name`, `email`, `password_hash`, `contact_number`, `address`, `birthdate`, `is_active`, `profile_photo`, `created_at`, `updated_at`) VALUES
-(1, 'admin', 'Administrator', 'admin@ojams.com', '$2y$12$UKcF4UtAouX8ljY2zw.Q4.rCIBm0VQ6QeUZNmQPQCOIzD5CC3aRgm', '09000000000', 'OJAMS HQ', '1990-01-01', 1, NULL, '2026-01-01 00:00:00', '2026-05-06 14:06:31');
+INSERT INTO `users` (`id`, `role`, `full_name`, `email`, `password_hash`, `contact_number`, `address`, `birthdate`, `is_active`, `is_approved`, `profile_photo`, `security_question`, `security_answer_hash`, `created_at`, `updated_at`) VALUES
+(1, 'admin', 'Administrator', 'admin@ojams.com', '$2y$12$UKcF4UtAouX8ljY2zw.Q4.rCIBm0VQ6QeUZNmQPQCOIzD5CC3aRgm', '09000000000', 'OJAMS HQ', '1990-01-01', 1, 1, NULL, NULL, NULL, '2026-01-01 00:00:00', '2026-05-06 14:06:31');
 
 --
 -- Indexes for dumped tables
