@@ -9,11 +9,13 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 
 ### Week 1 — v1.01 | Authentication
 
-**Present:** Login & Register
+**Present:** Login, Register & Forgot Password (security-question reset)
 **Under Construction:** All other pages
 
 - `login.php` — Login page
-- `register.php` — Register page
+- `register.php` — Register page (includes role picker + security question)
+- `forgot-password.php` — Forgot Password (security question verification)
+- `reset-password.php` — Set new password (reached via forgot-password token)
 - `index.php` — indexi page
 
 ---
@@ -110,7 +112,7 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 
 | Version | Tag     | Commit                                     |
 | ------- | ------- | ------------------------------------------ |
-| v1.01   | `v1.01` | `1e51cccba0249d3b5aa5e20432ebf4a2d177dd08` |
+| v1.01   | `v1.01` | `0a361a502e6795a50395eb15d583ca4854289fa9` |
 | v1.02   | `v1.02` | `a42bfdd1f486dc6bfb42d0604a9eb775c687550b` |
 | v1.03   | `v1.03` | `3d1d46d6dcec3144d32eafca3659f97d0eaa0a5f` |
 | v1.04   | `v1.04` | `73ab789ce50842a15769b24b09faffc51ff3dab9` |
