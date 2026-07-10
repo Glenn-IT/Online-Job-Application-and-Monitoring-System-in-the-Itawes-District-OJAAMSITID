@@ -104,8 +104,8 @@ if ($action === 'apply') {
     if (strlen($fullName) > 150)    { echo json_encode(['success' => false, 'message' => 'Full name must be 150 characters or fewer.']); exit; }
     if (strlen($email) > 150)       { echo json_encode(['success' => false, 'message' => 'Email must be 150 characters or fewer.']); exit; }
     if (strlen($contact) > 20)      { echo json_encode(['success' => false, 'message' => 'Contact number must be 20 characters or fewer.']); exit; }
-    if ($contact !== '' && !preg_match('/^\+?[\d\s\-\(\)\.]{7,20}$/', $contact)) {
-        echo json_encode(['success' => false, 'message' => 'Contact number may only contain digits, spaces, +, hyphens, or parentheses.']);
+    if ($contact !== '' && !preg_match('/^\d{11}$/', $contact)) {
+        echo json_encode(['success' => false, 'message' => 'Contact number must be exactly 11 digits (numbers only).']);
         exit;
     }
     if (strlen($elementary) > 200)  { echo json_encode(['success' => false, 'message' => 'Elementary school name must be 200 characters or fewer.']); exit; }

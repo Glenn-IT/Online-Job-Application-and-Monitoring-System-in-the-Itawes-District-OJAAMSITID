@@ -60,12 +60,35 @@ if ($action === 'reactivateUser') {
     exit;
 }
 
+// ── ACTION: approveUser ──────────────────────────────────────
+// Staff accounts register unapproved and cannot log in until an
+// admin approves them here.
+if ($action === 'approveUser') {
+    $targetId = (int)($body['id'] ?? 0);
+    if ($targetId <= 0) { echo json_encode(['success' => false, 'message' => 'Invalid user ID.']); exit; }
+
+    $check = $pdo->prepare("SELECT id, full_name, is_approved FROM users WHERE id = ?");
+    $check->execute([$targetId]);
+    $target = $check->fetch();
+    if (!$target) { echo json_encode(['success' => false, 'message' => 'User not found.']); exit; }
+    if ((int)$target['is_approved'] === 1) {
+        echo json_encode(['success' => false, 'message' => "{$target['full_name']} is already approved."]); exit;
+    }
+
+    $pdo->prepare("UPDATE users SET is_approved = 1 WHERE id = ?")->execute([$targetId]);
+    $uid = $_SESSION['ojams_user']['id'];
+    $pdo->prepare("INSERT INTO activity_logs (action, status, performed_by) VALUES (?, ?, ?)")
+        ->execute(["Staff account approved: {$target['full_name']}", 'Updated', $uid]);
+    echo json_encode(['success' => true, 'message' => "{$target['full_name']}'s account has been approved. They can now log in."]);
+    exit;
+}
+
 // ── ACTION: changeRole ───────────────────────────────────────
 if ($action === 'changeRole') {
     $targetId = (int)($body['id']   ?? 0);
     $newRole  = $body['role'] ?? '';
     $selfId   = $_SESSION['ojams_user']['id'];
-    if ($targetId <= 0 || !in_array($newRole, ['admin', 'user'])) {
+    if ($targetId <= 0 || !in_array($newRole, ['admin', 'staff', 'user'])) {
         echo json_encode(['success' => false, 'message' => 'Invalid parameters.']); exit;
     }
     if ($targetId === $selfId) {

@@ -43,7 +43,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
-        if (!$user || !password_verify($password, $user['password_hash']) || (isset($user['is_active']) && !$user['is_active'])) {
+        $validCreds = $user && password_verify($password, $user['password_hash']);
+
+        if ($validCreds && isset($user['is_approved']) && !$user['is_approved']) {
+            // Correct credentials but the account (staff) hasn't been approved yet.
+            // Not a failed attempt — don't count it toward the lockout.
+            $error = 'Your account is awaiting administrator approval. Please try again once it has been approved.';
+        } elseif (!$validCreds || (isset($user['is_active']) && !$user['is_active'])) {
             // ── Record failed attempt ────────────────────────
             $pdo->prepare("
                 INSERT INTO login_attempts (ip, attempts)

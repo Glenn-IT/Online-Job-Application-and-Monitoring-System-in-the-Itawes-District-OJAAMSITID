@@ -48,7 +48,9 @@
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Contact Number <span class="text-danger">*</span></label>
-                            <input type="tel" class="form-control" id="appContact" placeholder="e.g. 09171234567" maxlength="20" required>
+                            <input type="tel" class="form-control" id="appContact" placeholder="e.g. 09171234567"
+                                   inputmode="numeric" maxlength="11" pattern="\d{11}"
+                                   oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11)" required>
                         </div>
                     </div>
 

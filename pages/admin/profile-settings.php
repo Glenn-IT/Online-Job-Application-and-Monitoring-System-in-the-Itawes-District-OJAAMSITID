@@ -8,6 +8,11 @@ $currentPage = "profile-settings";
 
 $u = $_SESSION["ojams_user"];
 
+// Current security question (read from DB — older sessions won't have it)
+$sqStmt = $pdo->prepare("SELECT security_question FROM users WHERE id = ?");
+$sqStmt->execute([$u["id"]]);
+$currentSecQuestion = $sqStmt->fetchColumn() ?: null;
+
 include $basePath . "layouts/header.php";
 include $basePath . "layouts/navbar-admin.php";
 ?>
@@ -72,7 +77,10 @@ include $basePath . "layouts/navbar-admin.php";
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Contact Number</label>
                                 <input type="tel" class="form-control" id="adminContact"
-                                       value="<?php echo htmlspecialchars($u['contact_number'] ?? ''); ?>" maxlength="20">
+                                       inputmode="numeric" maxlength="11" pattern="\d{11}"
+                                       oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11)"
+                                       placeholder="11 digits, e.g. 09171234567"
+                                       value="<?php echo htmlspecialchars($u['contact_number'] ?? ''); ?>">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Birthdate</label>
@@ -136,12 +144,58 @@ include $basePath . "layouts/navbar-admin.php";
                         </button>
                     </div>
                 </div>
+                <!-- Security Question Form -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-patch-question me-2 text-primary"></i>Security Question</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">
+                            Used to verify your identity on the Forgot Password page.
+                            Current question:
+                            <strong id="currentSecQuestion"><?php echo $currentSecQuestion
+                                ? htmlspecialchars($currentSecQuestion)
+                                : 'Not set'; ?></strong>
+                        </p>
+                        <div class="mb-3">
+                            <label class="form-label">Security Question</label>
+                            <select class="form-select" id="secQuestion">
+                                <option value="" disabled selected>Choose a question…</option>
+                                <?php foreach (SECURITY_QUESTIONS as $q): ?>
+                                <option value="<?php echo htmlspecialchars($q); ?>"><?php echo htmlspecialchars($q); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Answer</label>
+                            <input type="text" class="form-control" id="secAnswer"
+                                   placeholder="Your answer (not case-sensitive)" maxlength="150" autocomplete="off">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="secCurrentPassword"
+                                   placeholder="Confirm with your current password">
+                        </div>
+                        <button type="button" class="btn btn-primary" id="saveSecQBtn" onclick="saveSecurityQuestion()">
+                            <i class="bi bi-shield-check me-1"></i>Save Security Question
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
 </div>
 <script>
 const PROFILE_HANDLER = "../../handlers/profile.php";
+
+// Security: passwords cannot be copied out of, or pasted into, these fields.
+["currentPassword", "newPassword", "confirmPassword"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    ["copy", "cut", "paste", "drop"].forEach(evt =>
+        el.addEventListener(evt, e => e.preventDefault())
+    );
+});
 
 function uploadAvatar(input) {
     if (!input.files.length) return;
@@ -176,6 +230,9 @@ function savePersonalInfo() {
     let infoValid = true;
     if (!fullName) { showFieldError("adminFullName", "Full name is required.");    infoValid = false; }
     if (!email)    { showFieldError("adminEmail",    "Email address is required."); infoValid = false; }
+    if (contact && !/^\d{11}$/.test(contact)) {
+        showFieldError("adminContact", "Contact number must be exactly 11 digits (numbers only)."); infoValid = false;
+    }
     if (!infoValid) return;
     const btn = document.getElementById("saveInfoBtn");
     btnLoading(btn, true, "Saving…");
@@ -190,6 +247,38 @@ function savePersonalInfo() {
         if (res.success) {
             document.getElementById("cardName").textContent  = fullName;
             document.getElementById("cardEmail").textContent = email;
+        }
+    })
+    .catch(() => showToast("Request failed.", "danger"))
+    .finally(() => btnLoading(btn, false));
+}
+
+function saveSecurityQuestion() {
+    const question  = document.getElementById("secQuestion")?.value;
+    const answer    = document.getElementById("secAnswer")?.value.trim();
+    const currentPw = document.getElementById("secCurrentPassword")?.value;
+    let sqValid = true;
+    if (!question)  { showFieldError("secQuestion",        "Choose a security question.");        sqValid = false; }
+    if (!answer)    { showFieldError("secAnswer",          "Answer is required.");                sqValid = false; }
+    else if (answer.length < 2) { showFieldError("secAnswer", "Answer must be at least 2 characters."); sqValid = false; }
+    if (!currentPw) { showFieldError("secCurrentPassword", "Current password is required.");      sqValid = false; }
+    if (!sqValid) return;
+
+    const btn = document.getElementById("saveSecQBtn");
+    btnLoading(btn, true, "Saving…");
+    fetch(PROFILE_HANDLER, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "updateSecurityQuestion", question, answer, current_password: currentPw, csrf_token: getCsrfToken() })
+    })
+    .then(r => r.json())
+    .then(res => {
+        showToast(res.message, res.success ? "success" : "danger");
+        if (res.success) {
+            document.getElementById("currentSecQuestion").textContent = res.question;
+            document.getElementById("secQuestion").selectedIndex = 0;
+            document.getElementById("secAnswer").value          = "";
+            document.getElementById("secCurrentPassword").value = "";
         }
     })
     .catch(() => showToast("Request failed.", "danger"))

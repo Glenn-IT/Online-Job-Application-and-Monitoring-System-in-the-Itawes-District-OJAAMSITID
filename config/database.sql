@@ -20,7 +20,7 @@ USE ojams_db;
 -- ============================================================
 CREATE TABLE IF NOT EXISTS users (
   id              INT UNSIGNED    NOT NULL AUTO_INCREMENT,
-  role            ENUM('admin','user') NOT NULL DEFAULT 'user',
+  role            ENUM('admin','staff','user') NOT NULL DEFAULT 'user', -- 'staff' is temporary; module drafted in docs/STAFF-ROLE-DRAFT.md
   full_name       VARCHAR(150)    NOT NULL,
   email           VARCHAR(150)    NOT NULL UNIQUE,
   password_hash   VARCHAR(255)    NOT NULL,
@@ -28,7 +28,10 @@ CREATE TABLE IF NOT EXISTS users (
   address         TEXT            DEFAULT NULL,
   birthdate       DATE            DEFAULT NULL,
   is_active       TINYINT(1)      NOT NULL DEFAULT 1,
+  is_approved     TINYINT(1)      NOT NULL DEFAULT 1, -- staff register with 0; admin must approve before login
   profile_photo   VARCHAR(255)    DEFAULT NULL, -- stored filename in uploads/avatars/
+  security_question    VARCHAR(255) DEFAULT NULL, -- forgot-password security question
+  security_answer_hash VARCHAR(255) DEFAULT NULL, -- bcrypt hash of the normalized answer
   created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
@@ -37,6 +40,10 @@ CREATE TABLE IF NOT EXISTS users (
 -- Run this if the table already exists (adds column to existing installs):
 -- ALTER TABLE users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER birthdate;
 -- ALTER TABLE users ADD COLUMN profile_photo VARCHAR(255) DEFAULT NULL AFTER is_active;
+-- ALTER TABLE users ADD COLUMN security_question VARCHAR(255) DEFAULT NULL AFTER profile_photo;
+-- ALTER TABLE users ADD COLUMN security_answer_hash VARCHAR(255) DEFAULT NULL AFTER security_question;
+-- ALTER TABLE users MODIFY COLUMN role ENUM('admin','staff','user') NOT NULL DEFAULT 'user';
+-- ALTER TABLE users ADD COLUMN is_approved TINYINT(1) NOT NULL DEFAULT 1 AFTER is_active;
 -- ALTER TABLE jobs  ADD COLUMN deadline DATE DEFAULT NULL AFTER status;
 -- ALTER TABLE jobs  ADD COLUMN location     VARCHAR(150) DEFAULT NULL AFTER qualification;
 -- ALTER TABLE jobs  ADD COLUMN job_type     ENUM('Full-time','Part-time','Contract','Internship','Freelance') DEFAULT NULL AFTER location;

@@ -11,7 +11,7 @@ $currentPage = 'user-management';
 $perPage    = PER_PAGE_ADMIN;
 $page       = max(1, (int)($_GET['page'] ?? 1));
 $roleFilter = $_GET['role'] ?? 'All';
-$allowed    = ['All', 'admin', 'user'];
+$allowed    = ['All', 'admin', 'staff', 'user'];
 if (!in_array($roleFilter, $allowed)) $roleFilter = 'All';
 
 $where  = $roleFilter !== 'All' ? 'WHERE role = ?' : '';
@@ -25,7 +25,7 @@ $page       = min($page, $totalPages);
 $offset     = ($page - 1) * $perPage;
 
 $stmt = $pdo->prepare("
-    SELECT id, role, full_name, email, contact_number, birthdate, is_active, created_at
+    SELECT id, role, full_name, email, contact_number, birthdate, is_active, is_approved, created_at
     FROM users {$where}
     ORDER BY created_at DESC
     LIMIT ? OFFSET ?
@@ -53,9 +53,9 @@ include $basePath . 'layouts/navbar-admin.php';
                 </p>
             </div>
             <div class="btn-group" role="group">
-                <?php foreach (['All', 'admin', 'user'] as $r):
+                <?php foreach (['All', 'admin', 'staff', 'user'] as $r):
                     $active  = $roleFilter === $r ? 'active' : '';
-                    $variant = $r === 'admin' ? 'danger' : ($r === 'user' ? 'primary' : 'secondary');
+                    $variant = $r === 'admin' ? 'danger' : ($r === 'staff' ? 'warning' : ($r === 'user' ? 'primary' : 'secondary'));
                 ?>
                 <a href="?role=<?php echo $r; ?>"
                    class="btn btn-outline-<?php echo $variant; ?> btn-sm <?php echo $active; ?>">
@@ -83,8 +83,9 @@ include $basePath . 'layouts/navbar-admin.php';
                                     </td>
                                 </tr>
                             <?php else: $rowNum = $offset + 1; foreach ($users as $u):
-                                $isSelf   = ((int)$u['id'] === $selfId);
-                                $isActive = (int)($u['is_active'] ?? 1);
+                                $isSelf     = ((int)$u['id'] === $selfId);
+                                $isActive   = (int)($u['is_active'] ?? 1);
+                                $isApproved = (int)($u['is_approved'] ?? 1);
                             ?>
                                 <tr class="<?php echo !$isActive ? 'table-secondary text-muted' : ''; ?>">
                                     <td><?php echo $rowNum++; ?></td>
@@ -97,14 +98,18 @@ include $basePath . 'layouts/navbar-admin.php';
                                     <td><?php echo htmlspecialchars($u['email']); ?></td>
                                     <td><?php echo htmlspecialchars($u['contact_number'] ?? '—'); ?></td>
                                     <td>
-                                        <span class="badge <?php echo $u['role'] === 'admin' ? 'bg-danger' : 'bg-primary'; ?>">
+                                        <span class="badge <?php echo $u['role'] === 'admin' ? 'bg-danger' : ($u['role'] === 'staff' ? 'bg-warning text-dark' : 'bg-primary'); ?>">
                                             <?php echo ucfirst($u['role']); ?>
                                         </span>
                                     </td>
                                     <td>
+                                        <?php if (!$isApproved): ?>
+                                        <span class="badge bg-warning text-dark">Pending Approval</span>
+                                        <?php else: ?>
                                         <span class="badge <?php echo $isActive ? 'bg-success' : 'bg-secondary'; ?>">
                                             <?php echo $isActive ? 'Active' : 'Inactive'; ?>
                                         </span>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <small><?php echo date('M d, Y', strtotime($u['created_at'])); ?></small>
@@ -119,12 +124,25 @@ include $basePath . 'layouts/navbar-admin.php';
                                         </button>
 
                                         <?php if (!$isSelf): ?>
+                                        <?php if (!$isApproved): ?>
+                                        <!-- Approve pending staff account -->
+                                        <button class="btn btn-sm btn-success me-1"
+                                            onclick="approveUser(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars($u['full_name'], ENT_QUOTES); ?>')"
+                                            title="Approve this account so they can log in">
+                                            <i class="bi bi-check-circle"></i> Approve
+                                        </button>
+                                        <?php endif; ?>
+
                                         <!-- Toggle Role -->
+                                        <?php
+                                            $toggleTo    = $u['role'] === 'admin' ? 'user' : ($u['role'] === 'staff' ? 'user' : 'admin');
+                                            $toggleLabel = $u['role'] === 'admin' ? 'Make User' : ($u['role'] === 'staff' ? 'Make Applicant' : 'Make Admin');
+                                        ?>
                                         <button class="btn btn-sm btn-outline-warning me-1"
-                                            onclick="changeRole(<?php echo $u['id']; ?>, '<?php echo $u['role'] === 'admin' ? 'user' : 'admin'; ?>', '<?php echo htmlspecialchars($u['full_name'], ENT_QUOTES); ?>')"
-                                            title="Change to <?php echo $u['role'] === 'admin' ? 'User' : 'Admin'; ?>">
+                                            onclick="changeRole(<?php echo $u['id']; ?>, '<?php echo $toggleTo; ?>', '<?php echo htmlspecialchars($u['full_name'], ENT_QUOTES); ?>')"
+                                            title="<?php echo $toggleLabel; ?>">
                                             <i class="bi bi-arrow-left-right"></i>
-                                            <?php echo $u['role'] === 'admin' ? 'Make User' : 'Make Admin'; ?>
+                                            <?php echo $toggleLabel; ?>
                                         </button>
 
                                         <!-- Deactivate / Reactivate -->
@@ -246,11 +264,32 @@ function viewUser(u) {
     document.getElementById('vuId').textContent        = '#' + u.id;
     const roleBadge = document.getElementById('vuRoleBadge');
     roleBadge.textContent  = u.role.charAt(0).toUpperCase() + u.role.slice(1);
-    roleBadge.className    = 'badge mt-1 ' + (u.role === 'admin' ? 'bg-danger' : 'bg-primary');
+    roleBadge.className    = 'badge mt-1 ' + (u.role === 'admin' ? 'bg-danger' : (u.role === 'staff' ? 'bg-warning text-dark' : 'bg-primary'));
     const statusBadge = document.getElementById('vuStatusBadge');
-    const active = parseInt(u.is_active ?? 1);
-    statusBadge.textContent = active ? 'Active' : 'Inactive';
-    statusBadge.className   = 'badge ms-1 mt-1 ' + (active ? 'bg-success' : 'bg-secondary');
+    const active   = parseInt(u.is_active ?? 1);
+    const approved = parseInt(u.is_approved ?? 1);
+    if (!approved) {
+        statusBadge.textContent = 'Pending Approval';
+        statusBadge.className   = 'badge ms-1 mt-1 bg-warning text-dark';
+    } else {
+        statusBadge.textContent = active ? 'Active' : 'Inactive';
+        statusBadge.className   = 'badge ms-1 mt-1 ' + (active ? 'bg-success' : 'bg-secondary');
+    }
+}
+
+function approveUser(id, name) {
+    if (!confirm(`Approve ${name}'s account? They will be able to log in immediately.`)) return;
+    fetch(ADMIN_HANDLER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approveUser', id: id, csrf_token: getCsrfToken() })
+    })
+    .then(r => r.json())
+    .then(res => {
+        showToast(res.message, res.success ? 'success' : 'danger');
+        if (res.success) setTimeout(() => location.reload(), 900);
+    })
+    .catch(() => showToast('Request failed.', 'danger'));
 }
 
 function toggleUserStatus(id, action, name) {
