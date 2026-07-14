@@ -108,6 +108,15 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 
 ---
 
+### v2.00 | Admin Core Snapshot
+
+**Present:** Login, Register, Forgot/Reset Password + Admin Dashboard + User Management (with admin-created Register Account modal)
+**Under Construction:** Manage Jobs, Applications, Reports, Export Report, both Profile Settings pages, Browse Jobs, Job Detail, Saved Jobs, My Applications
+
+Built as a true cherry-pick off a temp branch from `main` — the gate include was re-added to the pages above without touching `main`'s already-fully-unlocked state.
+
+---
+
 ## GitHub Release Tags
 
 | Version | Tag     | Commit                                     |
@@ -122,6 +131,7 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 | v1.08   | `v1.08` | `20691803c8bf8676264b7421a098e445ac7fdf4c` |
 | v1.09   | `v1.09` | `8a6f878936722c3316a249354f9045121b722eff` |
 | v1.10   | `v1.10` | `b69d2b404ddca723bd7f63bc1a95c1484555259d` |
+| v2.00   | `v2.00` | `249ca9447527fd56ad91117fe7e0a5c8492ef3f8` |
 
 > Fill in the commit hash or branch name after each GitHub release is published.
 
