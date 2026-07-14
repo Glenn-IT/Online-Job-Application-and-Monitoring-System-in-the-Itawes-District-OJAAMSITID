@@ -113,7 +113,7 @@ Each version corresponds to a GitHub release tag. Pages not yet presented displa
 | Version | Tag     | Commit                                     |
 | ------- | ------- | ------------------------------------------ |
 | v1.01   | `v1.01` | `0a361a502e6795a50395eb15d583ca4854289fa9` |
-| v1.02   | `v1.02` | `4fa41a3ca27d8d8bcf1d49d5db0d11ab0ab7e2f3` |
+| v1.02   | `v1.02` | `a42bfdd1f486dc6bfb42d0604a9eb775c687550b` |
 | v1.03   | `v1.03` | `3d1d46d6dcec3144d32eafca3659f97d0eaa0a5f` |
 | v1.04   | `v1.04` | `73ab789ce50842a15769b24b09faffc51ff3dab9` |
 | v1.05   | `v1.05` | `af09c37f13a3d6f66f6677f2fe52d0819cee59f6` |
