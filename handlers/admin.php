@@ -108,6 +108,67 @@ if ($action === 'changeRole') {
     exit;
 }
 
+// ── ACTION: addUser ──────────────────────────────────────────
+// Admin-created accounts (applicant, staff, or admin) are approved
+// and active immediately — no self-registration approval wait.
+if ($action === 'addUser') {
+    $role        = $body['role'] ?? 'user';
+    $full_name   = trim($body['full_name'] ?? '');
+    $email       = strtolower(trim($body['email'] ?? ''));
+    $contact     = trim($body['contact'] ?? '');
+    $password    = $body['password'] ?? '';
+    $confirm     = $body['confirm'] ?? '';
+    $sq_question = trim($body['security_question'] ?? '');
+    $sq_answer   = trim($body['security_answer'] ?? '');
+
+    if (!in_array($role, ['staff', 'user'], true)) {
+        echo json_encode(['success' => false, 'message' => 'Please choose a valid account type.']); exit;
+    }
+    if (!$full_name || !$email || !$contact || !$password || !$confirm) {
+        echo json_encode(['success' => false, 'message' => 'All fields are required.']); exit;
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(['success' => false, 'message' => 'Please enter a valid email address.']); exit;
+    }
+    if (!preg_match('/^\d{11}$/', $contact)) {
+        echo json_encode(['success' => false, 'message' => 'Contact number must be exactly 11 digits.']); exit;
+    }
+    if (strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[0-9]/', $password) || !preg_match('/[^A-Za-z0-9]/', $password)) {
+        echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters and include an uppercase letter, a number, and a special character.']); exit;
+    }
+    if ($password !== $confirm) {
+        echo json_encode(['success' => false, 'message' => 'Passwords do not match.']); exit;
+    }
+    if (!in_array($sq_question, SECURITY_QUESTIONS, true)) {
+        echo json_encode(['success' => false, 'message' => 'Please choose a security question from the list.']); exit;
+    }
+    if (mb_strlen($sq_answer) < 2) {
+        echo json_encode(['success' => false, 'message' => 'Security answer must be at least 2 characters.']); exit;
+    }
+
+    $check = $pdo->prepare("SELECT id FROM users WHERE LOWER(email) = ? LIMIT 1");
+    $check->execute([$email]);
+    if ($check->fetch()) {
+        echo json_encode(['success' => false, 'message' => 'That email address is already registered.']); exit;
+    }
+
+    $hash   = password_hash($password, PASSWORD_BCRYPT, ['cost' => BCRYPT_COST]);
+    $sqHash = password_hash(mb_strtolower($sq_answer), PASSWORD_BCRYPT, ['cost' => BCRYPT_COST]);
+
+    $stmt = $pdo->prepare("
+        INSERT INTO users (role, full_name, email, password_hash, contact_number, security_question, security_answer_hash, is_active, is_approved)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1)
+    ");
+    $stmt->execute([$role, $full_name, $email, $hash, $contact, $sq_question, $sqHash]);
+
+    $uid = $_SESSION['ojams_user']['id'];
+    $pdo->prepare("INSERT INTO activity_logs (action, status, performed_by) VALUES (?, ?, ?)")
+        ->execute(["Registered new {$role} account: {$full_name}", 'Created', $uid]);
+
+    echo json_encode(['success' => true, 'message' => "{$full_name}'s {$role} account has been created."]);
+    exit;
+}
+
 // ── ACTION: clearLogs ────────────────────────────────────────
 if ($action === 'clearLogs') {
     $days = max(1, (int)($body['days'] ?? 90));

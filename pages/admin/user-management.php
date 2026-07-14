@@ -51,16 +51,21 @@ include $basePath . 'layouts/navbar-admin.php';
                     <span class="small">(<?php echo $total; ?> total)</span>
                 </p>
             </div>
-            <div class="btn-group" role="group">
-                <?php foreach (['All', 'admin', 'staff', 'user'] as $r):
-                    $active  = $roleFilter === $r ? 'active' : '';
-                    $variant = $r === 'admin' ? 'danger' : ($r === 'staff' ? 'warning' : ($r === 'user' ? 'primary' : 'secondary'));
-                ?>
-                <a href="?role=<?php echo $r; ?>"
-                   class="btn btn-outline-<?php echo $variant; ?> btn-sm <?php echo $active; ?>">
-                    <?php echo ucfirst($r); ?>
-                </a>
-                <?php endforeach; ?>
+            <div class="d-flex align-items-center gap-2">
+                <div class="btn-group" role="group">
+                    <?php foreach (['All', 'admin', 'staff', 'user'] as $r):
+                        $active  = $roleFilter === $r ? 'active' : '';
+                        $variant = $r === 'admin' ? 'danger' : ($r === 'staff' ? 'warning' : ($r === 'user' ? 'primary' : 'secondary'));
+                    ?>
+                    <a href="?role=<?php echo $r; ?>"
+                       class="btn btn-outline-<?php echo $variant; ?> btn-sm <?php echo $active; ?>">
+                        <?php echo ucfirst($r); ?>
+                    </a>
+                    <?php endforeach; ?>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="bi bi-person-plus-fill me-1"></i>Register Account
+                </button>
             </div>
         </div>
 
@@ -131,18 +136,6 @@ include $basePath . 'layouts/navbar-admin.php';
                                             <i class="bi bi-check-circle"></i> Approve
                                         </button>
                                         <?php endif; ?>
-
-                                        <!-- Toggle Role -->
-                                        <?php
-                                            $toggleTo    = $u['role'] === 'admin' ? 'user' : ($u['role'] === 'staff' ? 'user' : 'admin');
-                                            $toggleLabel = $u['role'] === 'admin' ? 'Make User' : ($u['role'] === 'staff' ? 'Make Applicant' : 'Make Admin');
-                                        ?>
-                                        <button class="btn btn-sm btn-outline-warning me-1"
-                                            onclick="changeRole(<?php echo $u['id']; ?>, '<?php echo $toggleTo; ?>', '<?php echo htmlspecialchars($u['full_name'], ENT_QUOTES); ?>')"
-                                            title="<?php echo $toggleLabel; ?>">
-                                            <i class="bi bi-arrow-left-right"></i>
-                                            <?php echo $toggleLabel; ?>
-                                        </button>
 
                                         <!-- Deactivate / Reactivate -->
                                         <?php if ($isActive): ?>
@@ -249,6 +242,97 @@ include $basePath . 'layouts/navbar-admin.php';
     </div>
 </div>
 
+<!-- ── Register Account Modal (admin-created user/staff/admin) ─ -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="addUserForm">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-person-plus-fill me-2"></i>Register Account</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="addUserAlert" class="alert alert-danger d-none"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label d-block">Account Type <span class="text-danger">*</span></label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="au_role" id="auRoleUser" value="user" checked>
+                                <label class="btn btn-outline-primary w-100 btn-sm" for="auRoleUser">Applicant</label>
+                            </div>
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="au_role" id="auRoleStaff" value="staff">
+                                <label class="btn btn-outline-warning w-100 btn-sm" for="auRoleStaff">Staff</label>
+                            </div>
+                        </div>
+                        <div class="form-text text-muted">Accounts created here are approved and active immediately.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="auFullName">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="auFullName" placeholder="Full name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="auEmail">Email Address <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" id="auEmail" placeholder="name@example.com" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="auContact">Contact Number <span class="text-danger">*</span></label>
+                        <input type="tel" class="form-control" id="auContact" placeholder="e.g. 09171234567"
+                               inputmode="numeric" maxlength="11" pattern="\d{11}"
+                               oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11)" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="auPassword">Password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="auPassword" minlength="8"
+                                   placeholder="Min 8 chars, uppercase, number, symbol" required>
+                            <button type="button" class="btn btn-outline-secondary" onclick="toggleAuPass('auPassword', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="auConfirm">Confirm Password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="auConfirm" placeholder="Repeat password" required>
+                            <button type="button" class="btn btn-outline-secondary" onclick="toggleAuPass('auConfirm', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="auSecQuestion">Security Question <span class="text-danger">*</span></label>
+                        <select class="form-select" id="auSecQuestion" required>
+                            <option value="" disabled selected>Choose a question…</option>
+                            <?php foreach (SECURITY_QUESTIONS as $q): ?>
+                            <option value="<?php echo htmlspecialchars($q); ?>"><?php echo htmlspecialchars($q); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="mb-1">
+                        <label class="form-label" for="auSecAnswer">Security Answer <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="auSecAnswer" maxlength="150" autocomplete="off" placeholder="Answer" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-person-plus me-1"></i>Create Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 const ADMIN_HANDLER = '../../handlers/admin.php';
 
@@ -308,19 +392,66 @@ function toggleUserStatus(id, action, name) {
     .catch(() => showToast('Request failed.', 'danger'));
 }
 
-function changeRole(id, newRole, name) {
-    if (!confirm(`Change ${name}'s role to ${newRole}?`)) return;
+function toggleAuPass(id, btn) {
+    const inp  = document.getElementById(id);
+    const icon = btn.querySelector('i');
+    if (inp.type === 'password') { inp.type = 'text'; icon.className = 'bi bi-eye-slash'; }
+    else                         { inp.type = 'password'; icon.className = 'bi bi-eye'; }
+}
+
+document.getElementById('addUserForm')?.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const alertBox = document.getElementById('addUserAlert');
+    alertBox.classList.add('d-none');
+
+    const payload = {
+        action: 'addUser',
+        role: document.querySelector('input[name="au_role"]:checked')?.value || 'user',
+        full_name: document.getElementById('auFullName').value.trim(),
+        email: document.getElementById('auEmail').value.trim(),
+        contact: document.getElementById('auContact').value.trim(),
+        password: document.getElementById('auPassword').value,
+        confirm: document.getElementById('auConfirm').value,
+        security_question: document.getElementById('auSecQuestion').value,
+        security_answer: document.getElementById('auSecAnswer').value.trim(),
+        csrf_token: getCsrfToken()
+    };
+
+    if (payload.password !== payload.confirm) {
+        alertBox.textContent = 'Passwords do not match.';
+        alertBox.classList.remove('d-none');
+        return;
+    }
+
+    const btn = this.querySelector('[type="submit"]');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Creating…';
+
     fetch(ADMIN_HANDLER, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'changeRole', id: id, role: newRole, csrf_token: getCsrfToken() })
+        body: JSON.stringify(payload)
     })
     .then(r => r.json())
     .then(res => {
-        showToast(res.message, res.success ? 'success' : 'danger');
-        if (res.success) setTimeout(() => location.reload(), 900);
+        if (res.success) {
+            showToast(res.message, 'success');
+            setTimeout(() => location.reload(), 900);
+        } else {
+            alertBox.textContent = res.message;
+            alertBox.classList.remove('d-none');
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
     })
-    .catch(() => showToast('Request failed.', 'danger'));
-}
+    .catch(() => {
+        alertBox.textContent = 'Request failed.';
+        alertBox.classList.remove('d-none');
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    });
+});
 </script>
 <?php include $basePath . 'layouts/footer.php'; ?>
