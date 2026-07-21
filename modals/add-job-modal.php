@@ -60,7 +60,8 @@
                                 Salary Range <span class="text-muted fw-normal small">(optional)</span>
                             </label>
                             <input type="text" class="form-control" id="jobSalaryRange"
-                                   placeholder="e.g. ₱25,000 – ₱35,000" maxlength="100">
+                                   placeholder="e.g. ₱25,000 – ₱35,000" maxlength="100"
+                                   oninput="this.value = this.value.replace(/[a-zA-Z]/g, '')">
                         </div>
                     </div>
                     <div class="row">

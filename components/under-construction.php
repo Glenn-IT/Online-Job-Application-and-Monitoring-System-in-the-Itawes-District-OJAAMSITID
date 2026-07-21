@@ -93,7 +93,7 @@ if (!defined('BASE_URL')) {
             <i class="bi bi-cone-striped"></i>
         </div>
         <h1>Under Construction</h1>
-        <div class="badge-version">Version 2.00</div>
+        <div class="badge-version">Version 3.00</div>
         <p class="desc">
             This page is not yet available in the current version.<br>
             It will be unlocked in an upcoming presentation.
@@ -101,7 +101,7 @@ if (!defined('BASE_URL')) {
         <a href="<?= BASE_URL ?>/logout.php" class="btn-login">
             <i class="bi bi-box-arrow-left"></i> Log Out
         </a>
-        <div class="footer-note">&copy; 2026 OJAMS &mdash; Prototype v2.00</div>
+        <div class="footer-note">&copy; 2026 OJAMS &mdash; Prototype v3.00</div>
     </div>
 </body>
 </html>
