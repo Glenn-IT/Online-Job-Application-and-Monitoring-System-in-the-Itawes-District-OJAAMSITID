@@ -410,6 +410,7 @@ function saveJob() {
     if (!company)       { showFieldError('jobCompany',       'Company is required.');       valid = false; }
     if (!description)   { showFieldError('jobDescription',   'Description is required.');  valid = false; }
     if (!qualification) { showFieldError('jobQualification', 'Qualifications are required.'); valid = false; }
+    if (salary_range && /[a-zA-Z]/.test(salary_range)) { showFieldError('jobSalaryRange', 'Salary range cannot contain letters.'); valid = false; }
     if (!valid) return;
     const payload = _editingJobId
         ? { action: 'edit', id: _editingJobId, title, company, description, qualification, location, job_type, salary_range, date_posted, status, deadline, csrf_token: getCsrfToken() }

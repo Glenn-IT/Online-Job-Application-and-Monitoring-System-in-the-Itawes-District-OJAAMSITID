@@ -68,6 +68,7 @@ if ($action === 'add') {
     if (strlen($title) > 150)      { echo json_encode(['success' => false, 'message' => 'Job title must be 150 characters or fewer.']); exit; }
     if (strlen($company) > 150)    { echo json_encode(['success' => false, 'message' => 'Company name must be 150 characters or fewer.']); exit; }
     if ($location && strlen($location) > 150) { echo json_encode(['success' => false, 'message' => 'Location must be 150 characters or fewer.']); exit; }
+    if ($salaryRange && preg_match('/[a-zA-Z]/', $salaryRange)) { echo json_encode(['success' => false, 'message' => 'Salary range cannot contain letters.']); exit; }
 
     $stmt = $pdo->prepare("
         INSERT INTO jobs (title, company, description, qualification, location, job_type, salary_range, date_posted, status, deadline, created_by)
@@ -113,6 +114,7 @@ if ($action === 'edit') {
     if (strlen($title) > 150)      { echo json_encode(['success' => false, 'message' => 'Job title must be 150 characters or fewer.']); exit; }
     if (strlen($company) > 150)    { echo json_encode(['success' => false, 'message' => 'Company name must be 150 characters or fewer.']); exit; }
     if ($location && strlen($location) > 150) { echo json_encode(['success' => false, 'message' => 'Location must be 150 characters or fewer.']); exit; }
+    if ($salaryRange && preg_match('/[a-zA-Z]/', $salaryRange)) { echo json_encode(['success' => false, 'message' => 'Salary range cannot contain letters.']); exit; }
 
     $stmt = $pdo->prepare("
         UPDATE jobs
