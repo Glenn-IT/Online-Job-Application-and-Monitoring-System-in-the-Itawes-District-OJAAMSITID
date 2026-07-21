@@ -117,6 +117,15 @@ Built as a true cherry-pick off a temp branch from `main` — the gate include w
 
 ---
 
+### v3.00 | Manage Jobs Unlocked
+
+**Present:** All of v2.00 (Login, Register, Forgot/Reset Password + Admin Dashboard + User Management) + Manage Jobs, including the salary-range letter-validation fix
+**Under Construction:** Applications, Reports, Export Report, both Profile Settings pages, Browse Jobs, Job Detail, Saved Jobs, My Applications
+
+Built as a true cherry-pick off the `v2.00` tag — the Under Construction gate was removed from `pages/admin/manage-jobs.php` only, and the salary-range validation fix was carried over into `manage-jobs.php`, `modals/add-job-modal.php`, and `handlers/jobs.php`. `main` was not touched.
+
+---
+
 ## GitHub Release Tags
 
 | Version | Tag     | Commit                                     |
@@ -132,6 +141,7 @@ Built as a true cherry-pick off a temp branch from `main` — the gate include w
 | v1.09   | `v1.09` | `8a6f878936722c3316a249354f9045121b722eff` |
 | v1.10   | `v1.10` | `b69d2b404ddca723bd7f63bc1a95c1484555259d` |
 | v2.00   | `v2.00` | `249ca9447527fd56ad91117fe7e0a5c8492ef3f8` |
+| v3.00   | `v3.00` | `39622d16d8999a967545dc81c16aab03f98d416c` |
 
 > Fill in the commit hash or branch name after each GitHub release is published.
 
