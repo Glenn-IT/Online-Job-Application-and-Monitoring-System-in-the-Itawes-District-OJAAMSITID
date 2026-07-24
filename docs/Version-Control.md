@@ -124,6 +124,8 @@ Built as a true cherry-pick off a temp branch from `main` — the gate include w
 
 Built as a true cherry-pick off the `v2.00` tag — the Under Construction gate was removed from `pages/admin/manage-jobs.php` only, and the salary-range validation fix was carried over into `manage-jobs.php`, `modals/add-job-modal.php`, and `handlers/jobs.php`. `main` was not touched.
 
+**Re-cherry-picked (2026-07-24):** `main` gained an Applications Overview (doughnut) chart and an Applicants-per-Job (line) chart on the Admin Dashboard, plus an expanded 10-question Security Questions list. Since v3.00 already presents both Admin Dashboard and Register/Forgot-Password, these two changes were carried over via a fresh true cherry-pick off the `v3.00` tag (`config/config.php` and `pages/admin/dashboard.php` only — `docs/issues.md` was excluded as it's not part of the demo state). Tag re-pointed to the new commit; `main` was not touched.
+
 ---
 
 ## GitHub Release Tags
@@ -141,7 +143,7 @@ Built as a true cherry-pick off the `v2.00` tag — the Under Construction gate 
 | v1.09   | `v1.09` | `8a6f878936722c3316a249354f9045121b722eff` |
 | v1.10   | `v1.10` | `b69d2b404ddca723bd7f63bc1a95c1484555259d` |
 | v2.00   | `v2.00` | `249ca9447527fd56ad91117fe7e0a5c8492ef3f8` |
-| v3.00   | `v3.00` | `39622d16d8999a967545dc81c16aab03f98d416c` |
+| v3.00   | `v3.00` | `13c0248c8be089fcd4ba539cb575e79149c88d4b` |
 
 > Fill in the commit hash or branch name after each GitHub release is published.
 
