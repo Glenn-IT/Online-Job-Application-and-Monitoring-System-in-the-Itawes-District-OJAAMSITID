@@ -12,9 +12,20 @@ $stmtStats = $pdo->query("
         (SELECT COUNT(*) FROM jobs)                                   AS total_jobs,
         (SELECT COUNT(*) FROM applications)                          AS total_applicants,
         (SELECT COUNT(*) FROM applications WHERE status = 'Pending') AS pending_applications,
-        (SELECT COUNT(*) FROM applications WHERE status = 'Approved') AS approved_applications
+        (SELECT COUNT(*) FROM applications WHERE status = 'Approved') AS approved_applications,
+        (SELECT COUNT(*) FROM applications WHERE status = 'Rejected') AS rejected_applications
 ");
 $stats = $stmtStats->fetch();
+
+// Applicants per job (for line chart)
+$stmtJobApps = $pdo->query("
+    SELECT j.title, COUNT(a.id) AS applicant_count
+    FROM jobs j
+    LEFT JOIN applications a ON a.job_id = j.id
+    GROUP BY j.id, j.title
+    ORDER BY j.date_posted ASC, j.id ASC
+");
+$jobApplicantCounts = $stmtJobApps->fetchAll();
 
 // ── Activity Log Filters ─────────────────────────────────────
 $logSearch   = trim($_GET['log_search']  ?? '');
@@ -117,6 +128,47 @@ include $basePath . "layouts/navbar-admin.php";
             $statColor = "#20c997";
             include $basePath . "components/stats-card.php";
             ?>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mt-2">
+            <!-- Applications Overview Chart -->
+            <div class="col-lg-5 mb-3 mb-lg-0">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-pie-chart-fill me-2 text-primary"></i>Applications Overview
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <?php if ((int)$stats["total_applicants"] === 0): ?>
+                            <p class="text-muted text-center py-4 mb-0">No applications yet.</p>
+                        <?php else: ?>
+                            <div style="max-width:320px; margin:0 auto;">
+                                <canvas id="applicationsChart"></canvas>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Applicants per Job Chart -->
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-graph-up me-2 text-primary"></i>Applicants per Job
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($jobApplicantCounts)): ?>
+                            <p class="text-muted text-center py-4 mb-0">No jobs posted yet.</p>
+                        <?php else: ?>
+                            <canvas id="jobApplicantsChart" height="130"></canvas>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Activity Log -->
@@ -272,4 +324,66 @@ function clearOldLogs() {
     .catch(() => showToast("Request failed.", "danger"));
 }
 </script>
+<?php if ((int)$stats["total_applicants"] > 0 || !empty($jobApplicantCounts)): ?>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+const appsCtx = document.getElementById('applicationsChart');
+if (appsCtx) {
+    new Chart(appsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Pending', 'Approved', 'Rejected'],
+            datasets: [{
+                data: [
+                    <?php echo (int)$stats["pending_applications"]; ?>,
+                    <?php echo (int)$stats["approved_applications"]; ?>,
+                    <?php echo (int)$stats["rejected_applications"]; ?>
+                ],
+                backgroundColor: ['#ffc107', '#20c997', '#dc3545'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+}
+
+const jobApplicantsCtx = document.getElementById('jobApplicantsChart');
+if (jobApplicantsCtx) {
+    new Chart(jobApplicantsCtx, {
+        type: 'line',
+        data: {
+            labels: <?php echo json_encode(array_column($jobApplicantCounts, 'title')); ?>,
+            datasets: [{
+                label: 'Applicants',
+                data: <?php echo json_encode(array_map('intval', array_column($jobApplicantCounts, 'applicant_count'))); ?>,
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13,110,253,0.15)',
+                tension: 0.3,
+                fill: true,
+                pointBackgroundColor: '#0d6efd',
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                }
+            }
+        }
+    });
+}
+</script>
+<?php endif; ?>
 <?php include $basePath . "layouts/footer.php"; ?>

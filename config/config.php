@@ -82,6 +82,10 @@ define('SECURITY_QUESTIONS', [
     'What is the name of your elementary school?',
     'What was the name of your childhood best friend?',
     'What is your favorite food?',
+    'What was the make of your first car?',
+    'What is your favorite movie?',
+    'What was your childhood nickname?',
+    'What is the name of the street you grew up on?',
 ]);
 
 // Forgot-password attempt throttle (per session)
