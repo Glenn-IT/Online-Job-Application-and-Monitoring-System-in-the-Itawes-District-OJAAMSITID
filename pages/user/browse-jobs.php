@@ -1,6 +1,4 @@
 <?php
-require_once __DIR__ . '/../../components/under-construction.php';
-
 require_once __DIR__ . "/../../config/auth.php";
 requireUser();
 $pageTitle   = "OJAMS - Browse Jobs";
@@ -225,21 +223,19 @@ include $basePath . "layouts/navbar-user.php";
                                 <i class="bi bi-check-circle me-1"></i>Applied
                             </button>
                         <?php elseif ($isOpen): ?>
-                            <button class="btn btn-primary flex-grow-1"
-                                onclick="openApplyModal(<?php echo $job['id']; ?>, '<?php echo htmlspecialchars($job['title'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($job['company'], ENT_QUOTES); ?>')">
+                            <a href="#" class="btn btn-primary flex-grow-1 disabled" tabindex="-1" aria-disabled="true">
                                 <i class="bi bi-send me-1"></i>Apply
-                            </button>
+                            </a>
                         <?php else: ?>
                             <button class="btn btn-secondary flex-grow-1" disabled>
                                 <i class="bi bi-lock me-1"></i>Closed
                             </button>
                         <?php endif; ?>
-                        <button class="btn btn-outline-secondary <?php echo $isSaved ? 'text-warning' : ''; ?>"
-                                id="save-btn-<?php echo $job['id']; ?>"
-                                onclick="toggleSaveJob(<?php echo $job['id']; ?>)"
-                                title="<?php echo $isSaved ? 'Remove from saved' : 'Save job'; ?>">
+                        <a href="#" class="btn btn-outline-secondary disabled <?php echo $isSaved ? 'text-warning' : ''; ?>"
+                           tabindex="-1" aria-disabled="true"
+                           title="<?php echo $isSaved ? 'Remove from saved' : 'Save job'; ?>">
                             <i class="bi bi-bookmark<?php echo $isSaved ? '-fill' : ''; ?>"></i>
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -280,164 +276,4 @@ include $basePath . "layouts/navbar-user.php";
     </nav>
     <?php endif; ?>
 </div>
-<?php include $basePath . "modals/apply-job-modal.php"; ?>
-<script>
-const APP_HANDLER   = "../../handlers/applications.php";
-const SAVED_HANDLER = "../../handlers/saved-jobs.php";
-
-function toggleSaveJob(jobId) {
-    fetch(SAVED_HANDLER, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "toggle", job_id: jobId, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(res => {
-        showToast(res.message, res.success ? "success" : "danger");
-        if (res.success) {
-            const btn  = document.getElementById("save-btn-" + jobId);
-            const icon = btn?.querySelector("i");
-            if (res.saved) {
-                btn?.classList.add("text-warning");
-                btn?.setAttribute("title", "Remove from saved");
-                if (icon) icon.className = "bi bi-bookmark-fill";
-            } else {
-                btn?.classList.remove("text-warning");
-                btn?.setAttribute("title", "Save job");
-                if (icon) icon.className = "bi bi-bookmark";
-            }
-        }
-    })
-    .catch(() => showToast("Request failed.", "danger"));
-}
-
-function computeAge(birthdate) {
-    if (!birthdate) return "";
-    const today = new Date();
-    const dob   = new Date(birthdate);
-    let age = today.getFullYear() - dob.getFullYear();
-    const m = today.getMonth() - dob.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-    return age >= 0 ? age : "";
-}
-
-function openApplyModal(jobId, title, company) {
-    document.getElementById("applyJobTitle").textContent   = title;
-    document.getElementById("applyJobCompany").textContent = company;
-    document.getElementById("applicationForm").reset();
-    document.getElementById("applicationForm").dataset.jobId = jobId;
-    const sess = <?php echo json_encode([
-        "full_name"      => $_SESSION["ojams_user"]["full_name"],
-        "contact_number" => $_SESSION["ojams_user"]["contact_number"] ?? "",
-        "address"        => $_SESSION["ojams_user"]["address"] ?? "",
-        "birthdate"      => $_SESSION["ojams_user"]["birthdate"] ?? "",
-    ]); ?>;
-    const setV = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
-    setV("appFullName",  sess.full_name);
-    setV("appContact",   sess.contact_number);
-    setV("appAddress",   sess.address);
-    setV("appBirthdate", sess.birthdate);
-    // Auto-compute age from session birthdate
-    const ageEl = document.getElementById("appAge");
-    if (ageEl && sess.birthdate) ageEl.value = computeAge(sess.birthdate);
-    new bootstrap.Modal(document.getElementById("applyJobModal")).show();
-}
-
-// Auto-compute age when birthdate input changes
-document.addEventListener("DOMContentLoaded", function () {
-    const bdEl = document.getElementById("appBirthdate");
-    const ageEl = document.getElementById("appAge");
-    if (bdEl && ageEl) {
-        bdEl.addEventListener("change", function () {
-            ageEl.value = computeAge(this.value);
-        });
-    }
-});
-
-function submitApplication() {
-    const form  = document.getElementById("applicationForm");
-    const jobId = form ? form.dataset.jobId : null;
-    if (!jobId) { showToast("No job selected.", "danger"); return; }
-
-    const g = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
-    // Field-level validation
-    clearAllFieldErrors("applicationForm");
-    let valid = true;
-    if (!g("appFullName")) { showFieldError("appFullName", "Full name is required."); valid = false; }
-    if (!g("appAddress"))  { showFieldError("appAddress",  "Address is required.");   valid = false; }
-    const contactVal = g("appContact");
-    if (!contactVal) {
-        showFieldError("appContact", "Contact number is required."); valid = false;
-    } else if (!/^\+?[\d\s\-\(\)\.]{7,20}$/.test(contactVal)) {
-        showFieldError("appContact", "Contact number may only contain digits, spaces, +, hyphens, or parentheses."); valid = false;
-    }
-    const bdVal = document.getElementById("appBirthdate")?.value;
-    if (!bdVal) {
-        showFieldError("appBirthdate", "Birthdate is required."); valid = false;
-    } else {
-        const bd  = new Date(bdVal);
-        const now = new Date();
-        if (bd >= now) {
-            showFieldError("appBirthdate", "Birthdate cannot be a future date."); valid = false;
-        } else {
-            const age = Math.floor((now - bd) / (365.25 * 24 * 3600 * 1000));
-            if (age < 16 || age > 80) { showFieldError("appBirthdate", "Age must be between 16 and 80 years old."); valid = false; }
-        }
-    }
-    if (!valid) return;
-
-    const submitBtn = document.getElementById("submitAppBtn");
-    btnLoading(submitBtn, true, "Submitting…");
-
-    const fd = new FormData();
-    fd.append("action",     "apply");
-    fd.append("csrf_token", getCsrfToken());
-    fd.append("job_id",     jobId);
-    fd.append("full_name",  g("appFullName"));
-    fd.append("email",      "<?php echo htmlspecialchars($_SESSION['ojams_user']['email'], ENT_QUOTES); ?>");
-    fd.append("contact",    g("appContact"));
-    fd.append("address",    g("appAddress"));
-    fd.append("birthdate",  document.getElementById("appBirthdate")?.value ?? "");
-    fd.append("age",        document.getElementById("appAge")?.value ?? "0");
-    fd.append("elementary", g("appElementary"));
-    fd.append("jhs",        g("appJhs"));
-    fd.append("shs",        g("appShs"));
-    fd.append("college",    g("appCollege"));
-    fd.append("skills",     g("appSkills"));
-    fd.append("experience", g("appExperience"));
-
-    const resumeFile = document.getElementById("appResume")?.files[0];
-    if (resumeFile) fd.append("resume", resumeFile);
-
-    fetch(APP_HANDLER, { method: "POST", body: fd })
-    .then(r => r.json())
-    .then(res => {
-        bootstrap.Modal.getInstance(document.getElementById("applyJobModal"))?.hide();
-        showToast(res.message, res.success ? "success" : "danger");
-        if (res.success) setTimeout(() => location.reload(), 1200);
-    })
-    .catch(() => showToast("Request failed. Please try again.", "danger"))
-    .finally(() => btnLoading(submitBtn, false));
-}
-
-// Resume file name preview
-document.addEventListener("DOMContentLoaded", function () {
-    const resumeInput = document.getElementById("appResume");
-    if (resumeInput) {
-        resumeInput.addEventListener("change", function () {
-            const infoEl    = document.getElementById("resumeFileInfo");
-            const nameEl    = document.getElementById("resumeFileName");
-            const sizeEl    = document.getElementById("resumeFileSize");
-            if (!this.files.length) { infoEl?.classList.add("d-none"); return; }
-            const f = this.files[0];
-            const kb = (f.size / 1024).toFixed(1);
-            const mb = (f.size / (1024*1024)).toFixed(2);
-            if (nameEl) nameEl.textContent = f.name;
-            if (sizeEl) sizeEl.textContent = f.size > 1024*1024 ? mb + " MB" : kb + " KB";
-            infoEl?.classList.remove("d-none");
-        });
-    }
-});
-
-</script>
 <?php include $basePath . "layouts/footer.php"; ?>
