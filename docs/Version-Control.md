@@ -128,6 +128,15 @@ Built as a true cherry-pick off the `v2.00` tag — the Under Construction gate 
 
 ---
 
+### v4.00 | Browse Jobs & Profile Settings Unlocked
+
+**Present:** All of v3.00 (Login, Register, Forgot/Reset Password + Admin Dashboard + User Management + Manage Jobs) + Browse Jobs + both Profile Settings pages (user and admin)
+**Under Construction:** Applications, Reports, Export Report, Job Detail, Saved Jobs, My Applications
+
+Built as a true cherry-pick off the `v3.00` tag — the Under Construction gate was removed from `pages/user/browse-jobs.php`, `pages/user/profile-settings.php`, and `pages/admin/profile-settings.php` only. On Browse Jobs, the Apply and Save/bookmark actions are presentational-only: both buttons were converted to inert `href="#"` links (the `apply-job-modal.php` include and its supporting JS were removed from the page) since the apply flow and Saved Jobs list aren't presented yet. `main` was not touched.
+
+---
+
 ## GitHub Release Tags
 
 | Version | Tag     | Commit                                     |
@@ -144,6 +153,7 @@ Built as a true cherry-pick off the `v2.00` tag — the Under Construction gate 
 | v1.10   | `v1.10` | `b69d2b404ddca723bd7f63bc1a95c1484555259d` |
 | v2.00   | `v2.00` | `249ca9447527fd56ad91117fe7e0a5c8492ef3f8` |
 | v3.00   | `v3.00` | `13c0248c8be089fcd4ba539cb575e79149c88d4b` |
+| v4.00   | `v4.00` | `587252ca76813173cf1173b4a1654f959de418b6` |
 
 > Fill in the commit hash or branch name after each GitHub release is published.
 
