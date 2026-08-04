@@ -1,6 +1,4 @@
 <?php
-require_once __DIR__ . '/../../components/under-construction.php';
-
 require_once __DIR__ . '/../../config/auth.php';
 requireUser();
 
@@ -201,9 +199,9 @@ include $basePath . 'layouts/navbar-user.php';
                             onclick="openApplyModal(<?php echo $job['id']; ?>, '<?php echo htmlspecialchars($job['title'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($job['company'], ENT_QUOTES); ?>')">
                             <i class="bi bi-send me-2"></i>Apply Now
                         </button>
-                        <button class="btn btn-outline-secondary w-100 <?php echo $isSaved ? 'text-warning' : ''; ?>"
+                        <button class="btn btn-outline-secondary w-100 disabled <?php echo $isSaved ? 'text-warning' : ''; ?>"
                                 id="detailSaveBtn"
-                                onclick="toggleSaveJobDetail(<?php echo $job['id']; ?>)">
+                                disabled>
                             <i class="bi bi-bookmark<?php echo $isSaved ? '-fill' : ''; ?> me-1"></i>
                             <span id="detailSaveLabel"><?php echo $isSaved ? 'Saved' : 'Save Job'; ?></span>
                         </button>
