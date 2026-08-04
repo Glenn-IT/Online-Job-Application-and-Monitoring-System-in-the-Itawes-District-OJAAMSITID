@@ -137,6 +137,15 @@ Built as a true cherry-pick off the `v3.00` tag — the Under Construction gate 
 
 ---
 
+### v5.00 | Job Detail & Apply Function Unlocked
+
+**Present:** All of v4.00 (Login, Register, Forgot/Reset Password + Admin Dashboard + User Management + Manage Jobs + Browse Jobs + both Profile Settings pages) + Job Detail (View Details) + Apply for Jobs flow (on both Browse Jobs and Job Detail pages)
+**Under Construction:** Applications, Reports, Export Report, Saved Jobs, My Applications
+
+Built as a true cherry-pick off the `v4.00` tag — the Under Construction gate was removed from `pages/user/job-detail.php` and the Apply action was unlocked on both `pages/user/browse-jobs.php` and `pages/user/job-detail.php`. The Save/bookmark action remains gated/disabled on both pages since the Saved Jobs list is not presented yet. `main` was not touched.
+
+---
+
 ## GitHub Release Tags
 
 | Version | Tag     | Commit                                     |
@@ -154,6 +163,7 @@ Built as a true cherry-pick off the `v3.00` tag — the Under Construction gate 
 | v2.00   | `v2.00` | `249ca9447527fd56ad91117fe7e0a5c8492ef3f8` |
 | v3.00   | `v3.00` | `13c0248c8be089fcd4ba539cb575e79149c88d4b` |
 | v4.00   | `v4.00` | `587252ca76813173cf1173b4a1654f959de418b6` |
+| v5.00   | `v5.00` | `aa0b1705207acc0b1bc82092b7a8c1fed4e89144` |
 
 > Fill in the commit hash or branch name after each GitHub release is published.
 
