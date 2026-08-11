@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . "/../../config/auth.php";
 requireStaff();
+require_once __DIR__ . '/../../components/under-construction.php';
 
 $pageTitle   = "OJAMS - Staff Applications";
 $basePath    = "../../";

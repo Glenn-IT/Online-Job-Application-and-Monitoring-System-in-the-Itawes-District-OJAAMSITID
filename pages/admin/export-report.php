@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../config/auth.php';
 requireAdmin();
+require_once __DIR__ . '/../../components/under-construction.php';
 
 $type = $_GET['type'] ?? '';
 

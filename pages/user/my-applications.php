@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . "/../../config/auth.php";
 requireUser();
+require_once __DIR__ . '/../../components/under-construction.php';
 $pageTitle   = "OJAMS - My Applications";
 $basePath    = "../../";
 $currentPage = "my-applications";
