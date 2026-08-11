@@ -263,7 +263,7 @@ if ($action === 'getDetails') {
     }
     $appId = (int)($body['id'] ?? 0);
     $stmt  = $pdo->prepare("
-        SELECT a.*, j.title as job_title, j.company
+        SELECT a.*, j.title as job_title, j.company, j.contact_person, j.contact_phone
         FROM applications a
         JOIN jobs j ON j.id = a.job_id
         WHERE a.id = ?

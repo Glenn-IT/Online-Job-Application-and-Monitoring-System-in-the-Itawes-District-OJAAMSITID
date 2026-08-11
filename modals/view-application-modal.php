@@ -31,6 +31,8 @@
                         <table class="table table-borderless table-sm">
                             <tr><th class="text-muted" style="width:45%;">Job Title</th>    <td id="viewAppJobTitle">—</td></tr>
                             <tr><th class="text-muted">Company</th>                          <td id="viewAppCompany">—</td></tr>
+                            <tr><th class="text-muted">Hiring Contact</th>                   <td id="viewAppContactPerson">—</td></tr>
+                            <tr><th class="text-muted">Contact Phone</th>                    <td id="viewAppContactPhone">—</td></tr>
                             <tr><th class="text-muted">Date Applied</th>                     <td id="viewAppDate">—</td></tr>
                             <tr><th class="text-muted">Status</th>                           <td><span id="viewAppStatus" class="badge bg-secondary">—</span></td></tr>
                         </table>

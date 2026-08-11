@@ -21,12 +21,26 @@
             </p>
 
             <!-- Qualification -->
-            <p class="card-text">
+            <p class="card-text mb-1">
                 <small class="text-muted">
                     <i class="bi bi-mortarboard me-1"></i>
                     <strong>Qualifications:</strong> <?php echo $job['qualification']; ?>
                 </small>
             </p>
+
+            <!-- Hiring Contact Person -->
+            <?php if (!empty($job['contact_person']) || !empty($job['contact_phone'])): ?>
+                <p class="card-text mb-2">
+                    <small class="text-dark">
+                        <i class="bi bi-person-lines-fill me-1 text-primary"></i>
+                        <strong>Hiring Contact:</strong>
+                        <?php echo htmlspecialchars($job['contact_person'] ?? 'Recruiter'); ?>
+                        <?php if (!empty($job['contact_phone'])): ?>
+                            <span class="ms-1 fw-semibold text-primary"><i class="bi bi-telephone-fill ms-1 me-1"></i><?php echo htmlspecialchars($job['contact_phone']); ?></span>
+                        <?php endif; ?>
+                    </small>
+                </p>
+            <?php endif; ?>
 
             <!-- Date Posted, Poster & Status -->
             <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">

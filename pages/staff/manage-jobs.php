@@ -241,6 +241,8 @@ include $basePath . "layouts/navbar-staff.php";
                                                 data-location="<?= htmlspecialchars($job['location'] ?? '') ?>"
                                                 data-jobtype="<?= htmlspecialchars($job['job_type'] ?? '') ?>"
                                                 data-salary="<?= htmlspecialchars($job['salary_range'] ?? '') ?>"
+                                                data-contactperson="<?= htmlspecialchars($job['contact_person'] ?? '') ?>"
+                                                data-contactphone="<?= htmlspecialchars($job['contact_phone'] ?? '') ?>"
                                                 onclick="editJob('<?= addslashes(htmlspecialchars($job['title'])) ?>', '<?= addslashes(htmlspecialchars($job['company'])) ?>', '<?= addslashes(htmlspecialchars(str_replace(["\r", "\n"], ' ', $job['description']))) ?>', '<?= addslashes(htmlspecialchars(str_replace(["\r", "\n"], ' ', $job['qualification']))) ?>', '<?= $job['date_posted'] ?>', '<?= $job['status'] ?>', '<?= $job['deadline'] ?? '' ?>', <?= $job['id'] ?>)"
                                                 title="Edit Job Post">
                                             <i class="bi bi-pencil-square"></i> Edit
@@ -310,9 +312,11 @@ function editJob(title, company, description, qualification, datePosted, status,
     document.getElementById('jobCompany').value       = company;
     document.getElementById('jobDescription').value   = description;
     document.getElementById('jobQualification').value = qualification;
-    document.getElementById('jobLocation').value      = btn.dataset.location    || '';
-    document.getElementById('jobType').value          = btn.dataset.jobtype     || '';
-    document.getElementById('jobSalaryRange').value   = btn.dataset.salary      || '';
+    document.getElementById('jobLocation').value      = btn.dataset.location      || '';
+    document.getElementById('jobType').value          = btn.dataset.jobtype       || '';
+    document.getElementById('jobSalaryRange').value   = btn.dataset.salary        || '';
+    document.getElementById('jobContactPerson').value = btn.dataset.contactperson || '';
+    document.getElementById('jobContactPhone').value  = btn.dataset.contactphone  || '';
     document.getElementById('jobDatePosted').value    = datePosted;
     document.getElementById('jobStatus').value        = status;
     document.getElementById('jobDeadline').value      = deadline || '';
@@ -320,16 +324,18 @@ function editJob(title, company, description, qualification, datePosted, status,
 }
 
 function saveJob() {
-    const title         = document.getElementById('jobTitle')?.value.trim();
-    const company       = document.getElementById('jobCompany')?.value.trim();
-    const description   = document.getElementById('jobDescription')?.value.trim();
-    const qualification = document.getElementById('jobQualification')?.value.trim();
-    const location      = document.getElementById('jobLocation')?.value.trim()     || null;
-    const job_type      = document.getElementById('jobType')?.value                || null;
-    const salary_range  = document.getElementById('jobSalaryRange')?.value.trim() || null;
-    const date_posted   = document.getElementById('jobDatePosted')?.value;
-    const status        = document.getElementById('jobStatus')?.value;
-    const deadline      = document.getElementById('jobDeadline')?.value            || null;
+    const title          = document.getElementById('jobTitle')?.value.trim();
+    const company        = document.getElementById('jobCompany')?.value.trim();
+    const description    = document.getElementById('jobDescription')?.value.trim();
+    const qualification  = document.getElementById('jobQualification')?.value.trim();
+    const location       = document.getElementById('jobLocation')?.value.trim()      || null;
+    const job_type       = document.getElementById('jobType')?.value                 || null;
+    const salary_range   = document.getElementById('jobSalaryRange')?.value.trim()   || null;
+    const contact_person = document.getElementById('jobContactPerson')?.value.trim() || null;
+    const contact_phone  = document.getElementById('jobContactPhone')?.value.trim()  || null;
+    const date_posted    = document.getElementById('jobDatePosted')?.value;
+    const status         = document.getElementById('jobStatus')?.value;
+    const deadline       = document.getElementById('jobDeadline')?.value             || null;
 
     clearAllFieldErrors('addJobForm');
     let valid = true;
@@ -338,11 +344,12 @@ function saveJob() {
     if (!description)   { showFieldError('jobDescription',   'Description is required.');  valid = false; }
     if (!qualification) { showFieldError('jobQualification', 'Qualifications are required.'); valid = false; }
     if (salary_range && /[a-zA-Z]/.test(salary_range)) { showFieldError('jobSalaryRange', 'Salary range cannot contain letters.'); valid = false; }
+    if (contact_phone && /[a-zA-Z]/.test(contact_phone)) { showFieldError('jobContactPhone', 'Contact number cannot contain letters.'); valid = false; }
     if (!valid) return;
 
     const payload = _editingJobId
-        ? { action: 'edit', id: _editingJobId, title, company, description, qualification, location, job_type, salary_range, date_posted, status, deadline, csrf_token: getCsrfToken() }
-        : { action: 'add',                     title, company, description, qualification, location, job_type, salary_range, date_posted, status, deadline, csrf_token: getCsrfToken() };
+        ? { action: 'edit', id: _editingJobId, title, company, description, qualification, location, job_type, salary_range, contact_person, contact_phone, date_posted, status, deadline, csrf_token: getCsrfToken() }
+        : { action: 'add',                     title, company, description, qualification, location, job_type, salary_range, contact_person, contact_phone, date_posted, status, deadline, csrf_token: getCsrfToken() };
 
     const saveBtn = document.getElementById('saveJobBtn');
     btnLoading(saveBtn, true, 'Saving…');

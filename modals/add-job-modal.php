@@ -65,6 +65,29 @@
                         </div>
                     </div>
                     <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                Contact Person / Recruiter <span class="text-muted fw-normal small">(optional)</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control" id="jobContactPerson"
+                                       placeholder="e.g. Maria Santos (HR Manager)" maxlength="150">
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                Contact Number <span class="text-muted fw-normal small">(optional)</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                                <input type="text" class="form-control" id="jobContactPhone"
+                                       placeholder="e.g. 0917-123-4567" maxlength="50"
+                                       oninput="this.value = this.value.replace(/[a-zA-Z]/g, '')">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Date Posted</label>
                             <input type="date" class="form-control" id="jobDatePosted">

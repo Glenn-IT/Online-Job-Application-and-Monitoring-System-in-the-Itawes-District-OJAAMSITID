@@ -406,6 +406,8 @@ function viewAppDetails(appId) {
         setT("viewAppAge",        app.age);
         setT("viewAppJobTitle",   app.job_title);
         setT("viewAppCompany",    app.company);
+        setT("viewAppContactPerson", app.contact_person);
+        setT("viewAppContactPhone",  app.contact_phone);
         setT("viewAppDate",       app.date_applied);
         setT("viewAppElemSchool", app.elementary);
         setT("viewAppJhsSchool",  app.jhs);

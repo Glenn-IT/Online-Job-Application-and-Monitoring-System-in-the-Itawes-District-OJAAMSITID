@@ -7,7 +7,7 @@ $currentPage = "my-applications";
 
 $userId = $_SESSION["ojams_user"]["id"];
 $stmt = $pdo->prepare("
-    SELECT a.*, j.title as job_title, j.company
+    SELECT a.*, j.title as job_title, j.company, j.contact_person, j.contact_phone
     FROM applications a
     JOIN jobs j ON j.id = a.job_id
     WHERE a.user_id = ?
@@ -148,6 +148,8 @@ include $basePath . "layouts/navbar-user.php";
                         <table class="table table-borderless table-sm">
                             <tr><th class="text-muted" style="width:45%;">Job Title</th>  <td id="vmyAppJobTitle">—</td></tr>
                             <tr><th class="text-muted">Company</th>                        <td id="vmyAppCompany">—</td></tr>
+                            <tr><th class="text-muted">Hiring Contact</th>                 <td id="vmyAppContactPerson">—</td></tr>
+                            <tr><th class="text-muted">Contact Phone</th>                  <td id="vmyAppContactPhone">—</td></tr>
                             <tr><th class="text-muted">Date Applied</th>                   <td id="vmyAppDate">—</td></tr>
                             <tr><th class="text-muted">Status</th>                         <td id="vmyAppStatus">—</td></tr>
                         </table>
@@ -221,9 +223,11 @@ function viewMyApp(appId) {
     const app = myAppsData.find(a => a.id == appId);
     if (!app) return;
     const setT = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v || "—"; };
-    setT("vmyAppJobTitle",  app.job_title);
-    setT("vmyAppCompany",   app.company);
-    setT("vmyAppDate",      app.date_applied);
+    setT("vmyAppJobTitle",      app.job_title);
+    setT("vmyAppCompany",       app.company);
+    setT("vmyAppContactPerson", app.contact_person);
+    setT("vmyAppContactPhone",  app.contact_phone);
+    setT("vmyAppDate",          app.date_applied);
     setT("vmyAppName",      app.full_name);
     setT("vmyAppEmail",     app.email);
     setT("vmyAppContact",   app.contact);

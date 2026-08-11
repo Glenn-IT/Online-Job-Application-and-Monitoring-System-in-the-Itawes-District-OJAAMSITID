@@ -13,7 +13,12 @@ if ($jobId <= 0) {
 }
 
 // ── Fetch job ────────────────────────────────────────────────
-$stmt = $pdo->prepare("SELECT * FROM jobs WHERE id = ? LIMIT 1");
+$stmt = $pdo->prepare("
+    SELECT j.*, u.full_name AS poster_name, u.role AS poster_role
+    FROM jobs j
+    LEFT JOIN users u ON u.id = j.created_by
+    WHERE j.id = ? LIMIT 1
+");
 $stmt->execute([$jobId]);
 $job = $stmt->fetch();
 
@@ -100,6 +105,9 @@ include $basePath . 'layouts/navbar-user.php';
                 <span class="text-muted small">
                     <i class="bi bi-calendar-event me-1 text-primary"></i>
                     Posted: <strong><?php echo date('F d, Y', strtotime($job['date_posted'])); ?></strong>
+                    <?php if (!empty($job['poster_name'])): ?>
+                        <span class="ms-1 text-secondary">&bull; By <strong><?php echo htmlspecialchars($job['poster_name']); ?></strong> (<?php echo ucfirst($job['poster_role'] ?? 'Admin'); ?>)</span>
+                    <?php endif; ?>
                 </span>
                 <?php if (!empty($job['deadline'])): ?>
                 <?php $deadlinePast = strtotime($job['deadline']) < strtotime('today'); ?>
@@ -125,7 +133,7 @@ include $basePath . 'layouts/navbar-user.php';
 
     <div class="row g-4">
 
-        <!-- Left: Description + Qualifications -->
+        <!-- Left: Description + Qualifications + Hiring Contact -->
         <div class="col-lg-8">
 
             <div class="card border-0 shadow-sm mb-4">
@@ -139,7 +147,7 @@ include $basePath . 'layouts/navbar-user.php';
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body p-4">
                     <h5 class="fw-bold border-bottom pb-2 mb-3">
                         <i class="bi bi-mortarboard me-2 text-primary"></i>Qualifications
@@ -149,6 +157,39 @@ include $basePath . 'layouts/navbar-user.php';
                     </p>
                 </div>
             </div>
+
+            <!-- Hiring Contact Person & Number -->
+            <?php if (!empty($job['contact_person']) || !empty($job['contact_phone'])): ?>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold border-bottom pb-2 mb-3">
+                        <i class="bi bi-person-lines-fill me-2 text-primary"></i>Hiring Contact Information
+                    </h5>
+                    <div class="row g-3">
+                        <?php if (!empty($job['contact_person'])): ?>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded border">
+                                <small class="text-muted d-block mb-1">Contact Person / Recruiter</small>
+                                <h6 class="fw-bold mb-0 text-dark">
+                                    <i class="bi bi-person-fill me-2 text-primary"></i><?php echo htmlspecialchars($job['contact_person']); ?>
+                                </h6>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (!empty($job['contact_phone'])): ?>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded border">
+                                <small class="text-muted d-block mb-1">Contact Phone Number</small>
+                                <h6 class="fw-bold mb-0 text-primary">
+                                    <i class="bi bi-telephone-fill me-2"></i><?php echo htmlspecialchars($job['contact_phone']); ?>
+                                </h6>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
 
         </div>
 

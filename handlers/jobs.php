@@ -56,25 +56,30 @@ if ($action === 'add') {
     $company       = strip_tags(trim($body['company']));
     $description   = strip_tags(trim($body['description']));
     $qualification = strip_tags(trim($body['qualification']));
-    $location      = strip_tags(trim($body['location']    ?? '')) ?: null;
+    $location      = strip_tags(trim($body['location']        ?? '')) ?: null;
     $jobType       = in_array($body['job_type'] ?? '', ['Full-time','Part-time','Contract','Internship','Freelance'])
                         ? $body['job_type'] : null;
-    $salaryRange   = strip_tags(trim($body['salary_range'] ?? '')) ?: null;
+    $salaryRange   = strip_tags(trim($body['salary_range']   ?? '')) ?: null;
+    $contactPerson = strip_tags(trim($body['contact_person']  ?? '')) ?: null;
+    $contactPhone  = strip_tags(trim($body['contact_phone']   ?? '')) ?: null;
     $date_posted   = $body['date_posted'] ?: date('Y-m-d');
     $status        = in_array($body['status'] ?? '', ['Open', 'Closed']) ? $body['status'] : 'Open';
     $deadline      = !empty($body['deadline']) ? $body['deadline'] : null;
     $created_by    = $_SESSION['ojams_user']['id'];
 
-    if (strlen($title) > 150)      { echo json_encode(['success' => false, 'message' => 'Job title must be 150 characters or fewer.']); exit; }
-    if (strlen($company) > 150)    { echo json_encode(['success' => false, 'message' => 'Company name must be 150 characters or fewer.']); exit; }
-    if ($location && strlen($location) > 150) { echo json_encode(['success' => false, 'message' => 'Location must be 150 characters or fewer.']); exit; }
+    if (strlen($title) > 150)         { echo json_encode(['success' => false, 'message' => 'Job title must be 150 characters or fewer.']); exit; }
+    if (strlen($company) > 150)       { echo json_encode(['success' => false, 'message' => 'Company name must be 150 characters or fewer.']); exit; }
+    if ($location && strlen($location) > 150)           { echo json_encode(['success' => false, 'message' => 'Location must be 150 characters or fewer.']); exit; }
+    if ($contactPerson && strlen($contactPerson) > 150) { echo json_encode(['success' => false, 'message' => 'Contact person must be 150 characters or fewer.']); exit; }
+    if ($contactPhone && strlen($contactPhone) > 50)    { echo json_encode(['success' => false, 'message' => 'Contact number must be 50 characters or fewer.']); exit; }
+    if ($contactPhone && preg_match('/[a-zA-Z]/', $contactPhone)) { echo json_encode(['success' => false, 'message' => 'Contact number cannot contain letters.']); exit; }
     if ($salaryRange && preg_match('/[a-zA-Z]/', $salaryRange)) { echo json_encode(['success' => false, 'message' => 'Salary range cannot contain letters.']); exit; }
 
     $stmt = $pdo->prepare("
-        INSERT INTO jobs (title, company, description, qualification, location, job_type, salary_range, date_posted, status, deadline, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO jobs (title, company, description, qualification, location, job_type, salary_range, contact_person, contact_phone, date_posted, status, deadline, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$title, $company, $description, $qualification, $location, $jobType, $salaryRange, $date_posted, $status, $deadline, $created_by]);
+    $stmt->execute([$title, $company, $description, $qualification, $location, $jobType, $salaryRange, $contactPerson, $contactPhone, $date_posted, $status, $deadline, $created_by]);
     $newId = $pdo->lastInsertId();
 
     logActivity($pdo, "New job posted: \"{$title}\" at {$company}", 'Created', (int)$newId);
@@ -103,27 +108,33 @@ if ($action === 'edit') {
     $company       = strip_tags(trim($body['company']));
     $description   = strip_tags(trim($body['description']));
     $qualification = strip_tags(trim($body['qualification']));
-    $location      = strip_tags(trim($body['location']    ?? '')) ?: null;
+    $location      = strip_tags(trim($body['location']        ?? '')) ?: null;
     $jobType       = in_array($body['job_type'] ?? '', ['Full-time','Part-time','Contract','Internship','Freelance'])
                         ? $body['job_type'] : null;
-    $salaryRange   = strip_tags(trim($body['salary_range'] ?? '')) ?: null;
+    $salaryRange   = strip_tags(trim($body['salary_range']   ?? '')) ?: null;
+    $contactPerson = strip_tags(trim($body['contact_person']  ?? '')) ?: null;
+    $contactPhone  = strip_tags(trim($body['contact_phone']   ?? '')) ?: null;
     $date_posted   = $body['date_posted'] ?: date('Y-m-d');
     $status        = in_array($body['status'] ?? '', ['Open', 'Closed']) ? $body['status'] : 'Open';
     $deadline      = !empty($body['deadline']) ? $body['deadline'] : null;
 
-    if (strlen($title) > 150)      { echo json_encode(['success' => false, 'message' => 'Job title must be 150 characters or fewer.']); exit; }
-    if (strlen($company) > 150)    { echo json_encode(['success' => false, 'message' => 'Company name must be 150 characters or fewer.']); exit; }
-    if ($location && strlen($location) > 150) { echo json_encode(['success' => false, 'message' => 'Location must be 150 characters or fewer.']); exit; }
+    if (strlen($title) > 150)         { echo json_encode(['success' => false, 'message' => 'Job title must be 150 characters or fewer.']); exit; }
+    if (strlen($company) > 150)       { echo json_encode(['success' => false, 'message' => 'Company name must be 150 characters or fewer.']); exit; }
+    if ($location && strlen($location) > 150)           { echo json_encode(['success' => false, 'message' => 'Location must be 150 characters or fewer.']); exit; }
+    if ($contactPerson && strlen($contactPerson) > 150) { echo json_encode(['success' => false, 'message' => 'Contact person must be 150 characters or fewer.']); exit; }
+    if ($contactPhone && strlen($contactPhone) > 50)    { echo json_encode(['success' => false, 'message' => 'Contact number must be 50 characters or fewer.']); exit; }
+    if ($contactPhone && preg_match('/[a-zA-Z]/', $contactPhone)) { echo json_encode(['success' => false, 'message' => 'Contact number cannot contain letters.']); exit; }
     if ($salaryRange && preg_match('/[a-zA-Z]/', $salaryRange)) { echo json_encode(['success' => false, 'message' => 'Salary range cannot contain letters.']); exit; }
 
     $stmt = $pdo->prepare("
         UPDATE jobs
         SET title = ?, company = ?, description = ?, qualification = ?,
             location = ?, job_type = ?, salary_range = ?,
+            contact_person = ?, contact_phone = ?,
             date_posted = ?, status = ?, deadline = ?
         WHERE id = ?
     ");
-    $stmt->execute([$title, $company, $description, $qualification, $location, $jobType, $salaryRange, $date_posted, $status, $deadline, $id]);
+    $stmt->execute([$title, $company, $description, $qualification, $location, $jobType, $salaryRange, $contactPerson, $contactPhone, $date_posted, $status, $deadline, $id]);
 
     logActivity($pdo, "Job updated: \"{$title}\"", 'Updated', $id);
 
