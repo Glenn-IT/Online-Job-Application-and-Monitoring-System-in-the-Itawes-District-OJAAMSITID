@@ -44,6 +44,14 @@ if (getenv('BASE_URL') !== false && getenv('BASE_URL') !== '') {
     define('BASE_URL', 'http://localhost/OJAMS');
 }
 
+// ── Ensure Directories Exist ────────────────────────────────
+$_logDir     = __DIR__ . '/../logs';
+$_avatarDir  = __DIR__ . '/../uploads/avatars';
+$_resumeDir  = __DIR__ . '/../uploads/resumes';
+if (!is_dir($_logDir))    { @mkdir($_logDir, 0755, true); }
+if (!is_dir($_avatarDir)) { @mkdir($_avatarDir, 0755, true); }
+if (!is_dir($_resumeDir)) { @mkdir($_resumeDir, 0755, true); }
+
 // ── Logging ─────────────────────────────────────────────────
 define('LOG_FILE', __DIR__ . '/../logs/app.log');
 

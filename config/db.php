@@ -40,7 +40,11 @@ try {
 
 } catch (PDOException $e) {
     // Log the real error server-side before showing a safe message to the user
-    $logFile = __DIR__ . '/../logs/app.log';
+    $logDir  = __DIR__ . '/../logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+    $logFile = $logDir . '/app.log';
     $logLine = '[' . date('Y-m-d H:i:s') . '] DB connection failed: ' . $e->getMessage() . PHP_EOL;
     error_log($logLine, 3, $logFile);
 
