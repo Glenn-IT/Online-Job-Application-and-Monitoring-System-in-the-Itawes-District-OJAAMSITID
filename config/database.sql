@@ -73,6 +73,8 @@ CREATE TABLE IF NOT EXISTS jobs (
   location      VARCHAR(150)    DEFAULT NULL,  -- e.g. "Tuguegarao City", "Remote"
   job_type      ENUM('Full-time','Part-time','Contract','Internship','Freelance') DEFAULT NULL,
   salary_range  VARCHAR(100)    DEFAULT NULL,  -- e.g. "₱25,000 – ₱35,000" or "Negotiable"
+  contact_person VARCHAR(150)   DEFAULT NULL,  -- Hiring officer / recruiter name
+  contact_phone  VARCHAR(50)    DEFAULT NULL,  -- Hiring contact phone number
   status        ENUM('Open','Closed') NOT NULL DEFAULT 'Open',
   deadline      DATE            DEFAULT NULL,  -- Application closing date (optional)
   created_by    INT UNSIGNED    DEFAULT NULL,  -- FK → users.id (admin)
