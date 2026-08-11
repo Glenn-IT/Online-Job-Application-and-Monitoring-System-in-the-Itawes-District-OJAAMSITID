@@ -146,12 +146,12 @@ Built as a true cherry-pick off the `v4.00` tag — the Under Construction gate 
 
 ---
 
-### v6.00 | v5.00 Features + Staff Role & Hiring Contact Code Unlocked
+### v6.00 | v5.00 Features + Admin Applications & Manage Jobs + Staff Dashboard Unlocked
 
-**Present:** All of v5.00 (Login, Register, Forgot/Reset Password + Admin Dashboard + User Management + Manage Jobs + Browse Jobs + Job Detail + Apply for Jobs + both Profile Settings pages) + Staff Role & Staff Portal (Dashboard, Manage Jobs, Applications Review, Profile Settings) + Job Poster Attribution + Hiring Contact Person & Phone fields (Manage Jobs, Job Cards, Details Modal, Job Detail page)
-**Under Construction:** Applications (Admin), Reports, Export Report, Saved Jobs, My Applications
+**Present:** All of v5.00 (Login, Register, Forgot/Reset Password + Admin Dashboard + User Management + Manage Jobs + Browse Jobs + Job Detail + Apply for Jobs + both Profile Settings pages) + Admin Applications Review (`pages/admin/applications.php`) + Staff Dashboard (`pages/staff/dashboard.php`) + Job Poster Attribution + Hiring Contact Person & Phone fields (Manage Jobs, Job Cards, Details Modal, Job Detail page)
+**Under Construction:** Reports (`pages/admin/reports.php`), Export Report (`pages/admin/export-report.php`), Staff Manage Jobs (`pages/staff/manage-jobs.php`), Staff Applications (`pages/staff/applications.php`), Staff Profile Settings (`pages/staff/profile-settings.php`), Saved Jobs (`pages/user/saved-jobs.php`), My Applications (`pages/user/my-applications.php`)
 
-Built as a true cherry-pick off a temp branch from `main` — `pages/admin/manage-jobs.php` and the Staff Portal are fully unlocked, while `pages/admin/applications.php`, `pages/admin/reports.php`, `pages/admin/export-report.php`, `pages/user/saved-jobs.php`, and `pages/user/my-applications.php` remain gated behind the Under Construction page for this snapshot. `main` was not touched.
+Built as a true cherry-pick off a temp branch from `main` — `pages/admin/manage-jobs.php`, `pages/admin/applications.php`, and `pages/staff/dashboard.php` are unlocked, while remaining secondary management/report pages stay gated behind the Under Construction page for this snapshot. `main` was not touched.
 
 ---
 
@@ -173,7 +173,7 @@ Built as a true cherry-pick off a temp branch from `main` — `pages/admin/manag
 | v3.00   | `v3.00` | `13c0248c8be089fcd4ba539cb575e79149c88d4b` |
 | v4.00   | `v4.00` | `587252ca76813173cf1173b4a1654f959de418b6` |
 | v5.00   | `v5.00` | `aa0b1705207acc0b1bc82092b7a8c1fed4e89144` |
-| v6.00   | `v6.00` | `87f4a01b63d6471fe7d00c56e8bc2b961a2a6028` |
+| v6.00   | `v6.00` | `070823d88d0b7e7b151da70b022967df5453b49b` |
 
 > Fill in the commit hash or branch name after each GitHub release is published.
 
