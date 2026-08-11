@@ -4,9 +4,13 @@ require_once __DIR__ . '/config/auth.php';
 
 // Already logged in? Redirect to the right dashboard.
 if (isLoggedIn()) {
-    header('Location: ' . (isAdmin()
-        ? BASE_URL . '/pages/admin/dashboard.php'
-        : BASE_URL . '/pages/user/browse-jobs.php'));
+    if (isAdmin()) {
+        header('Location: ' . BASE_URL . '/pages/admin/dashboard.php');
+    } elseif (isStaff()) {
+        header('Location: ' . BASE_URL . '/pages/staff/dashboard.php');
+    } else {
+        header('Location: ' . BASE_URL . '/pages/user/browse-jobs.php');
+    }
     exit;
 }
 
@@ -88,9 +92,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'birthdate'      => $user['birthdate'],
             ];
 
-            header('Location: ' . ($user['role'] === 'admin'
-                ? BASE_URL . '/pages/admin/dashboard.php'
-                : BASE_URL . '/pages/user/browse-jobs.php'));
+            if ($user['role'] === 'admin') {
+                $redirect = BASE_URL . '/pages/admin/dashboard.php';
+            } elseif ($user['role'] === 'staff') {
+                $redirect = BASE_URL . '/pages/staff/dashboard.php';
+            } else {
+                $redirect = BASE_URL . '/pages/user/browse-jobs.php';
+            }
+            header('Location: ' . $redirect);
             exit;
         }
     }

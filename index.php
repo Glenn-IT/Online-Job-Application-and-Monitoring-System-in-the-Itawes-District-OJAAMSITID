@@ -21,7 +21,13 @@ if ($search !== '') {
     $params[]  = "%{$search}%";
     $params[]  = "%{$search}%";
 }
-$stmt = $pdo->prepare("SELECT j.* FROM jobs j {$whereSQL} ORDER BY j.date_posted DESC");
+$stmt = $pdo->prepare("
+    SELECT j.*, u.full_name AS poster_name, u.role AS poster_role
+    FROM jobs j
+    LEFT JOIN users u ON u.id = j.created_by
+    {$whereSQL}
+    ORDER BY j.date_posted DESC
+");
 $stmt->execute($params);
 $jobs = $stmt->fetchAll();
 

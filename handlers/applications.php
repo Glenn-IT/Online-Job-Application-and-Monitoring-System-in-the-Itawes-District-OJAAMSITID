@@ -214,9 +214,9 @@ if ($action === 'cancel') {
     exit;
 }
 
-// ── ACTION: updateStatus (admin only) ────────────────────────
+// ── ACTION: updateStatus (admin or staff) ────────────────────
 if ($action === 'updateStatus') {
-    if (!isAdmin()) {
+    if (!isAdmin() && !isStaff()) {
         echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
         exit;
     }
@@ -255,9 +255,9 @@ if ($action === 'updateStatus') {
     exit;
 }
 
-// ── ACTION: getDetails (admin only) ──────────────────────────
+// ── ACTION: getDetails (admin or staff) ──────────────────────
 if ($action === 'getDetails') {
-    if (!isAdmin()) {
+    if (!isAdmin() && !isStaff()) {
         echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
         exit;
     }
@@ -295,9 +295,9 @@ if ($action === 'getDetails') {
     exit;
 }
 
-// ── ACTION: bulkUpdateStatus (admin only) ────────────────────
+// ── ACTION: bulkUpdateStatus (admin or staff) ────────────────
 if ($action === 'bulkUpdateStatus') {
-    if (!isAdmin()) { echo json_encode(['success' => false, 'message' => 'Unauthorized.']); exit; }
+    if (!isAdmin() && !isStaff()) { echo json_encode(['success' => false, 'message' => 'Unauthorized.']); exit; }
     $ids    = array_filter(array_map('intval', (array)($body['ids'] ?? [])));
     $status = $body['status'] ?? '';
     if (empty($ids) || !in_array($status, ['Approved', 'Rejected'], true)) {

@@ -44,9 +44,12 @@ $totalPages    = max(1, (int)ceil($filteredTotal / $perPage));
 $page          = min($page, $totalPages);
 $offset        = ($page - 1) * $perPage;
 
-// ── Fetch paginated jobs ─────────────────────────────────────
+// ── Fetch paginated jobs with poster details ─────────────────
 $jobsStmt = $pdo->prepare("
-    SELECT j.* FROM jobs j {$whereSQL}
+    SELECT j.*, u.full_name AS poster_name, u.role AS poster_role
+    FROM jobs j
+    LEFT JOIN users u ON u.id = j.created_by
+    {$whereSQL}
     ORDER BY j.date_posted DESC
     LIMIT ? OFFSET ?
 ");

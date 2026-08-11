@@ -67,11 +67,12 @@ $totalPages = max(1, (int)ceil($total / $perPage));
 $page       = min($page, $totalPages);
 $offset     = ($page - 1) * $perPage;
 
-// ── Fetch filtered jobs with applicant counts ─────────────────
+// ── Fetch filtered jobs with applicant counts & poster details 
 $stmt = $pdo->prepare("
-    SELECT j.*, COUNT(a.id) AS applicant_count
+    SELECT j.*, COUNT(a.id) AS applicant_count, u.full_name AS poster_name, u.role AS poster_role
     FROM jobs j
     LEFT JOIN applications a ON a.job_id = j.id
+    LEFT JOIN users u ON u.id = j.created_by
     {$whereSQL}
     GROUP BY j.id
     ORDER BY {$jobOrderSQL}
@@ -212,6 +213,7 @@ include $basePath . 'layouts/navbar-admin.php';
                                 '#',
                                 jobsSortTh('Job Title',   'title'),
                                 jobsSortTh('Company',     'company'),
+                                'Posted By',
                                 'Location',
                                 'Type',
                                 jobsSortTh('Date Posted', 'date_posted'),
@@ -224,7 +226,7 @@ include $basePath . 'layouts/navbar-admin.php';
                             ?>
                             <tbody id="jobsTableBody">
                                 <?php if (empty($jobs)): ?>
-                                    <tr><td colspan="11" class="text-center text-muted py-4">No jobs found. Add your first job post!</td></tr>
+                                    <tr><td colspan="12" class="text-center text-muted py-4">No jobs found. Add your first job post!</td></tr>
                                 <?php else: ?>
                                 <?php $count = 1; foreach ($jobs as $job): ?>
                                     <tr>
@@ -235,6 +237,16 @@ include $basePath . 'layouts/navbar-admin.php';
                                             <?= htmlspecialchars($job['title']) ?>
                                         </td>
                                         <td><?= htmlspecialchars($job['company']) ?></td>
+                                        <td>
+                                            <?php if (!empty($job['poster_name'])): ?>
+                                                <div class="small fw-semibold text-dark"><?= htmlspecialchars($job['poster_name']) ?></div>
+                                                <span class="badge <?= ($job['poster_role'] ?? '') === 'admin' ? 'bg-danger' : (($job['poster_role'] ?? '') === 'staff' ? 'bg-warning text-dark' : 'bg-secondary') ?>" style="font-size:0.68rem;">
+                                                    <?= ucfirst($job['poster_role'] ?? 'System') ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="text-muted small">System</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td>
                                             <?php if (!empty($job['location'])): ?>
                                             <small><i class="bi bi-geo-alt me-1 text-muted"></i><?= htmlspecialchars($job['location']) ?></small>

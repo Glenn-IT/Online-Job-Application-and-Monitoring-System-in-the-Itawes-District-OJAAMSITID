@@ -26,9 +26,7 @@ function isAdmin(): bool {
 
 function isUser(): bool {
     $user = getCurrentUser();
-    // TEMPORARY: staff have no module of their own yet (see docs/STAFF-ROLE-DRAFT.md),
-    // so approved staff use the applicant pages until the staff module ships.
-    return $user && in_array($user['role'], ['user', 'staff'], true);
+    return $user && $user['role'] === 'user';
 }
 
 function isStaff(): bool {
@@ -45,6 +43,34 @@ function requireAdmin(
         exit;
     }
     if (!isAdmin()) {
+        header('Location: ' . (isStaff() ? BASE_URL . '/pages/staff/dashboard.php' : $wrongRolePath));
+        exit;
+    }
+}
+
+function requireStaff(
+    string $loginPath     = BASE_URL . '/login.php',
+    string $wrongRolePath = BASE_URL . '/pages/user/browse-jobs.php'
+): void {
+    if (!isLoggedIn()) {
+        header('Location: ' . $loginPath);
+        exit;
+    }
+    if (!isStaff()) {
+        header('Location: ' . (isAdmin() ? BASE_URL . '/pages/admin/dashboard.php' : $wrongRolePath));
+        exit;
+    }
+}
+
+function requireStaffOrAdmin(
+    string $loginPath     = BASE_URL . '/login.php',
+    string $wrongRolePath = BASE_URL . '/pages/user/browse-jobs.php'
+): void {
+    if (!isLoggedIn()) {
+        header('Location: ' . $loginPath);
+        exit;
+    }
+    if (!isAdmin() && !isStaff()) {
         header('Location: ' . $wrongRolePath);
         exit;
     }
@@ -59,7 +85,7 @@ function requireUser(
         exit;
     }
     if (!isUser()) {
-        header('Location: ' . $wrongRolePath);
+        header('Location: ' . (isStaff() ? BASE_URL . '/pages/staff/dashboard.php' : $wrongRolePath));
         exit;
     }
 }

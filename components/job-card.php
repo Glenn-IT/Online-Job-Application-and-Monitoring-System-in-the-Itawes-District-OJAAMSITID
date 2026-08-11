@@ -28,10 +28,13 @@
                 </small>
             </p>
 
-            <!-- Date Posted & Status -->
-            <div class="d-flex justify-content-between align-items-center mb-2">
+            <!-- Date Posted, Poster & Status -->
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
                 <small class="text-muted">
                     <i class="bi bi-calendar-event me-1"></i>Posted: <?php echo $job['date_posted']; ?>
+                    <?php if (!empty($job['poster_name'])): ?>
+                        <span class="ms-1 text-secondary">&bull; By <strong><?php echo htmlspecialchars($job['poster_name']); ?></strong> (<?php echo ucfirst($job['poster_role'] ?? 'Admin'); ?>)</span>
+                    <?php endif; ?>
                 </small>
                 <span class="badge <?php echo $job['status'] === 'Open' ? 'bg-success' : 'bg-secondary'; ?>">
                     <?php echo $job['status']; ?>

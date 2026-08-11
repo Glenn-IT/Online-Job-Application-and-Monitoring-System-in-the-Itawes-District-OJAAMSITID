@@ -2,7 +2,7 @@
 
 
 require_once __DIR__ . '/../config/auth.php';
-requireAdmin();   // Must be a logged-in admin — hard stop otherwise
+requireStaffOrAdmin();   // Logged-in admin or staff
 
 header('Content-Type: application/json');
 
@@ -135,6 +135,7 @@ if ($action === 'edit') {
 // ACTION: delete
 // ════════════════════════════════════════════════════════════
 if ($action === 'delete') {
+    if (!isAdmin()) { echo json_encode(['success' => false, 'message' => 'Unauthorized. Only administrators can delete jobs.']); exit; }
 
     $id = (int)($body['id'] ?? 0);
     if ($id <= 0) { echo json_encode(['success' => false, 'message' => 'Invalid job ID.']); exit; }
@@ -155,6 +156,7 @@ if ($action === 'delete') {
 
 // ── ACTION: bulkDelete ───────────────────────────────────────
 if ($action === 'bulkDelete') {
+    if (!isAdmin()) { echo json_encode(['success' => false, 'message' => 'Unauthorized. Only administrators can delete jobs.']); exit; }
     $ids = array_filter(array_map('intval', (array)($body['ids'] ?? [])));
     if (empty($ids)) { echo json_encode(['success' => false, 'message' => 'No jobs selected.']); exit; }
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
