@@ -220,7 +220,7 @@ include $basePath . 'layouts/navbar-user.php';
                         <span class="badge <?php echo $cls; ?> fs-6 px-3 py-2">
                             <i class="bi bi-<?php echo $ico; ?> me-1"></i><?php echo $s; ?>
                         </span>
-                        <div class="mt-3">
+                        <div class="mt-3 mb-2">
                             <a href="my-applications.php" class="btn btn-outline-primary btn-sm w-100">
                                 <i class="bi bi-list-check me-1"></i>View My Applications
                             </a>
@@ -240,12 +240,6 @@ include $basePath . 'layouts/navbar-user.php';
                             onclick="openApplyModal(<?php echo $job['id']; ?>, '<?php echo htmlspecialchars($job['title'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($job['company'], ENT_QUOTES); ?>')">
                             <i class="bi bi-send me-2"></i>Apply Now
                         </button>
-                        <button class="btn btn-outline-secondary w-100 <?php echo $isSaved ? 'text-warning' : ''; ?>"
-                                id="detailSaveBtn"
-                                onclick="toggleSaveJobDetail(<?php echo $job['id']; ?>)">
-                            <i class="bi bi-bookmark<?php echo $isSaved ? '-fill' : ''; ?> me-1"></i>
-                            <span id="detailSaveLabel"><?php echo $isSaved ? 'Saved' : 'Save Job'; ?></span>
-                        </button>
 
                     <?php else: ?>
                         <!-- Closed -->
@@ -257,10 +251,18 @@ include $basePath . 'layouts/navbar-user.php';
                             <h6 class="fw-bold">Applications Closed</h6>
                             <p class="text-muted small mb-0">This position is no longer accepting applications.</p>
                         </div>
-                        <button class="btn btn-secondary w-100" disabled>
+                        <button class="btn btn-secondary w-100 mb-2" disabled>
                             <i class="bi bi-lock me-2"></i>Closed
                         </button>
                     <?php endif; ?>
+
+                    <!-- Always unlocked Save Job button -->
+                    <button class="btn btn-outline-secondary w-100 <?php echo $isSaved ? 'text-warning' : ''; ?>"
+                            id="detailSaveBtn"
+                            onclick="toggleSaveJobDetail(<?php echo $job['id']; ?>)">
+                        <i class="bi bi-bookmark<?php echo $isSaved ? '-fill' : ''; ?> me-1"></i>
+                        <span id="detailSaveLabel"><?php echo $isSaved ? 'Saved' : 'Save Job'; ?></span>
+                    </button>
 
                     <hr class="my-3">
 

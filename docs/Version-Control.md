@@ -155,6 +155,12 @@ Built as a true cherry-pick off a temp branch from `main` — `pages/admin/manag
 
 ---
 
+### v7.00 | All v6.00 Features + Unlocked Saved Jobs + Custom Confirmation Modals & Enhanced Toasts
+
+**Present:** All of v6.00 (Login, Register, Forgot/Reset Password + Admin/Staff Dashboards + User Management + Manage Jobs + Applications + Browse Jobs + Job Detail + Apply for Jobs + Profile Settings) + Unlocked Saved Jobs (`pages/user/saved-jobs.php` and `job-detail.php`) + Enhanced Toast Notifications on all action buttons + Custom Bootstrap Confirmation Modals (`showConfirmModal`) replacing native browser `confirm()` popups ("localhost says").
+
+---
+
 ## GitHub Release Tags
 
 | Version | Tag     | Commit                                     |
@@ -174,6 +180,7 @@ Built as a true cherry-pick off a temp branch from `main` — `pages/admin/manag
 | v4.00   | `v4.00` | `587252ca76813173cf1173b4a1654f959de418b6` |
 | v5.00   | `v5.00` | `aa0b1705207acc0b1bc82092b7a8c1fed4e89144` |
 | v6.00   | `v6.00` | `070823d88d0b7e7b151da70b022967df5453b49b` |
+| v7.00   | `v7.00` | `main`                                     |
 
 > Fill in the commit hash or branch name after each GitHub release is published.
 
