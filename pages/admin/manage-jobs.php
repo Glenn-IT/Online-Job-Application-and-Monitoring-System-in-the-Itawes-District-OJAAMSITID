@@ -430,7 +430,10 @@ function saveJob() {
     if (!qualification) { showFieldError('jobQualification', 'Qualifications are required.'); valid = false; }
     if (salary_range && /[a-zA-Z]/.test(salary_range)) { showFieldError('jobSalaryRange', 'Salary range cannot contain letters.'); valid = false; }
     if (contact_phone && /[a-zA-Z]/.test(contact_phone)) { showFieldError('jobContactPhone', 'Contact number cannot contain letters.'); valid = false; }
-    if (!valid) return;
+    if (!valid) {
+        showToast("Please fill in all required fields correctly.", "warning");
+        return;
+    }
     const payload = _editingJobId
         ? { action: 'edit', id: _editingJobId, title, company, description, qualification, location, job_type, salary_range, contact_person, contact_phone, date_posted, status, deadline, csrf_token: getCsrfToken() }
         : { action: 'add',                     title, company, description, qualification, location, job_type, salary_range, contact_person, contact_phone, date_posted, status, deadline, csrf_token: getCsrfToken() };
@@ -493,34 +496,50 @@ document.addEventListener('DOMContentLoaded', function () {
 function bulkJobDelete() {
     const ids = getSelectedJobIds();
     if (!ids.length) return;
-    if (!confirm(`Permanently delete ${ids.length} job post(s) and all their applications? This cannot be undone.`)) return;
-    fetch(JOBS_HANDLER, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'bulkDelete', ids, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(res => {
-        showToast(res.message, res.success ? 'success' : 'danger');
-        if (res.success) setTimeout(() => location.reload(), 900);
-    })
-    .catch(() => showToast('Request failed.', 'danger'));
+    showConfirmModal({
+        title: "Delete Job Posts",
+        message: `Permanently delete ${ids.length} job post(s) and all their applications? This action cannot be undone.`,
+        confirmBtnText: "Yes, Delete All",
+        confirmBtnClass: "btn-danger",
+        icon: "bi-trash-fill",
+        onConfirm: () => {
+            fetch(JOBS_HANDLER, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'bulkDelete', ids, csrf_token: getCsrfToken() })
+            })
+            .then(r => r.json())
+            .then(res => {
+                showToast(res.message, res.success ? 'success' : 'danger');
+                if (res.success) setTimeout(() => location.reload(), 900);
+            })
+            .catch(() => showToast('Request failed.', 'danger'));
+        }
+    });
 }
 
-// Override: delete via fetch
+// Delete via fetch
 function deleteJob(id) {
-    if (!confirm('Are you sure you want to delete this job post?')) return;
-    fetch(JOBS_HANDLER, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', id: id, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(res => {
-        showToast(res.success ? 'Job deleted.' : res.message, res.success ? 'danger' : 'warning');
-        if (res.success) setTimeout(() => location.reload(), 800);
-    })
-    .catch(() => showToast('Request failed. Please try again.', 'danger'));
+    showConfirmModal({
+        title: "Delete Job Post",
+        message: "Are you sure you want to delete this job post?",
+        confirmBtnText: "Yes, Delete Job",
+        confirmBtnClass: "btn-danger",
+        icon: "bi-trash-fill",
+        onConfirm: () => {
+            fetch(JOBS_HANDLER, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', id: id, csrf_token: getCsrfToken() })
+            })
+            .then(r => r.json())
+            .then(res => {
+                showToast(res.success ? 'Job deleted.' : res.message, res.success ? 'danger' : 'warning');
+                if (res.success) setTimeout(() => location.reload(), 800);
+            })
+            .catch(() => showToast('Request failed. Please try again.', 'danger'));
+        }
+    });
 };
 </script>
 <?php include $basePath . 'layouts/footer.php'; ?>

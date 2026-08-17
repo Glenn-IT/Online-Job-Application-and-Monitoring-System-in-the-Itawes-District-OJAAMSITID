@@ -345,7 +345,10 @@ function saveJob() {
     if (!qualification) { showFieldError('jobQualification', 'Qualifications are required.'); valid = false; }
     if (salary_range && /[a-zA-Z]/.test(salary_range)) { showFieldError('jobSalaryRange', 'Salary range cannot contain letters.'); valid = false; }
     if (contact_phone && /[a-zA-Z]/.test(contact_phone)) { showFieldError('jobContactPhone', 'Contact number cannot contain letters.'); valid = false; }
-    if (!valid) return;
+    if (!valid) {
+        showToast("Please fill in all required fields correctly.", "warning");
+        return;
+    }
 
     const payload = _editingJobId
         ? { action: 'edit', id: _editingJobId, title, company, description, qualification, location, job_type, salary_range, contact_person, contact_phone, date_posted, status, deadline, csrf_token: getCsrfToken() }
@@ -374,23 +377,31 @@ function saveJob() {
 }
 
 function toggleJobStatus(jobId, newStatus) {
-    if (!confirm(`Switch job listing status to ${newStatus}?`)) return;
-
-    fetch(JOBS_HANDLER, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'edit', id: jobId, status: newStatus, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            showToast(`Job status updated to ${newStatus}`, 'success');
-            setTimeout(() => location.reload(), 800);
-        } else {
-            showToast(data.message || 'Action failed.', 'danger');
+    const isClose = newStatus === 'Closed';
+    showConfirmModal({
+        title: isClose ? "Close Job Listing" : "Open Job Listing",
+        message: `Switch job listing status to ${newStatus}?`,
+        confirmBtnText: isClose ? "Yes, Close Job" : "Yes, Open Job",
+        confirmBtnClass: isClose ? "btn-warning" : "btn-success",
+        icon: isClose ? "bi-lock-fill" : "bi-unlock-fill",
+        onConfirm: () => {
+            fetch(JOBS_HANDLER, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'edit', id: jobId, status: newStatus, csrf_token: getCsrfToken() })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(`Job status updated to ${newStatus}`, 'success');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showToast(data.message || 'Action failed.', 'danger');
+                }
+            })
+            .catch(err => showToast('An error occurred. Please try again.', 'danger'));
         }
-    })
-    .catch(err => showToast('An error occurred. Please try again.', 'danger'));
+    });
 }
 </script>
 <?php include $basePath . "layouts/footer.php"; ?>

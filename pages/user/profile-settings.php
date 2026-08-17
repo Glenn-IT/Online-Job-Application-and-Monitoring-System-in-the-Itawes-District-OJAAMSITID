@@ -319,7 +319,10 @@ function saveProfile() {
         else if (secA.length < 2) { showFieldError("editSecAnswer", "Answer must be at least 2 characters."); editValid = false; }
         if (!currentPw) { showFieldError("editCurrentPassword", "Current password is required to change your security question."); editValid = false; }
     }
-    if (!editValid) return;
+    if (!editValid) {
+        showToast("Please fill in all required profile fields correctly.", "warning");
+        return;
+    }
 
     const doPasswordChange   = currentPw && newPw;
     const doSecurityQuestion = secQ && secA && currentPw;

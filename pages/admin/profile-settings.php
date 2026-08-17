@@ -232,7 +232,10 @@ function savePersonalInfo() {
     if (contact && !/^\d{11}$/.test(contact)) {
         showFieldError("adminContact", "Contact number must be exactly 11 digits (numbers only)."); infoValid = false;
     }
-    if (!infoValid) return;
+    if (!infoValid) {
+        showToast("Please fill in all required personal info fields correctly.", "warning");
+        return;
+    }
     const btn = document.getElementById("saveInfoBtn");
     btnLoading(btn, true, "Saving…");
     fetch(PROFILE_HANDLER, {
@@ -261,7 +264,10 @@ function saveSecurityQuestion() {
     if (!answer)    { showFieldError("secAnswer",          "Answer is required.");                sqValid = false; }
     else if (answer.length < 2) { showFieldError("secAnswer", "Answer must be at least 2 characters."); sqValid = false; }
     if (!currentPw) { showFieldError("secCurrentPassword", "Current password is required.");      sqValid = false; }
-    if (!sqValid) return;
+    if (!sqValid) {
+        showToast("Please fill in all required security question fields.", "warning");
+        return;
+    }
 
     const btn = document.getElementById("saveSecQBtn");
     btnLoading(btn, true, "Saving…");
@@ -299,7 +305,10 @@ function changeAdminPassword() {
     else if (newPw.length < 6) { showFieldError("newPassword", "Password must be at least 6 characters."); pwValid = false; }
     if (!confirm) { showFieldError("confirmPassword", "Please confirm your new password."); pwValid = false; }
     else if (newPw && confirm && newPw !== confirm) { showFieldError("confirmPassword", "Passwords do not match."); pwValid = false; }
-    if (!pwValid) return;
+    if (!pwValid) {
+        showToast("Please fix the password errors before submitting.", "warning");
+        return;
+    }
 
     const changePwBtnEl = document.getElementById("changePwBtn");
     btnLoading(changePwBtnEl, true, "Updating…");

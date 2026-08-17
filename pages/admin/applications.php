@@ -300,19 +300,27 @@ const APP_HANDLER_ADMIN = "../../handlers/applications.php";
 const appsData = <?php echo json_encode(array_values($applications)); ?>;
 
 function updateAppStatus(id, status) {
-    const label = status === "Approved" ? "approve" : "reject";
-    if (!confirm("Are you sure you want to " + label + " this application?")) return;
-    fetch(APP_HANDLER_ADMIN, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "updateStatus", id: id, status: status, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(res => {
-        showToast(res.message, res.success ? (status === "Approved" ? "success" : "danger") : "warning");
-        if (res.success) setTimeout(() => location.reload(), 900);
-    })
-    .catch(() => showToast("Request failed.", "danger"));
+    const isApprove = status === "Approved";
+    showConfirmModal({
+        title: isApprove ? "Approve Application" : "Reject Application",
+        message: `Are you sure you want to ${isApprove ? 'approve' : 'reject'} this application?`,
+        confirmBtnText: isApprove ? "Yes, Approve" : "Yes, Reject",
+        confirmBtnClass: isApprove ? "btn-success" : "btn-danger",
+        icon: isApprove ? "bi-check-circle-fill" : "bi-x-circle-fill",
+        onConfirm: () => {
+            fetch(APP_HANDLER_ADMIN, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "updateStatus", id: id, status: status, csrf_token: getCsrfToken() })
+            })
+            .then(r => r.json())
+            .then(res => {
+                showToast(res.message, res.success ? (status === "Approved" ? "success" : "danger") : "warning");
+                if (res.success) setTimeout(() => location.reload(), 900);
+            })
+            .catch(() => showToast("Request failed.", "danger"));
+        }
+    });
 }
 
 // ── Bulk selection ───────────────────────────────────────────
@@ -353,35 +361,52 @@ document.addEventListener('DOMContentLoaded', function () {
 function bulkAppAction(status) {
     const ids = getSelectedAppIds();
     if (!ids.length) return;
-    const label = status === 'Approved' ? 'approve' : 'reject';
-    if (!confirm(`${label.charAt(0).toUpperCase()+label.slice(1)} ${ids.length} application(s)?`)) return;
-    fetch(APP_HANDLER_ADMIN, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'bulkUpdateStatus', ids, status, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(res => {
-        showToast(res.message, res.success ? 'success' : 'danger');
-        if (res.success) setTimeout(() => location.reload(), 900);
-    })
-    .catch(() => showToast('Request failed.', 'danger'));
+    const isApprove = status === 'Approved';
+    const label = isApprove ? 'approve' : 'reject';
+    showConfirmModal({
+        title: isApprove ? "Bulk Approve Applications" : "Bulk Reject Applications",
+        message: `Are you sure you want to ${label} ${ids.length} selected application(s)?`,
+        confirmBtnText: isApprove ? "Yes, Approve All" : "Yes, Reject All",
+        confirmBtnClass: isApprove ? "btn-success" : "btn-danger",
+        icon: isApprove ? "bi-check-circle-fill" : "bi-x-circle-fill",
+        onConfirm: () => {
+            fetch(APP_HANDLER_ADMIN, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'bulkUpdateStatus', ids, status, csrf_token: getCsrfToken() })
+            })
+            .then(r => r.json())
+            .then(res => {
+                showToast(res.message, res.success ? 'success' : 'danger');
+                if (res.success) setTimeout(() => location.reload(), 900);
+            })
+            .catch(() => showToast('Request failed.', 'danger'));
+        }
+    });
 }
 function bulkAppDelete() {
     const ids = getSelectedAppIds();
     if (!ids.length) return;
-    if (!confirm(`Permanently delete ${ids.length} application(s)? This cannot be undone.`)) return;
-    fetch(APP_HANDLER_ADMIN, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'bulkDelete', ids, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(res => {
-        showToast(res.message, res.success ? 'success' : 'danger');
-        if (res.success) setTimeout(() => location.reload(), 900);
-    })
-    .catch(() => showToast('Request failed.', 'danger'));
+    showConfirmModal({
+        title: "Delete Applications",
+        message: `Permanently delete ${ids.length} application(s)? This action cannot be undone.`,
+        confirmBtnText: "Yes, Delete All",
+        confirmBtnClass: "btn-danger",
+        icon: "bi-trash-fill",
+        onConfirm: () => {
+            fetch(APP_HANDLER_ADMIN, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'bulkDelete', ids, csrf_token: getCsrfToken() })
+            })
+            .then(r => r.json())
+            .then(res => {
+                showToast(res.message, res.success ? 'success' : 'danger');
+                if (res.success) setTimeout(() => location.reload(), 900);
+            })
+            .catch(() => showToast('Request failed.', 'danger'));
+        }
+    });
 }
 
 function viewAppDetails(appId) {
@@ -475,6 +500,7 @@ function viewAppDetails(appId) {
     })
     .catch(() => {
         if (histEl) histEl.innerHTML = '<p class="text-danger small">Failed to load details.</p>';
+        showToast("Failed to load application details.", "danger");
     });
 }
 </script>

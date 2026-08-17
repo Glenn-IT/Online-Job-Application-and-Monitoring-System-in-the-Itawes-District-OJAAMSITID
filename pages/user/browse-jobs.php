@@ -385,7 +385,10 @@ function submitApplication() {
             if (age < 16 || age > 80) { showFieldError("appBirthdate", "Age must be between 16 and 80 years old."); valid = false; }
         }
     }
-    if (!valid) return;
+    if (!valid) {
+        showToast("Please fill in all required application fields correctly.", "warning");
+        return;
+    }
 
     const submitBtn = document.getElementById("submitAppBtn");
     btnLoading(submitBtn, true, "Submitting…");

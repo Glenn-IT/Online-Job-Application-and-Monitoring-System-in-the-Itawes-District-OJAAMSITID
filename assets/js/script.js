@@ -136,4 +136,95 @@ function btnLoading(btn, loading, loadingText = "Please wait…") {
   }
 }
 
+// ── Confirmation Modal Utility ─────────────────────────────
+// Replaces native browser confirm() dialogs ("localhost says") with custom Bootstrap modals
+function showConfirmModal({
+  title = "Confirm Action",
+  message = "Are you sure you want to proceed?",
+  confirmBtnText = "Confirm",
+  confirmBtnClass = "btn-primary",
+  icon = "bi-question-circle",
+  onConfirm = null
+}) {
+  let modalEl = document.getElementById("ojamsConfirmModal");
+  if (!modalEl) {
+    modalEl = document.createElement("div");
+    modalEl.id = "ojamsConfirmModal";
+    modalEl.className = "modal fade";
+    modalEl.tabIndex = -1;
+    modalEl.setAttribute("aria-hidden", "true");
+    modalEl.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header" id="ojamsConfirmHeader">
+            <h5 class="modal-title" id="ojamsConfirmTitle">
+              <i class="bi me-2" id="ojamsConfirmIcon"></i>
+              <span id="ojamsConfirmTitleText"></span>
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body text-center py-4">
+            <i class="bi display-4 d-block mb-3" id="ojamsConfirmBodyIcon"></i>
+            <p class="mb-0 fs-6 fw-medium" id="ojamsConfirmMessage"></p>
+          </div>
+          <div class="modal-footer justify-content-center">
+            <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+              <i class="bi bi-x-lg me-1"></i>Cancel
+            </button>
+            <button type="button" class="btn px-4" id="ojamsConfirmBtn">
+              <span id="ojamsConfirmBtnText">Confirm</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modalEl);
+  }
+
+  const header = document.getElementById("ojamsConfirmHeader");
+  const titleText = document.getElementById("ojamsConfirmTitleText");
+  const iconEl = document.getElementById("ojamsConfirmIcon");
+  const bodyIcon = document.getElementById("ojamsConfirmBodyIcon");
+  const messageEl = document.getElementById("ojamsConfirmMessage");
+  const confirmBtn = document.getElementById("ojamsConfirmBtn");
+  const confirmBtnTextEl = document.getElementById("ojamsConfirmBtnText");
+
+  let headerClass = "bg-primary text-white";
+  let bodyIconClass = "bi-question-circle-fill text-primary";
+  if (confirmBtnClass.includes("btn-danger")) {
+    headerClass = "bg-danger text-white";
+    bodyIconClass = "bi-exclamation-triangle-fill text-danger";
+  } else if (confirmBtnClass.includes("btn-success")) {
+    headerClass = "bg-success text-white";
+    bodyIconClass = "bi-check-circle-fill text-success";
+  } else if (confirmBtnClass.includes("btn-warning")) {
+    headerClass = "bg-warning text-dark";
+    bodyIconClass = "bi-exclamation-circle-fill text-warning";
+  }
+
+  header.className = `modal-header ${headerClass}`;
+  titleText.textContent = title;
+  iconEl.className = `bi ${icon} me-2`;
+  bodyIcon.className = `bi ${icon} display-4 d-block mb-3 ${bodyIconClass.split(" ")[1] || ""}`;
+  messageEl.textContent = message;
+
+  confirmBtn.className = `btn ${confirmBtnClass} px-4`;
+  confirmBtnTextEl.textContent = confirmBtnText;
+
+  const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+  const newConfirmBtn = confirmBtn.cloneNode(true);
+  confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+  newConfirmBtn.addEventListener("click", function () {
+    bsModal.hide();
+    if (typeof onConfirm === "function") {
+      onConfirm();
+    }
+  });
+
+  bsModal.show();
+}
+
+
 

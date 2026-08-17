@@ -361,35 +361,52 @@ function viewUser(u) {
 }
 
 function approveUser(id, name) {
-    if (!confirm(`Approve ${name}'s account? They will be able to log in immediately.`)) return;
-    fetch(ADMIN_HANDLER, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'approveUser', id: id, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(res => {
-        showToast(res.message, res.success ? 'success' : 'danger');
-        if (res.success) setTimeout(() => location.reload(), 900);
-    })
-    .catch(() => showToast('Request failed.', 'danger'));
+    showConfirmModal({
+        title: "Approve Account",
+        message: `Approve ${name}'s account? They will be able to log in immediately.`,
+        confirmBtnText: "Yes, Approve Account",
+        confirmBtnClass: "btn-success",
+        icon: "bi-check-circle-fill",
+        onConfirm: () => {
+            fetch(ADMIN_HANDLER, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'approveUser', id: id, csrf_token: getCsrfToken() })
+            })
+            .then(r => r.json())
+            .then(res => {
+                showToast(res.message, res.success ? 'success' : 'danger');
+                if (res.success) setTimeout(() => location.reload(), 900);
+            })
+            .catch(() => showToast('Request failed.', 'danger'));
+        }
+    });
 }
 
 function toggleUserStatus(id, action, name) {
-    const label = action === 'deactivate' ? 'deactivate' : 'reactivate';
-    if (!confirm(`Are you sure you want to ${label} ${name}'s account?`)) return;
-    const apiAction = action === 'deactivate' ? 'deactivateUser' : 'reactivateUser';
-    fetch(ADMIN_HANDLER, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: apiAction, id: id, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(res => {
-        showToast(res.message, res.success ? 'success' : 'danger');
-        if (res.success) setTimeout(() => location.reload(), 900);
-    })
-    .catch(() => showToast('Request failed.', 'danger'));
+    const isDeactivate = action === 'deactivate';
+    const label = isDeactivate ? 'deactivate' : 'reactivate';
+    const apiAction = isDeactivate ? 'deactivateUser' : 'reactivateUser';
+    showConfirmModal({
+        title: isDeactivate ? "Deactivate Account" : "Reactivate Account",
+        message: `Are you sure you want to ${label} ${name}'s account?`,
+        confirmBtnText: isDeactivate ? "Yes, Deactivate" : "Yes, Reactivate",
+        confirmBtnClass: isDeactivate ? "btn-danger" : "btn-success",
+        icon: isDeactivate ? "bi-person-slash" : "bi-person-check",
+        onConfirm: () => {
+            fetch(ADMIN_HANDLER, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: apiAction, id: id, csrf_token: getCsrfToken() })
+            })
+            .then(r => r.json())
+            .then(res => {
+                showToast(res.message, res.success ? 'success' : 'danger');
+                if (res.success) setTimeout(() => location.reload(), 900);
+            })
+            .catch(() => showToast('Request failed.', 'danger'));
+        }
+    });
 }
 
 function toggleAuPass(id, btn) {
@@ -421,6 +438,7 @@ document.getElementById('addUserForm')?.addEventListener('submit', function (e) 
     if (payload.password !== payload.confirm) {
         alertBox.textContent = 'Passwords do not match.';
         alertBox.classList.remove('d-none');
+        showToast('Passwords do not match.', 'danger');
         return;
     }
 
@@ -442,6 +460,7 @@ document.getElementById('addUserForm')?.addEventListener('submit', function (e) 
         } else {
             alertBox.textContent = res.message;
             alertBox.classList.remove('d-none');
+            showToast(res.message || 'Failed to create account.', 'danger');
             btn.disabled = false;
             btn.innerHTML = originalHtml;
         }
@@ -449,6 +468,7 @@ document.getElementById('addUserForm')?.addEventListener('submit', function (e) 
     .catch(() => {
         alertBox.textContent = 'Request failed.';
         alertBox.classList.remove('d-none');
+        showToast('Request failed. Please try again.', 'danger');
         btn.disabled = false;
         btn.innerHTML = originalHtml;
     });

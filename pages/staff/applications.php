@@ -314,45 +314,61 @@ function updateBulkBtnState() {
 }
 
 function updateAppStatus(appId, status) {
-    if (!confirm(`Are you sure you want to mark this application as ${status}?`)) return;
-
-    fetch(APP_HANDLER_STAFF, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'updateStatus', id: appId, status: status, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            showToast(`Application marked as ${status}!`, 'success');
-            setTimeout(() => location.reload(), 800);
-        } else {
-            showToast(data.message || 'Action failed.', 'danger');
+    const isApprove = status === 'Approved';
+    showConfirmModal({
+        title: isApprove ? "Approve Application" : "Reject Application",
+        message: `Are you sure you want to mark this application as ${status}?`,
+        confirmBtnText: isApprove ? "Yes, Approve" : "Yes, Reject",
+        confirmBtnClass: isApprove ? "btn-success" : "btn-danger",
+        icon: isApprove ? "bi-check-circle-fill" : "bi-x-circle-fill",
+        onConfirm: () => {
+            fetch(APP_HANDLER_STAFF, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'updateStatus', id: appId, status: status, csrf_token: getCsrfToken() })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(`Application marked as ${status}!`, 'success');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showToast(data.message || 'Action failed.', 'danger');
+                }
+            })
+            .catch(() => showToast('An error occurred. Please try again.', 'danger'));
         }
-    })
-    .catch(() => showToast('An error occurred. Please try again.', 'danger'));
+    });
 }
 
 function bulkUpdate(status) {
     const checked = Array.from(document.querySelectorAll('.app-checkbox:checked')).map(cb => parseInt(cb.value));
     if (checked.length === 0) return;
-    if (!confirm(`Are you sure you want to mark ${checked.length} application(s) as ${status}?`)) return;
-
-    fetch(APP_HANDLER_STAFF, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'bulkUpdateStatus', ids: checked, status: status, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            showToast(data.message, 'success');
-            setTimeout(() => location.reload(), 800);
-        } else {
-            showToast(data.message || 'Bulk update failed.', 'danger');
+    const isApprove = status === 'Approved';
+    showConfirmModal({
+        title: isApprove ? "Bulk Approve Applications" : "Bulk Reject Applications",
+        message: `Are you sure you want to mark ${checked.length} application(s) as ${status}?`,
+        confirmBtnText: isApprove ? "Yes, Approve Selected" : "Yes, Reject Selected",
+        confirmBtnClass: isApprove ? "btn-success" : "btn-danger",
+        icon: isApprove ? "bi-check-circle-fill" : "bi-x-circle-fill",
+        onConfirm: () => {
+            fetch(APP_HANDLER_STAFF, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'bulkUpdateStatus', ids: checked, status: status, csrf_token: getCsrfToken() })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showToast(data.message || 'Bulk update failed.', 'danger');
+                }
+            })
+            .catch(() => showToast('An error occurred. Please try again.', 'danger'));
         }
-    })
-    .catch(() => showToast('An error occurred. Please try again.', 'danger'));
+    });
 }
 
 function viewApplicationDetails(appId) {
@@ -449,6 +465,7 @@ function viewApplicationDetails(appId) {
     })
     .catch(() => {
         if (histEl) histEl.innerHTML = '<p class="text-danger small">Failed to load details.</p>';
+        showToast("Failed to load application details.", "danger");
     });
 }
 </script>

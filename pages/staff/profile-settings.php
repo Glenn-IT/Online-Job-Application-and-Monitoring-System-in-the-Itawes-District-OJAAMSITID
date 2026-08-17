@@ -184,6 +184,7 @@ document.getElementById('profileForm')?.addEventListener('submit', function(e) {
     .then(r => r.json())
     .then(res => {
         const box = document.getElementById('profileAlert');
+        showToast(res.message, res.success ? 'success' : 'danger');
         if (res.success) {
             box.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>${res.message}</div>`;
             document.getElementById('cardName').textContent = data.full_name;
@@ -191,7 +192,8 @@ document.getElementById('profileForm')?.addEventListener('submit', function(e) {
         } else {
             box.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${res.message}</div>`;
         }
-    });
+    })
+    .catch(() => showToast('Request failed. Please try again.', 'danger'));
 });
 
 document.getElementById('passForm')?.addEventListener('submit', function(e) {
@@ -205,13 +207,15 @@ document.getElementById('passForm')?.addEventListener('submit', function(e) {
     .then(r => r.json())
     .then(res => {
         const box = document.getElementById('passAlert');
+        showToast(res.message, res.success ? 'success' : 'danger');
         if (res.success) {
             box.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>${res.message}</div>`;
             this.reset();
         } else {
             box.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${res.message}</div>`;
         }
-    });
+    })
+    .catch(() => showToast('Request failed. Please try again.', 'danger'));
 });
 
 document.getElementById('sqForm')?.addEventListener('submit', function(e) {
@@ -225,13 +229,15 @@ document.getElementById('sqForm')?.addEventListener('submit', function(e) {
     .then(r => r.json())
     .then(res => {
         const box = document.getElementById('sqAlert');
+        showToast(res.message, res.success ? 'success' : 'danger');
         if (res.success) {
             box.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>${res.message}</div>`;
             document.getElementById('sqAnswer').value = '';
         } else {
             box.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>${res.message}</div>`;
         }
-    });
+    })
+    .catch(() => showToast('Request failed. Please try again.', 'danger'));
 });
 
 function uploadAvatar(input) {
@@ -247,12 +253,12 @@ function uploadAvatar(input) {
     })
     .then(r => r.json())
     .then(res => {
+        showToast(res.message || (res.success ? 'Avatar updated.' : 'Avatar upload failed.'), res.success ? 'success' : 'danger');
         if (res.success) {
-            location.reload();
-        } else {
-            alert(res.message || 'Avatar upload failed.');
+            setTimeout(() => location.reload(), 800);
         }
-    });
+    })
+    .catch(() => showToast('Avatar upload failed. Please try again.', 'danger'));
 }
 </script>
 <?php include $basePath . "layouts/footer.php"; ?>

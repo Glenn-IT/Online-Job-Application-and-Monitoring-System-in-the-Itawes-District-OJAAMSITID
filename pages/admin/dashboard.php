@@ -310,18 +310,26 @@ include $basePath . "layouts/navbar-admin.php";
 </div>
 <script>
 function clearOldLogs() {
-    if (!confirm("Delete all activity logs older than 90 days?")) return;
-    fetch("../../handlers/admin.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "clearLogs", days: 90, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(res => {
-        showToast(res.message, res.success ? "success" : "danger");
-        if (res.success) setTimeout(() => location.reload(), 1200);
-    })
-    .catch(() => showToast("Request failed.", "danger"));
+    showConfirmModal({
+        title: "Clear Activity Logs",
+        message: "Delete all activity logs older than 90 days? This action cannot be undone.",
+        confirmBtnText: "Yes, Clear Logs",
+        confirmBtnClass: "btn-danger",
+        icon: "bi-trash-fill",
+        onConfirm: () => {
+            fetch("../../handlers/admin.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "clearLogs", days: 90, csrf_token: getCsrfToken() })
+            })
+            .then(r => r.json())
+            .then(res => {
+                showToast(res.message, res.success ? "success" : "danger");
+                if (res.success) setTimeout(() => location.reload(), 1200);
+            })
+            .catch(() => showToast("Request failed.", "danger"));
+        }
+    });
 }
 </script>
 <?php if ((int)$stats["total_applicants"] > 0 || !empty($jobApplicantCounts)): ?>
