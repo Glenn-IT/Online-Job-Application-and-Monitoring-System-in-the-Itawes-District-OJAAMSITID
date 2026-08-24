@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/mailer.php';
 requireLogin();
 header('Content-Type: application/json');
 
@@ -189,6 +190,12 @@ if ($action === 'apply') {
 
     $user = getCurrentUser();
     logActivity($pdo, "New application received from {$user['full_name']} for \"{$job['title']}\"", 'New', $jobId, $newAppId);
+
+    // Send confirmation email to applicant via Gmail
+    if (!empty($email)) {
+        sendApplicationSubmittedEmail($email, $fullName, $job['title'], $job['company']);
+    }
+
     echo json_encode(['success' => true, 'message' => 'Application submitted successfully.']);
     exit;
 }
@@ -227,7 +234,7 @@ if ($action === 'updateStatus') {
         exit;
     }
     $check = $pdo->prepare("
-        SELECT a.id, a.full_name, a.job_id, j.title
+        SELECT a.id, a.full_name, a.email, a.job_id, j.title, j.company
         FROM applications a
         JOIN jobs j ON j.id = a.job_id
         WHERE a.id = ?
@@ -251,6 +258,12 @@ if ($action === 'updateStatus') {
     ")->execute([$appId, $oldStatus ?: null, $status, $_SESSION['ojams_user']['id']]);
 
     logActivity($pdo, "Application of {$app['full_name']} marked as {$status} for \"{$app['title']}\"", $status, (int)$app['job_id'], $appId);
+
+    // Send email notification to applicant via Gmail
+    if (!empty($app['email'])) {
+        sendApplicationStatusEmail($app['email'], $app['full_name'], $app['title'], $app['company'], $status);
+    }
+
     echo json_encode(['success' => true, 'message' => "Application {$status}."]);
     exit;
 }
@@ -320,6 +333,21 @@ if ($action === 'bulkUpdateStatus') {
     ");
     foreach ($ids as $id) {
         $histStmt->execute([$id, $oldStatuses[$id] ?? null, $status, $adminId]);
+    }
+
+    // Fetch applicant details for email notification
+    $emailStmt = $pdo->prepare("
+        SELECT a.id, a.full_name, a.email, j.title, j.company
+        FROM applications a
+        JOIN jobs j ON j.id = a.job_id
+        WHERE a.id IN ({$placeholders})
+    ");
+    $emailStmt->execute(array_values($ids));
+    $bulkApplicants = $emailStmt->fetchAll();
+    foreach ($bulkApplicants as $bApp) {
+        if (!empty($bApp['email'])) {
+            sendApplicationStatusEmail($bApp['email'], $bApp['full_name'], $bApp['title'], $bApp['company'], $status);
+        }
     }
 
     logActivity($pdo, "Bulk marked " . count($ids) . " application(s) as {$status}", $status);

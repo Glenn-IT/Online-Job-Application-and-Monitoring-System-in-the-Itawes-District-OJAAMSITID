@@ -32,6 +32,13 @@ define('DB_CHARSET', 'utf8mb4');
 define('APP_NAME',    getenv('APP_NAME')  ?: 'OJAMS');
 define('APP_VERSION', '2.0.0');
 
+// ── SMTP / Mailer Settings ──────────────────────────────────
+define('SMTP_HOST',      getenv('SMTP_HOST')      ?: 'smtp.gmail.com');
+define('SMTP_PORT',      (int)(getenv('SMTP_PORT') ?: 587));
+define('SMTP_USER',      getenv('SMTP_USER')      ?: '');
+define('SMTP_PASS',      getenv('SMTP_PASS')      ?: '');
+define('SMTP_FROM_NAME', getenv('SMTP_FROM_NAME') ?: 'OJAMS Notifications');
+
 // ── URL / Path Helpers ──────────────────────────────────────
 // Use .env BASE_URL if set; otherwise derive from the current request so the
 // redirect after login works regardless of which port XAMPP is running on.

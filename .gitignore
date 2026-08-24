@@ -1,9 +1,32 @@
-# Environment — contains real credentials, never commit
+# Environment & Sensitive Credentials
 .env
+.env.*
+!.env.example
 
-# Logs
-logs/*.log
+# Composer Dependencies
+/vendor/
 
-# OS / editor junk
+# User Uploaded Files (Privacy & Security)
+uploads/resumes/*
+!uploads/resumes/.gitkeep
+!uploads/resumes/index.php
+uploads/avatars/*
+!uploads/avatars/.gitkeep
+!uploads/avatars/index.php
+
+# Application & Server Logs
+logs/*
+!logs/.gitkeep
+*.log
+
+# IDE & Editor Configurations
+.idea/
+.vscode/
+.claude/
+*.sublime-project
+*.sublime-workspace
+
+# Operating System Files
 .DS_Store
 Thumbs.db
+desktop.ini

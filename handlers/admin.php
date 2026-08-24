@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/mailer.php';
 requireAdmin();
 header('Content-Type: application/json');
 
@@ -67,7 +68,7 @@ if ($action === 'approveUser') {
     $targetId = (int)($body['id'] ?? 0);
     if ($targetId <= 0) { echo json_encode(['success' => false, 'message' => 'Invalid user ID.']); exit; }
 
-    $check = $pdo->prepare("SELECT id, full_name, is_approved FROM users WHERE id = ?");
+    $check = $pdo->prepare("SELECT id, full_name, email, is_approved FROM users WHERE id = ?");
     $check->execute([$targetId]);
     $target = $check->fetch();
     if (!$target) { echo json_encode(['success' => false, 'message' => 'User not found.']); exit; }
@@ -79,6 +80,12 @@ if ($action === 'approveUser') {
     $uid = $_SESSION['ojams_user']['id'];
     $pdo->prepare("INSERT INTO activity_logs (action, status, performed_by) VALUES (?, ?, ?)")
         ->execute(["Staff account approved: {$target['full_name']}", 'Updated', $uid]);
+
+    // Send email notification to staff member via Gmail
+    if (!empty($target['email'])) {
+        sendStaffAccountApprovedEmail($target['email'], $target['full_name']);
+    }
+
     echo json_encode(['success' => true, 'message' => "{$target['full_name']}'s account has been approved. They can now log in."]);
     exit;
 }

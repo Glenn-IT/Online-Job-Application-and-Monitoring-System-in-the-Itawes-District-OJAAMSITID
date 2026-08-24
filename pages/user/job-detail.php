@@ -385,6 +385,10 @@ function submitApplication() {
     const submitBtn = document.getElementById('submitAppBtn');
     btnLoading(submitBtn, true, 'Submitting…');
 
+    // Hide input modal and show clean loading spinner
+    bootstrap.Modal.getInstance(document.getElementById('applyJobModal'))?.hide();
+    showLoadingModal("Submitting application…");
+
     const fd = new FormData();
     fd.append('action',     'apply');
     fd.append('csrf_token', getCsrfToken());
@@ -408,11 +412,14 @@ function submitApplication() {
     fetch(APP_HANDLER, { method: 'POST', body: fd })
     .then(r => r.json())
     .then(res => {
-        bootstrap.Modal.getInstance(document.getElementById('applyJobModal'))?.hide();
+        hideLoadingModal();
         showToast(res.message, res.success ? 'success' : 'danger');
-        if (res.success) setTimeout(() => location.reload(), 1200);
+        if (res.success) setTimeout(() => location.reload(), 1000);
     })
-    .catch(() => showToast('Request failed. Please try again.', 'danger'))
+    .catch(() => {
+        hideLoadingModal();
+        showToast('Request failed. Please try again.', 'danger');
+    })
     .finally(() => btnLoading(submitBtn, false));
 }
 

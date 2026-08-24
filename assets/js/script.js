@@ -226,5 +226,56 @@ function showConfirmModal({
   bsModal.show();
 }
 
+// ── Global Processing / Loading Modal ────────────────────────
+// ── Global Processing / Loading Modal ────────────────────────
+let _ojamsLoadingModalInstance = null;
+
+function showLoadingModal(text = "Please wait…") {
+  let modalEl = document.getElementById("ojamsLoadingModal");
+  if (!modalEl) {
+    modalEl = document.createElement("div");
+    modalEl.id = "ojamsLoadingModal";
+    modalEl.className = "modal fade";
+    modalEl.tabIndex = -1;
+    modalEl.setAttribute("data-bs-backdrop", "static");
+    modalEl.setAttribute("data-bs-keyboard", "false");
+    modalEl.setAttribute("aria-hidden", "true");
+    modalEl.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered" style="max-width: 280px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+          <div class="modal-body text-center p-4">
+            <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem; border-width: 0.25rem;" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <h6 class="fw-semibold text-dark mb-0" id="ojamsLoadingText">Please wait…</h6>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modalEl);
+  }
+
+  const textEl = document.getElementById("ojamsLoadingText");
+  if (textEl) {
+    textEl.textContent = typeof text === "string" ? text : (text?.text || "Please wait…");
+  }
+
+  _ojamsLoadingModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl, {
+    backdrop: "static",
+    keyboard: false
+  });
+  _ojamsLoadingModalInstance.show();
+}
+
+function hideLoadingModal() {
+  const modalEl = document.getElementById("ojamsLoadingModal");
+  if (modalEl) {
+    const bsModal = bootstrap.Modal.getInstance(modalEl) || _ojamsLoadingModalInstance;
+    if (bsModal) {
+      bsModal.hide();
+    }
+  }
+}
+
 
 

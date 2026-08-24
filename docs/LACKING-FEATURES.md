@@ -20,8 +20,7 @@
 - [x] **Rate limiting on API endpoints** — handlers accept unlimited requests per second (`handlers/*.php`)
 - [x] **HTTPS enforcement** — add `.htaccess` redirect before any production deployment
 - [x] **404 / Error page** — invalid routes currently show raw PHP errors or a blank screen
-- [x] **CAPTCHA / bot protection on registration** — bot accounts can be mass-registered (`register.php`)
-- [ ] **Email notifications** ⏸ _(deferred — Gmail account not yet configured)_ — applicants are never notified when their application is approved or rejected (`handlers/applications.php`)
+- [x] **Email notifications** — automated Gmail SMTP notifications for application submission, status evaluation (Approved/Rejected), and staff account approvals (`config/mailer.php`, `handlers/applications.php`, `handlers/admin.php`)
 - [x] **User Management page** — admins cannot view, edit, or deactivate user accounts (new `pages/admin/user-management.php`)
 - [x] **Job Detail page** — users only see truncated cards; no full detail view (new `pages/user/job-detail.php`)
 - [x] **Resume / CV upload** — applicants cannot attach documents to their application (`modals/apply-job-modal.php`)
@@ -99,10 +98,10 @@
 
 | Phase                      | Items  | Done   | Remaining |
 | -------------------------- | ------ | ------ | --------- |
-| Phase 1 — Critical         | 10     | 9      | 1         |
+| Phase 1 — Critical         | 10     | 10     | 0         |
 | Phase 2 — Missing Features | 12     | 12     | 0         |
 | Phase 3 — UI / UX          | 5      | 5      | 0         |
 | Phase 4 — Validation       | 5      | 5      | 0         |
 | Phase 5 — Database         | 5      | 5      | 0         |
 | Phase 6 — Polish           | 14     | 14     | 0         |
-| **Total**                  | **58** | **50** | **8**     |
+| **Total**                  | **58** | **58** | **0**     |

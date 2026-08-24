@@ -322,6 +322,7 @@ function updateAppStatus(appId, status) {
         confirmBtnClass: isApprove ? "btn-success" : "btn-danger",
         icon: isApprove ? "bi-check-circle-fill" : "bi-x-circle-fill",
         onConfirm: () => {
+            showLoadingModal();
             fetch(APP_HANDLER_STAFF, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -329,6 +330,7 @@ function updateAppStatus(appId, status) {
             })
             .then(r => r.json())
             .then(data => {
+                hideLoadingModal();
                 if (data.success) {
                     showToast(`Application marked as ${status}!`, 'success');
                     setTimeout(() => location.reload(), 800);
@@ -336,7 +338,10 @@ function updateAppStatus(appId, status) {
                     showToast(data.message || 'Action failed.', 'danger');
                 }
             })
-            .catch(() => showToast('An error occurred. Please try again.', 'danger'));
+            .catch(() => {
+                hideLoadingModal();
+                showToast('An error occurred. Please try again.', 'danger');
+            });
         }
     });
 }
@@ -352,6 +357,7 @@ function bulkUpdate(status) {
         confirmBtnClass: isApprove ? "btn-success" : "btn-danger",
         icon: isApprove ? "bi-check-circle-fill" : "bi-x-circle-fill",
         onConfirm: () => {
+            showLoadingModal();
             fetch(APP_HANDLER_STAFF, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -359,6 +365,7 @@ function bulkUpdate(status) {
             })
             .then(r => r.json())
             .then(data => {
+                hideLoadingModal();
                 if (data.success) {
                     showToast(data.message, 'success');
                     setTimeout(() => location.reload(), 800);
@@ -366,7 +373,10 @@ function bulkUpdate(status) {
                     showToast(data.message || 'Bulk update failed.', 'danger');
                 }
             })
-            .catch(() => showToast('An error occurred. Please try again.', 'danger'));
+            .catch(() => {
+                hideLoadingModal();
+                showToast('An error occurred. Please try again.', 'danger');
+            });
         }
     });
 }

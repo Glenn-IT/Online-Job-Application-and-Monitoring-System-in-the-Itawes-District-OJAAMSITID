@@ -308,6 +308,7 @@ function updateAppStatus(id, status) {
         confirmBtnClass: isApprove ? "btn-success" : "btn-danger",
         icon: isApprove ? "bi-check-circle-fill" : "bi-x-circle-fill",
         onConfirm: () => {
+            showLoadingModal();
             fetch(APP_HANDLER_ADMIN, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -315,10 +316,14 @@ function updateAppStatus(id, status) {
             })
             .then(r => r.json())
             .then(res => {
+                hideLoadingModal();
                 showToast(res.message, res.success ? (status === "Approved" ? "success" : "danger") : "warning");
-                if (res.success) setTimeout(() => location.reload(), 900);
+                if (res.success) setTimeout(() => location.reload(), 800);
             })
-            .catch(() => showToast("Request failed.", "danger"));
+            .catch(() => {
+                hideLoadingModal();
+                showToast("Request failed.", "danger");
+            });
         }
     });
 }
@@ -370,6 +375,7 @@ function bulkAppAction(status) {
         confirmBtnClass: isApprove ? "btn-success" : "btn-danger",
         icon: isApprove ? "bi-check-circle-fill" : "bi-x-circle-fill",
         onConfirm: () => {
+            showLoadingModal();
             fetch(APP_HANDLER_ADMIN, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -377,10 +383,14 @@ function bulkAppAction(status) {
             })
             .then(r => r.json())
             .then(res => {
+                hideLoadingModal();
                 showToast(res.message, res.success ? 'success' : 'danger');
-                if (res.success) setTimeout(() => location.reload(), 900);
+                if (res.success) setTimeout(() => location.reload(), 800);
             })
-            .catch(() => showToast('Request failed.', 'danger'));
+            .catch(() => {
+                hideLoadingModal();
+                showToast('Request failed.', 'danger');
+            });
         }
     });
 }
