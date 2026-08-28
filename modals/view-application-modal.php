@@ -50,6 +50,22 @@
                         <div><strong>Experience:</strong> <span id="viewAppExperience">—</span></div>
                     </div>
 
+                    <!-- Interview Schedule (if approved) -->
+                    <div class="col-12" id="viewAppInterviewRow" style="display:none;">
+                        <div class="alert alert-success d-flex align-items-start gap-3 mb-0 border-success-subtle">
+                            <i class="bi bi-calendar2-check-fill fs-3 text-success"></i>
+                            <div class="flex-grow-1">
+                                <h6 class="alert-heading fw-bold mb-1 text-success">
+                                    <i class="bi bi-calendar2-event me-1"></i>Scheduled Interview
+                                </h6>
+                                <p class="mb-1"><strong>Date &amp; Time:</strong> <span id="viewAppInterviewDate" class="badge bg-success fs-6">—</span></p>
+                                <div id="viewAppInterviewNotesWrap" style="display:none;">
+                                    <p class="mb-0 text-muted small"><strong>Instructions / Venue:</strong> <span id="viewAppInterviewNotes" class="text-dark">—</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Resume -->
                     <div class="col-12" id="viewAppResumeRow" style="display:none;">
                         <h6 class="fw-bold text-primary border-bottom pb-2">Resume / CV</h6>

@@ -14,14 +14,15 @@ All handlers live in `handlers/`. They accept `POST` only, return JSON, and requ
 
 ## handlers/applications.php
 
-| Action             | Role  | Description                                                           |
-| ------------------ | ----- | --------------------------------------------------------------------- |
-| `apply`            | user  | Submit a job application (multipart, includes optional `resume` file) |
-| `cancel`           | user  | Cancel a pending application (`id`)                                   |
-| `updateStatus`     | admin | Set application status to `Approved` or `Rejected` (`id`, `status`)   |
-| `getDetails`       | admin | Return full application data + status history + resume info (`id`)    |
-| `bulkUpdateStatus` | admin | Bulk approve/reject (`ids[]`, `status`)                               |
-| `bulkDelete`       | admin | Bulk delete applications (`ids[]`)                                    |
+| Action              | Role         | Description                                                                     |
+| ------------------- | ------------ | ------------------------------------------------------------------------------- |
+| `apply`             | user         | Submit a job application (multipart, includes optional `resume` file)           |
+| `cancel`            | user         | Cancel a pending application (`id`)                                             |
+| `updateStatus`      | admin, staff | Set status (`Approved`/`Rejected`), optional `interview_date`, `interview_notes` |
+| `scheduleInterview` | admin, staff | Schedule/reschedule interview (`id`, `interview_date`, `interview_notes`)        |
+| `getDetails`        | admin, staff | Return full application data + status history + resume info (`id`)              |
+| `bulkUpdateStatus`  | admin, staff | Bulk approve/reject (`ids[]`, `status`)                                         |
+| `bulkDelete`        | admin        | Bulk delete applications (`ids[]`)                                              |
 
 ### apply (multipart/form-data)
 
@@ -44,6 +45,8 @@ resume (optional file — PDF/DOC/DOCX, max 5 MB)
   "action": "updateStatus",
   "id": 42,
   "status": "Approved",
+  "interview_date": "2026-08-30 09:00:00",
+  "interview_notes": "Room 204 HR Office",
   "csrf_token": "..."
 }
 ```

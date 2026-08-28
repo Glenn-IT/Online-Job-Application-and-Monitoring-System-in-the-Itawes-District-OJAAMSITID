@@ -40,10 +40,11 @@ $whereSQL = $where ? "WHERE " . implode(" AND ", $where) : "";
 
 // ── Sorting ───────────────────────────────────────────────────
 $allowedAppSorts = [
-    'full_name'    => 'a.full_name',
-    'job_title'    => 'j.title',
-    'date_applied' => 'a.date_applied',
-    'status'       => 'a.status',
+    'full_name'      => 'a.full_name',
+    'job_title'      => 'j.title',
+    'date_applied'   => 'a.date_applied',
+    'status'         => 'a.status',
+    'interview_date' => 'a.interview_date',
 ];
 $appSortCol = $_GET['sort'] ?? 'date_applied';
 $appSortDir = strtolower($_GET['dir'] ?? 'desc') === 'asc' ? 'ASC' : 'DESC';
@@ -198,7 +199,7 @@ include $basePath . "layouts/navbar-admin.php";
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0 align-middle">
                             <?php
                             $columns = [
                                 "<input type='checkbox' id='selectAllApps' class='form-check-input'>",
@@ -207,6 +208,7 @@ include $basePath . "layouts/navbar-admin.php";
                                 appsSortTh("Job Title",       "job_title"),
                                 appsSortTh("Date Applied",    "date_applied"),
                                 appsSortTh("Status",          "status"),
+                                appsSortTh("Interview Schedule", "interview_date"),
                                 "Actions",
                             ];
                             include $basePath . "components/table-header.php";
@@ -214,7 +216,7 @@ include $basePath . "layouts/navbar-admin.php";
                             <tbody id="applicationsTableBody">
                                 <?php if (empty($applications)): ?>
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted py-4">
+                                        <td colspan="8" class="text-center text-muted py-4">
                                             No <?php echo $filter !== "All" ? strtolower($filter) : ""; ?> applications found.
                                         </td>
                                     </tr>
@@ -237,10 +239,41 @@ include $basePath . "layouts/navbar-admin.php";
                                         <td><?php echo $app["date_applied"]; ?></td>
                                         <td><span class="badge <?php echo $badgeClass; ?>"><?php echo $app["status"]; ?></span></td>
                                         <td>
+                                            <?php if ($app["status"] === "Approved" && !empty($app["interview_date"])): ?>
+                                                <div class="badge bg-success-subtle text-success border border-success-subtle text-wrap text-start p-2">
+                                                    <div><i class="bi bi-calendar2-check me-1"></i><?= date('M d, Y', strtotime($app['interview_date'])) ?></div>
+                                                    <div class="small fw-normal text-muted"><i class="bi bi-clock me-1"></i><?= date('h:i A', strtotime($app['interview_date'])) ?></div>
+                                                </div>
+                                            <?php elseif ($app["status"] === "Approved"): ?>
+                                                <span class="badge bg-secondary-subtle text-secondary">Not scheduled</span>
+                                            <?php else: ?>
+                                                <span class="text-muted small">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
                                             <?php if ($app["status"] !== "Approved"): ?>
                                             <button class="btn btn-sm btn-outline-success me-1"
-                                                onclick="updateAppStatus(<?php echo $app['id']; ?>, 'Approved')">
+                                                onclick="openApproveModal(<?= htmlspecialchars(json_encode([
+                                                    'id' => (int)$app['id'],
+                                                    'full_name' => $app['full_name'],
+                                                    'job_title' => $app['job_title'],
+                                                    'company' => $app['company'],
+                                                    'interview_date' => $app['interview_date'] ?? '',
+                                                    'interview_notes' => $app['interview_notes'] ?? ''
+                                                ]), ENT_QUOTES, 'UTF-8') ?>)">
                                                 <i class="bi bi-check-circle"></i> Approve
+                                            </button>
+                                            <?php else: ?>
+                                            <button class="btn btn-sm btn-outline-info me-1"
+                                                onclick="openApproveModal(<?= htmlspecialchars(json_encode([
+                                                    'id' => (int)$app['id'],
+                                                    'full_name' => $app['full_name'],
+                                                    'job_title' => $app['job_title'],
+                                                    'company' => $app['company'],
+                                                    'interview_date' => $app['interview_date'] ?? '',
+                                                    'interview_notes' => $app['interview_notes'] ?? ''
+                                                ]), ENT_QUOTES, 'UTF-8') ?>)" title="Update Interview Schedule">
+                                                <i class="bi bi-calendar2-event"></i> Schedule
                                             </button>
                                             <?php endif; ?>
                                             <?php if ($app["status"] !== "Rejected"): ?>
@@ -294,10 +327,81 @@ include $basePath . "layouts/navbar-admin.php";
             </div>
     </main>
 </div>
-<?php include $basePath . "modals/view-application-modal.php"; ?>
+<?php 
+include $basePath . "modals/view-application-modal.php";
+include $basePath . "modals/schedule-interview-modal.php";
+?>
 <script>
 const APP_HANDLER_ADMIN = "../../handlers/applications.php";
 const appsData = <?php echo json_encode(array_values($applications)); ?>;
+
+function openApproveModal(data) {
+    document.getElementById('approveAppId').value = data.id;
+    document.getElementById('approveApplicantName').textContent = data.full_name || 'Applicant';
+    document.getElementById('approveJobTitle').textContent = (data.job_title || '') + (data.company ? ' at ' + data.company : '');
+    
+    // Set default datetime: tomorrow at 09:00 AM if empty
+    const dateInput = document.getElementById('approveInterviewDate');
+    if (data.interview_date) {
+        // Convert 'YYYY-MM-DD HH:MM:SS' to 'YYYY-MM-DDTHH:MM'
+        dateInput.value = data.interview_date.replace(' ', 'T').substring(0, 16);
+    } else {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(9, 0, 0, 0);
+        // timezone offset adjust to local ISO
+        const tzOffset = tomorrow.getTimezoneOffset() * 60000;
+        const localISO = new Date(tomorrow.getTime() - tzOffset).toISOString().substring(0, 16);
+        dateInput.value = localISO;
+    }
+
+    document.getElementById('approveInterviewNotes').value = data.interview_notes || '';
+
+    const modal = new bootstrap.Modal(document.getElementById('approveAppModal'));
+    modal.show();
+}
+
+function handleApproveSubmit(e) {
+    e.preventDefault();
+    const id = parseInt(document.getElementById('approveAppId').value);
+    const interviewDate = document.getElementById('approveInterviewDate').value;
+    const interviewNotes = document.getElementById('approveInterviewNotes').value.trim();
+    const btn = document.getElementById('approveSubmitBtn');
+
+    if (!id || !interviewDate) {
+        showToast('Please specify a date and time for the interview.', 'warning');
+        return;
+    }
+
+    btnLoading(btn, true, 'Approving & Notifying…');
+    showLoadingModal();
+
+    fetch(APP_HANDLER_ADMIN, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "updateStatus",
+            id: id,
+            status: "Approved",
+            interview_date: interviewDate,
+            interview_notes: interviewNotes,
+            csrf_token: getCsrfToken()
+        })
+    })
+    .then(r => r.json())
+    .then(res => {
+        btnLoading(btn, false);
+        hideLoadingModal();
+        bootstrap.Modal.getInstance(document.getElementById('approveAppModal'))?.hide();
+        showToast(res.message, res.success ? "success" : "danger");
+        if (res.success) setTimeout(() => location.reload(), 800);
+    })
+    .catch(() => {
+        btnLoading(btn, false);
+        hideLoadingModal();
+        showToast("Request failed.", "danger");
+    });
+}
 
 function updateAppStatus(id, status) {
     const isApprove = status === "Approved";
@@ -456,6 +560,28 @@ function viewAppDetails(appId) {
             const cls = app.status === "Approved" ? "bg-success" : app.status === "Rejected" ? "bg-danger" : "bg-warning text-dark";
             statusEl.className = "badge " + cls;
             statusEl.textContent = app.status;
+        }
+
+        // ── Interview Schedule ──────────────────────────────
+        const interviewRow = document.getElementById("viewAppInterviewRow");
+        const interviewDateEl = document.getElementById("viewAppInterviewDate");
+        const interviewNotesWrap = document.getElementById("viewAppInterviewNotesWrap");
+        const interviewNotesEl = document.getElementById("viewAppInterviewNotes");
+
+        if (app.status === "Approved" && app.interview_date) {
+            if (interviewRow) interviewRow.style.display = "";
+            if (interviewDateEl) {
+                const d = new Date(app.interview_date.replace(' ', 'T'));
+                interviewDateEl.textContent = isNaN(d.getTime()) ? app.interview_date : d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+            }
+            if (app.interview_notes && interviewNotesWrap && interviewNotesEl) {
+                interviewNotesWrap.style.display = "";
+                interviewNotesEl.textContent = app.interview_notes;
+            } else if (interviewNotesWrap) {
+                interviewNotesWrap.style.display = "none";
+            }
+        } else if (interviewRow) {
+            interviewRow.style.display = "none";
         }
 
         // ── Resume ──────────────────────────────────────────

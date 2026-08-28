@@ -124,8 +124,9 @@ HTML;
 
 /**
  * Sends notification when application status changes (Approved / Rejected)
+ * Supports interview scheduling details for approved applications.
  */
-function sendApplicationStatusEmail(string $toEmail, string $applicantName, string $jobTitle, string $company, string $status): bool {
+function sendApplicationStatusEmail(string $toEmail, string $applicantName, string $jobTitle, string $company, string $status, ?string $interviewDate = null, ?string $interviewNotes = null): bool {
     $isApproved = ($status === 'Approved');
     $badgeText  = $isApproved ? 'Application Approved 🎉' : 'Application Status Update';
     $badgeColor = $isApproved ? '#16a34a' : '#dc2626';
@@ -136,16 +137,43 @@ function sendApplicationStatusEmail(string $toEmail, string $applicantName, stri
     $portalUrl = BASE_URL . '/pages/user/my-applications.php';
 
     if ($isApproved) {
-        $content = <<<HTML
-        <p>Dear <strong>{$applicantName}</strong>,</p>
-        <p>Great news! We are pleased to inform you that your application for the position of <strong>{$jobTitle}</strong> at <strong>{$company}</strong> has been <span style="color:#16a34a; font-weight:700;">APPROVED</span>.</p>
-        
+        $interviewSection = '';
+        if (!empty($interviewDate)) {
+            $formattedDate = date('F j, Y \a\t g:i A', strtotime($interviewDate));
+            $notesHtml = !empty($interviewNotes) 
+                ? "<p style=\"margin:8px 0 0 0; color:#14532d; font-size:14px;\"><strong>Instructions / Venue:</strong> " . nl2br(htmlspecialchars($interviewNotes)) . "</p>" 
+                : '';
+
+            $interviewSection = <<<HTML
+        <div style="background-color:#ecfdf5; border-left:4px solid #10b981; padding:18px 20px; margin:20px 0; border-radius:6px; border:1px solid #a7f3d0;">
+            <h4 style="margin:0 0 10px 0; color:#065f46; font-size:16px; display:flex; align-items:center;">
+                📅 Scheduled Interview Details
+            </h4>
+            <p style="margin:0 0 6px 0; color:#064e3b; font-size:15px;">
+                <strong>Date & Time:</strong> <span style="background-color:#d1fae5; padding:2px 8px; border-radius:4px; font-weight:700; color:#065f46;">{$formattedDate}</span>
+            </p>
+            {$notesHtml}
+            <p style="margin:10px 0 0 0; color:#047857; font-size:13px; font-style:italic;">
+                Please be ready at least 10 minutes before the scheduled time and prepare any required credentials.
+            </p>
+        </div>
+HTML;
+        } else {
+            $interviewSection = <<<HTML
         <div style="background-color:#f0fdf4; border-left:4px solid #16a34a; padding:15px; margin:20px 0; border-radius:4px;">
             <h4 style="margin:0 0 6px 0; color:#166534; font-size:15px;">Next Steps:</h4>
             <p style="margin:0; color:#14532d; font-size:14px;">The hiring team or human resources department will be in contact with you shortly regarding the next stages of the recruitment process.</p>
         </div>
+HTML;
+        }
 
-        <p>You can check your application timeline and updates anytime on your OJAMS portal.</p>
+        $content = <<<HTML
+        <p>Dear <strong>{$applicantName}</strong>,</p>
+        <p>Great news! We are pleased to inform you that your application for the position of <strong>{$jobTitle}</strong> at <strong>{$company}</strong> has been <span style="color:#16a34a; font-weight:700;">APPROVED</span>.</p>
+        
+        {$interviewSection}
+
+        <p>You can check your application timeline and interview updates anytime on your OJAMS portal.</p>
         
         <div style="text-align:center; margin:30px 0 10px 0;">
             <a href="{$portalUrl}" style="background-color:#4f46e5; color:#ffffff; padding:12px 28px; font-weight:700; text-decoration:none; border-radius:8px; display:inline-block;">View My Applications</a>

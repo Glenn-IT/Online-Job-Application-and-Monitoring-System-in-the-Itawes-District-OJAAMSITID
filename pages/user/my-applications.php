@@ -64,7 +64,14 @@ include $basePath . "layouts/navbar-user.php";
                                 <td><i class="bi bi-briefcase me-1 text-primary"></i><?php echo htmlspecialchars($app["job_title"]); ?></td>
                                 <td><?php echo htmlspecialchars($app["company"]); ?></td>
                                 <td><?php echo $app["date_applied"]; ?></td>
-                                <td><span class="badge <?php echo $badgeClass; ?>"><?php echo $app["status"]; ?></span></td>
+                                <td>
+                                    <span class="badge <?php echo $badgeClass; ?>"><?php echo $app["status"]; ?></span>
+                                    <?php if ($app["status"] === "Approved" && !empty($app["interview_date"])): ?>
+                                        <div class="mt-1 small text-success fw-semibold">
+                                            <i class="bi bi-calendar2-check me-1"></i><?= date('M d, Y h:i A', strtotime($app['interview_date'])) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <button class="btn btn-sm btn-outline-primary me-1"
                                         onclick="viewMyApp(<?php echo $app['id']; ?>)"
@@ -165,6 +172,23 @@ include $basePath . "layouts/navbar-user.php";
                             <tr><th class="text-muted">Age</th>                            <td id="vmyAppAge">—</td></tr>
                         </table>
                     </div>
+                    
+                    <!-- Interview Schedule (if approved) -->
+                    <div class="col-12" id="vmyAppInterviewRow" style="display:none;">
+                        <div class="alert alert-success d-flex align-items-start gap-3 mb-0 border-success-subtle">
+                            <i class="bi bi-calendar2-check-fill fs-3 text-success"></i>
+                            <div class="flex-grow-1">
+                                <h6 class="alert-heading fw-bold mb-1 text-success">
+                                    <i class="bi bi-calendar2-event me-1"></i>Scheduled Interview
+                                </h6>
+                                <p class="mb-1"><strong>Date &amp; Time:</strong> <span id="vmyAppInterviewDate" class="badge bg-success fs-6">—</span></p>
+                                <div id="vmyAppInterviewNotesWrap" style="display:none;">
+                                    <p class="mb-0 text-muted small"><strong>Instructions / Venue:</strong> <span id="vmyAppInterviewNotes" class="text-dark">—</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="col-12">
                         <h6 class="fw-bold text-primary border-bottom pb-2">Education</h6>
                         <div class="row">
@@ -240,10 +264,33 @@ function viewMyApp(appId) {
     setT("vmyAppCollege",   app.college);
     setT("vmyAppSkills",    app.skills);
     setT("vmyAppExperience",app.experience);
+
     const statusEl = document.getElementById("vmyAppStatus");
     if (statusEl) {
         const cls = app.status === "Approved" ? "bg-success" : app.status === "Rejected" ? "bg-danger" : "bg-warning text-dark";
         statusEl.innerHTML = "<span class=\"badge " + cls + "\">" + app.status + "</span>";
+    }
+
+    // ── Interview Schedule ──────────────────────────────
+    const interviewRow = document.getElementById("vmyAppInterviewRow");
+    const interviewDateEl = document.getElementById("vmyAppInterviewDate");
+    const interviewNotesWrap = document.getElementById("vmyAppInterviewNotesWrap");
+    const interviewNotesEl = document.getElementById("vmyAppInterviewNotes");
+
+    if (app.status === "Approved" && app.interview_date) {
+        if (interviewRow) interviewRow.style.display = "";
+        if (interviewDateEl) {
+            const d = new Date(app.interview_date.replace(' ', 'T'));
+            interviewDateEl.textContent = isNaN(d.getTime()) ? app.interview_date : d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+        if (app.interview_notes && interviewNotesWrap && interviewNotesEl) {
+            interviewNotesWrap.style.display = "";
+            interviewNotesEl.textContent = app.interview_notes;
+        } else if (interviewNotesWrap) {
+            interviewNotesWrap.style.display = "none";
+        }
+    } else if (interviewRow) {
+        interviewRow.style.display = "none";
     }
 }
 </script>

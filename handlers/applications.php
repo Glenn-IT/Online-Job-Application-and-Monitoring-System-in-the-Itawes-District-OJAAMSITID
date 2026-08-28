@@ -227,8 +227,11 @@ if ($action === 'updateStatus') {
         echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
         exit;
     }
-    $appId  = (int)($body['id'] ?? 0);
-    $status = $body['status'] ?? '';
+    $appId          = (int)($body['id'] ?? 0);
+    $status         = $body['status'] ?? '';
+    $interviewDate  = !empty($body['interview_date']) ? trim($body['interview_date']) : null;
+    $interviewNotes = !empty($body['interview_notes']) ? trim($body['interview_notes']) : null;
+
     if ($appId <= 0 || !in_array($status, ['Approved', 'Rejected'])) {
         echo json_encode(['success' => false, 'message' => 'Invalid parameters.']);
         exit;
@@ -250,21 +253,68 @@ if ($action === 'updateStatus') {
     $oldRow->execute([$appId]);
     $oldStatus = $oldRow->fetchColumn();
 
-    $pdo->prepare("UPDATE applications SET status = ? WHERE id = ?")->execute([$status, $appId]);
+    if ($status === 'Approved') {
+        $pdo->prepare("UPDATE applications SET status = ?, interview_date = ?, interview_notes = ? WHERE id = ?")
+            ->execute([$status, $interviewDate, $interviewNotes, $appId]);
+    } else {
+        $pdo->prepare("UPDATE applications SET status = ?, interview_date = NULL, interview_notes = NULL WHERE id = ?")
+            ->execute([$status, $appId]);
+    }
 
     $pdo->prepare("
         INSERT INTO application_status_history (application_id, from_status, to_status, changed_by)
         VALUES (?, ?, ?, ?)
     ")->execute([$appId, $oldStatus ?: null, $status, $_SESSION['ojams_user']['id']]);
 
-    logActivity($pdo, "Application of {$app['full_name']} marked as {$status} for \"{$app['title']}\"", $status, (int)$app['job_id'], $appId);
+    $logMsg = ($status === 'Approved' && !empty($interviewDate))
+        ? "Application of {$app['full_name']} Approved with Interview scheduled on {$interviewDate}"
+        : "Application of {$app['full_name']} marked as {$status} for \"{$app['title']}\"";
+    logActivity($pdo, $logMsg, $status, (int)$app['job_id'], $appId);
 
-    // Send email notification to applicant via Gmail
+    // Send email notification to applicant via Gmail with interview details
     if (!empty($app['email'])) {
-        sendApplicationStatusEmail($app['email'], $app['full_name'], $app['title'], $app['company'], $status);
+        sendApplicationStatusEmail($app['email'], $app['full_name'], $app['title'], $app['company'], $status, $interviewDate, $interviewNotes);
     }
 
     echo json_encode(['success' => true, 'message' => "Application {$status}."]);
+    exit;
+}
+
+// ── ACTION: scheduleInterview (admin or staff) ────────────────
+if ($action === 'scheduleInterview') {
+    if (!isAdmin() && !isStaff()) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
+        exit;
+    }
+    $appId          = (int)($body['id'] ?? 0);
+    $interviewDate  = !empty($body['interview_date']) ? trim($body['interview_date']) : null;
+    $interviewNotes = !empty($body['interview_notes']) ? trim($body['interview_notes']) : null;
+
+    if ($appId <= 0 || empty($interviewDate)) {
+        echo json_encode(['success' => false, 'message' => 'Please provide a valid interview date and time.']);
+        exit;
+    }
+    $check = $pdo->prepare("
+        SELECT a.id, a.full_name, a.email, a.status, a.job_id, j.title, j.company
+        FROM applications a
+        JOIN jobs j ON j.id = a.job_id
+        WHERE a.id = ?
+    ");
+    $check->execute([$appId]);
+    $app = $check->fetch();
+    if (!$app) {
+        echo json_encode(['success' => false, 'message' => 'Application not found.']);
+        exit;
+    }
+    $pdo->prepare("UPDATE applications SET interview_date = ?, interview_notes = ? WHERE id = ?")
+        ->execute([$interviewDate, $interviewNotes, $appId]);
+
+    logActivity($pdo, "Interview scheduled for {$app['full_name']} for \"{$app['title']}\" on {$interviewDate}", 'Updated', (int)$app['job_id'], $appId);
+
+    if (!empty($app['email'])) {
+        sendApplicationStatusEmail($app['email'], $app['full_name'], $app['title'], $app['company'], 'Approved', $interviewDate, $interviewNotes);
+    }
+    echo json_encode(['success' => true, 'message' => 'Interview schedule updated and notification sent to applicant.']);
     exit;
 }
 
