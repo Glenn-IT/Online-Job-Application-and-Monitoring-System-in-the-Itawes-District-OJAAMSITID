@@ -161,26 +161,33 @@ Built as a true cherry-pick off a temp branch from `main` — `pages/admin/manag
 
 ---
 
+### final-v1.00 | Final Production Release (Full System Unlocked + Gmail SMTP Notifications)
+
+**Present:** Fully unlocked system with zero gated pages across Admin, Staff, and User portals. Includes live Gmail SMTP email notifications for application status updates, full job lifecycle management, hiring contact details, responsive toast feedback, and modal workflows.
+
+---
+
 ## GitHub Release Tags
 
-| Version | Tag     | Commit                                     |
-| ------- | ------- | ------------------------------------------ |
-| v1.01   | `v1.01` | `0a361a502e6795a50395eb15d583ca4854289fa9` |
-| v1.02   | `v1.02` | `a42bfdd1f486dc6bfb42d0604a9eb775c687550b` |
-| v1.03   | `v1.03` | `3d1d46d6dcec3144d32eafca3659f97d0eaa0a5f` |
-| v1.04   | `v1.04` | `73ab789ce50842a15769b24b09faffc51ff3dab9` |
-| v1.05   | `v1.05` | `af09c37f13a3d6f66f6677f2fe52d0819cee59f6` |
-| v1.06   | `v1.06` | `57d95b677696672e0391a91cfc8fccf654747562` |
-| v1.07   | `v1.07` | `be77342d1eaa8b6e71144210bb9726e4b8b779e1` |
-| v1.08   | `v1.08` | `20691803c8bf8676264b7421a098e445ac7fdf4c` |
-| v1.09   | `v1.09` | `8a6f878936722c3316a249354f9045121b722eff` |
-| v1.10   | `v1.10` | `b69d2b404ddca723bd7f63bc1a95c1484555259d` |
-| v2.00   | `v2.00` | `249ca9447527fd56ad91117fe7e0a5c8492ef3f8` |
-| v3.00   | `v3.00` | `13c0248c8be089fcd4ba539cb575e79149c88d4b` |
-| v4.00   | `v4.00` | `587252ca76813173cf1173b4a1654f959de418b6` |
-| v5.00   | `v5.00` | `aa0b1705207acc0b1bc82092b7a8c1fed4e89144` |
-| v6.00   | `v6.00` | `070823d88d0b7e7b151da70b022967df5453b49b` |
-| v7.00   | `v7.00` | `main`                                     |
+| Version    | Tag           | Commit                                     |
+| ---------- | ------------- | ------------------------------------------ |
+| v1.01      | `v1.01`       | `0a361a502e6795a50395eb15d583ca4854289fa9` |
+| v1.02      | `v1.02`       | `a42bfdd1f486dc6bfb42d0604a9eb775c687550b` |
+| v1.03      | `v1.03`       | `3d1d46d6dcec3144d32eafca3659f97d0eaa0a5f` |
+| v1.04      | `v1.04`       | `73ab789ce50842a15769b24b09faffc51ff3dab9` |
+| v1.05      | `v1.05`       | `af09c37f13a3d6f66f6677f2fe52d0819cee59f6` |
+| v1.06      | `v1.06`       | `57d95b677696672e0391a91cfc8fccf654747562` |
+| v1.07      | `v1.07`       | `be77342d1eaa8b6e71144210bb9726e4b8b779e1` |
+| v1.08      | `v1.08`       | `20691803c8bf8676264b7421a098e445ac7fdf4c` |
+| v1.09      | `v1.09`       | `8a6f878936722c3316a249354f9045121b722eff` |
+| v1.10      | `v1.10`       | `b69d2b404ddca723bd7f63bc1a95c1484555259d` |
+| v2.00      | `v2.00`       | `249ca9447527fd56ad91117fe7e0a5c8492ef3f8` |
+| v3.00      | `v3.00`       | `13c0248c8be089fcd4ba539cb575e79149c88d4b` |
+| v4.00      | `v4.00`       | `587252ca76813173cf1173b4a1654f959de418b6` |
+| v5.00      | `v5.00`       | `aa0b1705207acc0b1bc82092b7a8c1fed4e89144` |
+| v6.00      | `v6.00`       | `070823d88d0b7e7b151da70b022967df5453b49b` |
+| v7.00      | `v7.00`       | `e58421dc61011e860959db62f83d97f26fc9980d` |
+| final-v1.00| `final-v1.00` | `HEAD`                                     |
 
 > Fill in the commit hash or branch name after each GitHub release is published.
 
