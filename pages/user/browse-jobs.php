@@ -56,14 +56,10 @@ $jobsStmt = $pdo->prepare("
 $jobsStmt->execute(array_merge($params, [$perPage, $offset]));
 $jobs = $jobsStmt->fetchAll();
 
-// Applied and saved job IDs for this user
+// Applied job IDs for this user
 $appliedStmt = $pdo->prepare("SELECT job_id FROM applications WHERE user_id = ?");
 $appliedStmt->execute([$_SESSION["ojams_user"]["id"]]);
 $appliedJobIds = array_column($appliedStmt->fetchAll(), "job_id");
-
-$savedStmt = $pdo->prepare("SELECT job_id FROM saved_jobs WHERE user_id = ?");
-$savedStmt->execute([$_SESSION["ojams_user"]["id"]]);
-$savedJobIds = array_column($savedStmt->fetchAll(), "job_id");
 
 // Applicant counts — cached in session for 5 minutes to reduce DB hits
 $cacheKey = 'browse_app_counts';
@@ -150,7 +146,6 @@ include $basePath . "layouts/navbar-user.php";
         <?php else: ?>
         <?php foreach ($jobs as $job):
             $alreadyApplied = in_array($job["id"], $appliedJobIds);
-            $isSaved        = in_array($job["id"], $savedJobIds);
             $isOpen         = $job["status"] === "Open";
             $cnt            = $appCounts[$job["id"]] ?? 0;
         ?>
@@ -235,12 +230,6 @@ include $basePath . "layouts/navbar-user.php";
                                 <i class="bi bi-lock me-1"></i>Closed
                             </button>
                         <?php endif; ?>
-                        <button class="btn btn-outline-secondary <?php echo $isSaved ? 'text-warning' : ''; ?>"
-                                id="save-btn-<?php echo $job['id']; ?>"
-                                onclick="toggleSaveJob(<?php echo $job['id']; ?>)"
-                                title="<?php echo $isSaved ? 'Remove from saved' : 'Save job'; ?>">
-                            <i class="bi bi-bookmark<?php echo $isSaved ? '-fill' : ''; ?>"></i>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -283,34 +272,7 @@ include $basePath . "layouts/navbar-user.php";
 </div>
 <?php include $basePath . "modals/apply-job-modal.php"; ?>
 <script>
-const APP_HANDLER   = "../../handlers/applications.php";
-const SAVED_HANDLER = "../../handlers/saved-jobs.php";
-
-function toggleSaveJob(jobId) {
-    fetch(SAVED_HANDLER, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "toggle", job_id: jobId, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(res => {
-        showToast(res.message, res.success ? "success" : "danger");
-        if (res.success) {
-            const btn  = document.getElementById("save-btn-" + jobId);
-            const icon = btn?.querySelector("i");
-            if (res.saved) {
-                btn?.classList.add("text-warning");
-                btn?.setAttribute("title", "Remove from saved");
-                if (icon) icon.className = "bi bi-bookmark-fill";
-            } else {
-                btn?.classList.remove("text-warning");
-                btn?.setAttribute("title", "Save job");
-                if (icon) icon.className = "bi bi-bookmark";
-            }
-        }
-    })
-    .catch(() => showToast("Request failed.", "danger"));
-}
+const APP_HANDLER = "../../handlers/applications.php";
 
 function computeAge(birthdate) {
     if (!birthdate) return "";

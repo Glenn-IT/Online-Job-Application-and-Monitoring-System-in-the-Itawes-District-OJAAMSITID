@@ -27,16 +27,12 @@ if (!$job) {
     exit;
 }
 
-// ── Has the user already applied or saved? ───────────────────
+// ── Has the user already applied? ───────────────────────────
 $userId = $_SESSION['ojams_user']['id'];
 $dupStmt = $pdo->prepare("SELECT id, status FROM applications WHERE user_id = ? AND job_id = ? LIMIT 1");
 $dupStmt->execute([$userId, $jobId]);
 $existingApp = $dupStmt->fetch();
 $alreadyApplied = (bool)$existingApp;
-
-$svStmt = $pdo->prepare("SELECT id FROM saved_jobs WHERE user_id = ? AND job_id = ? LIMIT 1");
-$svStmt->execute([$userId, $jobId]);
-$isSaved = (bool)$svStmt->fetch();
 
 // ── Applicant count ──────────────────────────────────────────
 $cntStmt = $pdo->prepare("SELECT COUNT(*) FROM applications WHERE job_id = ?");
@@ -256,14 +252,6 @@ include $basePath . 'layouts/navbar-user.php';
                         </button>
                     <?php endif; ?>
 
-                    <!-- Always unlocked Save Job button -->
-                    <button class="btn btn-outline-secondary w-100 <?php echo $isSaved ? 'text-warning' : ''; ?>"
-                            id="detailSaveBtn"
-                            onclick="toggleSaveJobDetail(<?php echo $job['id']; ?>)">
-                        <i class="bi bi-bookmark<?php echo $isSaved ? '-fill' : ''; ?> me-1"></i>
-                        <span id="detailSaveLabel"><?php echo $isSaved ? 'Saved' : 'Save Job'; ?></span>
-                    </button>
-
                     <hr class="my-3">
 
                     <a href="browse-jobs.php" class="btn btn-outline-secondary btn-sm w-100">
@@ -279,35 +267,7 @@ include $basePath . 'layouts/navbar-user.php';
 
 <?php include $basePath . 'modals/apply-job-modal.php'; ?>
 <script>
-const APP_HANDLER   = '../../handlers/applications.php';
-const SAVED_HANDLER = '../../handlers/saved-jobs.php';
-
-function toggleSaveJobDetail(jobId) {
-    fetch(SAVED_HANDLER, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'toggle', job_id: jobId, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(res => {
-        showToast(res.message, res.success ? 'success' : 'danger');
-        if (res.success) {
-            const btn   = document.getElementById('detailSaveBtn');
-            const icon  = btn?.querySelector('i');
-            const label = document.getElementById('detailSaveLabel');
-            if (res.saved) {
-                btn?.classList.add('text-warning');
-                if (icon)  icon.className  = 'bi bi-bookmark-fill me-1';
-                if (label) label.textContent = 'Saved';
-            } else {
-                btn?.classList.remove('text-warning');
-                if (icon)  icon.className  = 'bi bi-bookmark me-1';
-                if (label) label.textContent = 'Save Job';
-            }
-        }
-    })
-    .catch(() => showToast('Request failed.', 'danger'));
-}
+const APP_HANDLER = '../../handlers/applications.php';
 
 function computeAge(birthdate) {
     if (!birthdate) return '';
