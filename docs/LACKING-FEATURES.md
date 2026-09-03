@@ -21,6 +21,7 @@
 - [x] **HTTPS enforcement** — add `.htaccess` redirect before any production deployment
 - [x] **404 / Error page** — invalid routes currently show raw PHP errors or a blank screen
 - [x] **Email notifications** — automated Gmail SMTP notifications for application submission, status evaluation (Approved/Rejected), and staff account approvals (`config/mailer.php`, `handlers/applications.php`, `handlers/admin.php`)
+- [x] **SMS notifications (PhilSMS)** — automated SMS notifications for application submission, status evaluation (Approved/Rejected), and scheduled interviews (`config/sms.php`, `handlers/applications.php`)
 - [x] **User Management page** — admins cannot view, edit, or deactivate user accounts (new `pages/admin/user-management.php`)
 - [x] **Job Detail page** — users only see truncated cards; no full detail view (new `pages/user/job-detail.php`)
 - [x] **Resume / CV upload** — applicants cannot attach documents to their application (`modals/apply-job-modal.php`)

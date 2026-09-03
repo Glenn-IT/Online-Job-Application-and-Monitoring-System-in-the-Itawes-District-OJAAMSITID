@@ -39,6 +39,11 @@ define('SMTP_USER',      getenv('SMTP_USER')      ?: '');
 define('SMTP_PASS',      getenv('SMTP_PASS')      ?: '');
 define('SMTP_FROM_NAME', getenv('SMTP_FROM_NAME') ?: 'OJAMS Notifications');
 
+// ── PhilSMS / SMS Gateway Settings ──────────────────────────
+define('PHILSMS_API_URL',   getenv('PHILSMS_API_URL')   ?: 'https://dashboard.philsms.com/api/v3/sms/send');
+define('PHILSMS_API_TOKEN', getenv('PHILSMS_API_TOKEN') ?: '');
+define('PHILSMS_SENDER_ID', getenv('PHILSMS_SENDER_ID') ?: 'PhilSMS');
+
 // ── URL / Path Helpers ──────────────────────────────────────
 // Use .env BASE_URL if set; otherwise derive from the current request so the
 // redirect after login works regardless of which port XAMPP is running on.

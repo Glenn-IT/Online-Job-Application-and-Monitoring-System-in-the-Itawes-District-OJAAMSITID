@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/mailer.php';
+require_once __DIR__ . '/../config/sms.php';
 requireLogin();
 header('Content-Type: application/json');
 
@@ -196,6 +197,11 @@ if ($action === 'apply') {
         sendApplicationSubmittedEmail($email, $fullName, $job['title'], $job['company']);
     }
 
+    // Send confirmation SMS to applicant via PhilSMS
+    if (!empty($contact)) {
+        sendApplicationSubmittedSms($contact, $fullName, $job['title'], $job['company']);
+    }
+
     echo json_encode(['success' => true, 'message' => 'Application submitted successfully.']);
     exit;
 }
@@ -237,7 +243,7 @@ if ($action === 'updateStatus') {
         exit;
     }
     $check = $pdo->prepare("
-        SELECT a.id, a.full_name, a.email, a.job_id, j.title, j.company
+        SELECT a.id, a.full_name, a.email, a.contact, a.job_id, j.title, j.company
         FROM applications a
         JOIN jobs j ON j.id = a.job_id
         WHERE a.id = ?
@@ -276,6 +282,11 @@ if ($action === 'updateStatus') {
         sendApplicationStatusEmail($app['email'], $app['full_name'], $app['title'], $app['company'], $status, $interviewDate, $interviewNotes);
     }
 
+    // Send SMS notification to applicant via PhilSMS with interview details
+    if (!empty($app['contact'])) {
+        sendApplicationStatusSms($app['contact'], $app['full_name'], $app['title'], $app['company'], $status, $interviewDate, $interviewNotes);
+    }
+
     echo json_encode(['success' => true, 'message' => "Application {$status}."]);
     exit;
 }
@@ -295,7 +306,7 @@ if ($action === 'scheduleInterview') {
         exit;
     }
     $check = $pdo->prepare("
-        SELECT a.id, a.full_name, a.email, a.status, a.job_id, j.title, j.company
+        SELECT a.id, a.full_name, a.email, a.contact, a.status, a.job_id, j.title, j.company
         FROM applications a
         JOIN jobs j ON j.id = a.job_id
         WHERE a.id = ?
@@ -313,6 +324,10 @@ if ($action === 'scheduleInterview') {
 
     if (!empty($app['email'])) {
         sendApplicationStatusEmail($app['email'], $app['full_name'], $app['title'], $app['company'], 'Approved', $interviewDate, $interviewNotes);
+    }
+
+    if (!empty($app['contact'])) {
+        sendApplicationStatusSms($app['contact'], $app['full_name'], $app['title'], $app['company'], 'Approved', $interviewDate, $interviewNotes);
     }
     echo json_encode(['success' => true, 'message' => 'Interview schedule updated and notification sent to applicant.']);
     exit;
@@ -385,9 +400,9 @@ if ($action === 'bulkUpdateStatus') {
         $histStmt->execute([$id, $oldStatuses[$id] ?? null, $status, $adminId]);
     }
 
-    // Fetch applicant details for email notification
+    // Fetch applicant details for email & SMS notifications
     $emailStmt = $pdo->prepare("
-        SELECT a.id, a.full_name, a.email, j.title, j.company
+        SELECT a.id, a.full_name, a.email, a.contact, j.title, j.company
         FROM applications a
         JOIN jobs j ON j.id = a.job_id
         WHERE a.id IN ({$placeholders})
@@ -397,6 +412,9 @@ if ($action === 'bulkUpdateStatus') {
     foreach ($bulkApplicants as $bApp) {
         if (!empty($bApp['email'])) {
             sendApplicationStatusEmail($bApp['email'], $bApp['full_name'], $bApp['title'], $bApp['company'], $status);
+        }
+        if (!empty($bApp['contact'])) {
+            sendApplicationStatusSms($bApp['contact'], $bApp['full_name'], $bApp['title'], $bApp['company'], $status);
         }
     }
 
