@@ -45,13 +45,13 @@ define('PHILSMS_API_TOKEN', getenv('PHILSMS_API_TOKEN') ?: '');
 define('PHILSMS_SENDER_ID', getenv('PHILSMS_SENDER_ID') ?: 'PhilSMS');
 
 // ── URL / Path Helpers ──────────────────────────────────────
-// Use .env BASE_URL if set; otherwise derive from the current request so the
-// redirect after login works regardless of which port XAMPP is running on.
-if (getenv('BASE_URL') !== false && getenv('BASE_URL') !== '') {
-    define('BASE_URL', getenv('BASE_URL'));
-} elseif (isset($_SERVER['HTTP_HOST'])) {
+// Dynamically derive from the current request (HTTP_HOST) so testing across LAN
+// devices (e.g. mobile phone via Wi-Fi IP) and custom XAMPP ports works seamlessly.
+if (isset($_SERVER['HTTP_HOST'])) {
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     define('BASE_URL', $scheme . '://' . $_SERVER['HTTP_HOST'] . '/OJAMS');
+} elseif (getenv('BASE_URL') !== false && getenv('BASE_URL') !== '') {
+    define('BASE_URL', getenv('BASE_URL'));
 } else {
     define('BASE_URL', 'http://localhost/OJAMS');
 }

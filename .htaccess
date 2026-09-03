@@ -12,9 +12,12 @@ DirectoryIndex index.php
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Skip redirect for localhost / 127.0.0.1 (dev environment)
-    RewriteCond %{HTTP_HOST} !^localhost$ [NC]
-    RewriteCond %{HTTP_HOST} !^127\.0\.0\.1$
+    # Skip redirect for localhost, 127.0.0.1, and private LAN IPs (dev/testing environments)
+    RewriteCond %{HTTP_HOST} !^localhost(:[0-9]+)?$ [NC]
+    RewriteCond %{HTTP_HOST} !^127\.0\.0\.1(:[0-9]+)?$
+    RewriteCond %{HTTP_HOST} !^192\.168\.
+    RewriteCond %{HTTP_HOST} !^10\.
+    RewriteCond %{HTTP_HOST} !^172\.(1[6-9]|2[0-9]|3[0-1])\.
     RewriteCond %{HTTP_HOST} !^::1$
 
     # Only redirect if not already on HTTPS
