@@ -137,21 +137,44 @@ include $basePath . "layouts/navbar-user.php";
                             </div>
                             <hr>
                             <p class="text-muted small mb-3">Leave blank to keep your current password.</p>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Current Password</label>
+                            <div class="mb-3">
+                                <label class="form-label">Current Password</label>
+                                <div class="input-group">
                                     <input type="password" class="form-control" id="editCurrentPassword"
                                            placeholder="Enter current password">
+                                    <button class="btn btn-outline-secondary" type="button"
+                                            onclick="togglePwVisibility('editCurrentPassword', this)" title="Show/Hide Password">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
                                 </div>
+                            </div>
+                            <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">New Password</label>
-                                    <input type="password" class="form-control" id="editNewPassword"
-                                           placeholder="Min 8 chars, uppercase, number, symbol"
-                                           oninput="checkUserPwStrength()">
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="editNewPassword"
+                                               placeholder="Min 8 chars, uppercase, number, symbol"
+                                               oninput="checkUserPwStrength()">
+                                        <button class="btn btn-outline-secondary" type="button"
+                                                onclick="togglePwVisibility('editNewPassword', this)" title="Show/Hide Password">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
                                     <div class="progress mt-2" style="height:5px;">
                                         <div class="progress-bar" id="userPwStrengthBar" role="progressbar" style="width:0%"></div>
                                     </div>
                                     <small class="text-muted" id="userPwStrengthText"></small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Confirm New Password</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="editConfirmPassword"
+                                               placeholder="Re-enter new password">
+                                        <button class="btn btn-outline-secondary" type="button"
+                                                onclick="togglePwVisibility('editConfirmPassword', this)" title="Show/Hide Password">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -206,7 +229,7 @@ include $basePath . "layouts/navbar-user.php";
 const PROFILE_HANDLER = "../../handlers/profile.php";
 
 // Security: passwords cannot be copied out of, or pasted into, these fields.
-["editCurrentPassword", "editNewPassword"].forEach(id => {
+["editCurrentPassword", "editNewPassword", "editConfirmPassword"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     ["copy", "cut", "paste", "drop"].forEach(evt =>
@@ -271,6 +294,7 @@ function toggleEditProfile() {
         viewEl.style.display = "block";
         btn.innerHTML = "<i class=\"bi bi-pencil me-1\"></i>Edit Profile";
         btn.classList.replace("btn-secondary", "btn-outline-primary");
+        clearAllFieldErrors("editProfileForm");
     } else {
         editEl.style.display = "block";
         viewEl.style.display = "none";
@@ -285,8 +309,9 @@ function saveProfile() {
     const contact   = document.getElementById("editContact")?.value.trim();
     const address   = document.getElementById("editAddress")?.value.trim();
     const birthdate = document.getElementById("editBirthdate")?.value;
-    const currentPw = document.getElementById("editCurrentPassword")?.value;
-    const newPw     = document.getElementById("editNewPassword")?.value;
+    const currentPw = document.getElementById("editCurrentPassword")?.value || "";
+    const newPw     = document.getElementById("editNewPassword")?.value || "";
+    const confirmPw = document.getElementById("editConfirmPassword")?.value || "";
     const secQ      = document.getElementById("editSecQuestion")?.value;
     const secA      = document.getElementById("editSecAnswer")?.value.trim();
 
@@ -307,12 +332,39 @@ function saveProfile() {
             if (age < 16 || age > 80) { showFieldError("editBirthdate", "Age must be between 16 and 80 years."); editValid = false; }
         }
     }
-    if (currentPw && newPw) {
-        if (newPw.length < 8)              { showFieldError("editNewPassword", "New password must be at least 8 characters."); editValid = false; }
-        else if (!/[A-Z]/.test(newPw))    { showFieldError("editNewPassword", "New password must contain at least one uppercase letter."); editValid = false; }
-        else if (!/[0-9]/.test(newPw))    { showFieldError("editNewPassword", "New password must contain at least one number."); editValid = false; }
-        else if (!/[^A-Za-z0-9]/.test(newPw)) { showFieldError("editNewPassword", "New password must contain at least one special character."); editValid = false; }
+
+    if (newPw || confirmPw || (currentPw && !secQ && !secA)) {
+        if (!currentPw) {
+            showFieldError("editCurrentPassword", "Current password is required.");
+            editValid = false;
+        }
+        if (!newPw) {
+            showFieldError("editNewPassword", "New password is required.");
+            editValid = false;
+        } else {
+            if (newPw.length < 8) {
+                showFieldError("editNewPassword", "New password must be at least 8 characters.");
+                editValid = false;
+            } else if (!/[A-Z]/.test(newPw)) {
+                showFieldError("editNewPassword", "New password must contain at least one uppercase letter.");
+                editValid = false;
+            } else if (!/[0-9]/.test(newPw)) {
+                showFieldError("editNewPassword", "New password must contain at least one number.");
+                editValid = false;
+            } else if (!/[^A-Za-z0-9]/.test(newPw)) {
+                showFieldError("editNewPassword", "New password must contain at least one special character.");
+                editValid = false;
+            }
+        }
+        if (!confirmPw) {
+            showFieldError("editConfirmPassword", "Please confirm your new password.");
+            editValid = false;
+        } else if (newPw && confirmPw && newPw !== confirmPw) {
+            showFieldError("editConfirmPassword", "New passwords do not match.");
+            editValid = false;
+        }
     }
+
     if (secQ || secA) {
         if (!secQ)      { showFieldError("editSecQuestion", "Choose a security question.");            editValid = false; }
         if (!secA)      { showFieldError("editSecAnswer",   "Security answer is required.");           editValid = false; }
@@ -324,8 +376,8 @@ function saveProfile() {
         return;
     }
 
-    const doPasswordChange   = currentPw && newPw;
-    const doSecurityQuestion = secQ && secA && currentPw;
+    const doPasswordChange   = !!(currentPw && newPw && confirmPw);
+    const doSecurityQuestion = !!(secQ && secA && currentPw);
 
     const saveBtn = document.getElementById("saveProfileBtn");
     btnLoading(saveBtn, true, "Saving…");
@@ -339,7 +391,7 @@ function saveProfile() {
     const changePass = () => fetch(PROFILE_HANDLER, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "changePassword", current_password: currentPw, new_password: newPw, confirm_password: newPw, csrf_token: getCsrfToken() })
+        body: JSON.stringify({ action: "changePassword", current_password: currentPw, new_password: newPw, confirm_password: confirmPw, csrf_token: getCsrfToken() })
     }).then(r => r.json());
 
     const updateSecurity = () => fetch(PROFILE_HANDLER, {
@@ -377,7 +429,7 @@ function saveProfile() {
                 if (r2.locked) {
                     startPwLockdown(
                         r2.retry_after,
-                        ["editCurrentPassword", "editNewPassword"],
+                        ["editCurrentPassword", "editNewPassword", "editConfirmPassword"],
                         "saveProfileBtn",
                         "pwLockNoticeUser",
                         "pwCountdownUser"
@@ -389,6 +441,11 @@ function saveProfile() {
                 if (r2.success) {
                     document.getElementById("editCurrentPassword").value = "";
                     document.getElementById("editNewPassword").value     = "";
+                    document.getElementById("editConfirmPassword").value = "";
+                    const bar = document.getElementById("userPwStrengthBar");
+                    const txt = document.getElementById("userPwStrengthText");
+                    if (bar) bar.style.width = "0%";
+                    if (txt) txt.textContent = "";
                 }
             });
         } else if (!doSecurityQuestion) {
@@ -422,6 +479,19 @@ function checkUserPwStrength() {
     bar.style.width = lvl.pct;
     bar.className   = "progress-bar " + lvl.cls;
     txt.textContent = lvl.label;
+}
+
+function togglePwVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon  = btn ? btn.querySelector("i") : null;
+    if (!input || !icon) return;
+    if (input.type === "password") {
+        input.type = "text";
+        icon.className = "bi bi-eye-slash";
+    } else {
+        input.type = "password";
+        icon.className = "bi bi-eye";
+    }
 }
 </script>
 <?php include $basePath . "layouts/footer.php"; ?>
