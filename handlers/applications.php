@@ -73,25 +73,6 @@ if ($action === 'apply') {
     $contact    = strip_tags(trim($body['contact']    ?? ''));
     $address    = strip_tags(trim($body['address']    ?? ''));
     $birthdate  = $body['birthdate']       ?? null;
-    // Validate and compute age server-side — never trust the submitted value
-    $age = null;
-    if ($birthdate) {
-        $bd = DateTime::createFromFormat('Y-m-d', $birthdate);
-        if (!$bd || $bd->format('Y-m-d') !== $birthdate) {
-            echo json_encode(['success' => false, 'message' => 'Invalid birthdate format.']);
-            exit;
-        }
-        $now = new DateTime();
-        if ($bd >= $now) {
-            echo json_encode(['success' => false, 'message' => 'Birthdate cannot be a future date.']);
-            exit;
-        }
-        $age = (int)$now->diff($bd)->y;
-        if ($age < 16 || $age > 80) {
-            echo json_encode(['success' => false, 'message' => 'Age must be between 16 and 80 years old.']);
-            exit;
-        }
-    }
     $elementary = strip_tags(trim($body['elementary'] ?? ''));
     $jhs        = strip_tags(trim($body['jhs']        ?? ''));
     $shs        = strip_tags(trim($body['shs']        ?? ''));
@@ -99,63 +80,156 @@ if ($action === 'apply') {
     $skills     = strip_tags(trim($body['skills']     ?? ''));
     $experience = strip_tags(trim($body['experience'] ?? ''));
 
-    if (!$fullName || !$email) {
-        echo json_encode(['success' => false, 'message' => 'Full name and email are required.']);
+    // ── Required Fields Validation ──
+    if (!$fullName) {
+        echo json_encode(['success' => false, 'message' => 'Full name is required.']);
         exit;
     }
-    if (strlen($fullName) > 150)    { echo json_encode(['success' => false, 'message' => 'Full name must be 150 characters or fewer.']); exit; }
-    if (strlen($email) > 150)       { echo json_encode(['success' => false, 'message' => 'Email must be 150 characters or fewer.']); exit; }
-    if (strlen($contact) > 20)      { echo json_encode(['success' => false, 'message' => 'Contact number must be 20 characters or fewer.']); exit; }
-    if ($contact !== '' && !preg_match('/^\d{11}$/', $contact)) {
+    if (strlen($fullName) > 150) {
+        echo json_encode(['success' => false, 'message' => 'Full name must be 150 characters or fewer.']);
+        exit;
+    }
+
+    if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(['success' => false, 'message' => 'A valid email address is required.']);
+        exit;
+    }
+    if (strlen($email) > 150) {
+        echo json_encode(['success' => false, 'message' => 'Email must be 150 characters or fewer.']);
+        exit;
+    }
+
+    if (!$contact) {
+        echo json_encode(['success' => false, 'message' => 'Contact number is required.']);
+        exit;
+    }
+    if (!preg_match('/^\d{11}$/', $contact)) {
         echo json_encode(['success' => false, 'message' => 'Contact number must be exactly 11 digits (numbers only).']);
         exit;
     }
-    if (strlen($elementary) > 200)  { echo json_encode(['success' => false, 'message' => 'Elementary school name must be 200 characters or fewer.']); exit; }
-    if (strlen($jhs) > 200)         { echo json_encode(['success' => false, 'message' => 'JHS school name must be 200 characters or fewer.']); exit; }
-    if (strlen($shs) > 200)         { echo json_encode(['success' => false, 'message' => 'SHS school name must be 200 characters or fewer.']); exit; }
-    if (strlen($college) > 200)     { echo json_encode(['success' => false, 'message' => 'College name must be 200 characters or fewer.']); exit; }
 
-    // ── Resume / CV upload (optional) ───────────────────────
-    $uploadedFile  = null; // holds validated file info pre-insert
-    $resumeError   = null;
-    if (isset($_FILES['resume']) && $_FILES['resume']['error'] !== UPLOAD_ERR_NO_FILE) {
-        $file = $_FILES['resume'];
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            echo json_encode(['success' => false, 'message' => 'File upload failed (code ' . $file['error'] . ').']);
-            exit;
-        }
-        // Size limit: 5 MB
-        if ($file['size'] > 5 * 1024 * 1024) {
-            echo json_encode(['success' => false, 'message' => 'Resume must be 5 MB or smaller.']);
-            exit;
-        }
-        // MIME validation (real content check, not just extension)
-        $allowedMimes = [
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        ];
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime  = $finfo->file($file['tmp_name']);
-        if (!in_array($mime, $allowedMimes, true)) {
-            echo json_encode(['success' => false, 'message' => 'Only PDF, DOC, and DOCX files are allowed.']);
-            exit;
-        }
-        // Extension cross-check
-        $ext         = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $allowedExts = ['pdf', 'doc', 'docx'];
-        if (!in_array($ext, $allowedExts, true)) {
-            echo json_encode(['success' => false, 'message' => 'Only PDF, DOC, and DOCX files are allowed.']);
-            exit;
-        }
-        $uploadedFile = [
-            'tmp'      => $file['tmp_name'],
-            'original' => basename($file['name']),
-            'size'     => $file['size'],
-            'mime'     => $mime,
-            'ext'      => $ext,
-        ];
+    if (!$address) {
+        echo json_encode(['success' => false, 'message' => 'Address is required.']);
+        exit;
     }
+    if (strlen($address) > 500) {
+        echo json_encode(['success' => false, 'message' => 'Address must be 500 characters or fewer.']);
+        exit;
+    }
+
+    // ── Birthdate & Age Trapping (Must be at least 18 years old) ──
+    if (!$birthdate) {
+        echo json_encode(['success' => false, 'message' => 'Birthdate is required.']);
+        exit;
+    }
+    $bd = DateTime::createFromFormat('Y-m-d', $birthdate);
+    if (!$bd || $bd->format('Y-m-d') !== $birthdate) {
+        echo json_encode(['success' => false, 'message' => 'Invalid birthdate format.']);
+        exit;
+    }
+    $now = new DateTime();
+    if ($bd >= $now) {
+        echo json_encode(['success' => false, 'message' => 'Birthdate cannot be a future date.']);
+        exit;
+    }
+    $age = (int)$now->diff($bd)->y;
+    if ($age < 18) {
+        echo json_encode(['success' => false, 'message' => 'Applicants must be at least 18 years of age to apply.']);
+        exit;
+    }
+    if ($age > 80) {
+        echo json_encode(['success' => false, 'message' => 'Age must be 80 years old or below.']);
+        exit;
+    }
+
+    // ── Educational Attainment Validation ──
+    if (!$elementary) {
+        echo json_encode(['success' => false, 'message' => 'Elementary school is required.']);
+        exit;
+    }
+    if (strlen($elementary) > 200) {
+        echo json_encode(['success' => false, 'message' => 'Elementary school name must be 200 characters or fewer.']);
+        exit;
+    }
+
+    if (!$jhs) {
+        echo json_encode(['success' => false, 'message' => 'Junior High School (JHS) is required.']);
+        exit;
+    }
+    if (strlen($jhs) > 200) {
+        echo json_encode(['success' => false, 'message' => 'JHS school name must be 200 characters or fewer.']);
+        exit;
+    }
+
+    if (!$shs) {
+        echo json_encode(['success' => false, 'message' => 'Senior High School (SHS) is required.']);
+        exit;
+    }
+    if (strlen($shs) > 200) {
+        echo json_encode(['success' => false, 'message' => 'SHS school name must be 200 characters or fewer.']);
+        exit;
+    }
+
+    if (!$college) {
+        echo json_encode(['success' => false, 'message' => 'College education is required.']);
+        exit;
+    }
+    if (strlen($college) > 200) {
+        echo json_encode(['success' => false, 'message' => 'College name must be 200 characters or fewer.']);
+        exit;
+    }
+
+    // ── Additional Information Validation ──
+    if (!$skills) {
+        echo json_encode(['success' => false, 'message' => 'Skills are required.']);
+        exit;
+    }
+    if (!$experience) {
+        echo json_encode(['success' => false, 'message' => 'Work experience is required (enter N/A if none).']);
+        exit;
+    }
+
+    // ── Resume / CV Upload (Mandatory) ───────────────────────
+    if (!isset($_FILES['resume']) || $_FILES['resume']['error'] === UPLOAD_ERR_NO_FILE) {
+        echo json_encode(['success' => false, 'message' => 'Resume / CV file is required.']);
+        exit;
+    }
+    $file = $_FILES['resume'];
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        echo json_encode(['success' => false, 'message' => 'File upload failed (code ' . $file['error'] . ').']);
+        exit;
+    }
+    // Size limit: 5 MB
+    if ($file['size'] > 5 * 1024 * 1024) {
+        echo json_encode(['success' => false, 'message' => 'Resume must be 5 MB or smaller.']);
+        exit;
+    }
+    // MIME validation (real content check, not just extension)
+    $allowedMimes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime  = $finfo->file($file['tmp_name']);
+    if (!in_array($mime, $allowedMimes, true)) {
+        echo json_encode(['success' => false, 'message' => 'Only PDF, DOC, and DOCX files are allowed for resume.']);
+        exit;
+    }
+    // Extension cross-check
+    $ext         = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $allowedExts = ['pdf', 'doc', 'docx'];
+    if (!in_array($ext, $allowedExts, true)) {
+        echo json_encode(['success' => false, 'message' => 'Only PDF, DOC, and DOCX files are allowed for resume.']);
+        exit;
+    }
+    $uploadedFile = [
+        'tmp'      => $file['tmp_name'],
+        'original' => basename($file['name']),
+        'size'     => $file['size'],
+        'mime'     => $mime,
+        'ext'      => $ext,
+    ];
 
     $stmt = $pdo->prepare("
         INSERT INTO applications

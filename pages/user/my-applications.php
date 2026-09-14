@@ -24,7 +24,7 @@ include $basePath . "layouts/header.php";
 include $basePath . "layouts/navbar-user.php";
 ?>
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4">
         <div>
             <h2 class="fw-bold mb-1">
                 <i class="bi bi-file-earmark-text me-2 text-primary"></i>My Applications
@@ -35,7 +35,7 @@ include $basePath . "layouts/navbar-user.php";
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
+                <table class="table table-hover align-middle mb-0">
                     <?php
                     $columns = ["#", "Job Title", "Company", "Date Applied", "Status", "Actions"];
                     include $basePath . "components/table-header.php";
@@ -63,16 +63,16 @@ include $basePath . "layouts/navbar-user.php";
                                 <td><?php echo $count++; ?></td>
                                 <td><i class="bi bi-briefcase me-1 text-primary"></i><?php echo htmlspecialchars($app["job_title"]); ?></td>
                                 <td><?php echo htmlspecialchars($app["company"]); ?></td>
-                                <td><?php echo $app["date_applied"]; ?></td>
+                                <td class="text-nowrap"><?php echo $app["date_applied"]; ?></td>
                                 <td>
                                     <span class="badge <?php echo $badgeClass; ?>"><?php echo $app["status"]; ?></span>
                                     <?php if ($app["status"] === "Approved" && !empty($app["interview_date"])): ?>
-                                        <div class="mt-1 small text-success fw-semibold">
+                                        <div class="mt-1 small text-success fw-semibold text-nowrap">
                                             <i class="bi bi-calendar2-check me-1"></i><?= date('M d, Y h:i A', strtotime($app['interview_date'])) ?>
                                         </div>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td class="text-nowrap">
                                     <button class="btn btn-sm btn-outline-primary me-1"
                                         onclick="viewMyApp(<?php echo $app['id']; ?>)"
                                         data-bs-toggle="modal" data-bs-target="#viewMyApplicationModal">
@@ -94,23 +94,23 @@ include $basePath . "layouts/navbar-user.php";
         </div>
     </div>
     <!-- Summary Cards -->
-    <div class="row mt-4">
-        <div class="col-md-4 mb-3">
-            <div class="card border-0 shadow-sm text-center p-3">
+    <div class="row g-2 g-sm-3 mt-3">
+        <div class="col-4">
+            <div class="card border-0 shadow-sm text-center p-2 p-sm-3">
                 <h4 class="fw-bold text-primary mb-1"><?php echo $total; ?></h4>
-                <small class="text-muted">Total Applications</small>
+                <small class="text-muted text-truncate d-block">Total</small>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card border-0 shadow-sm text-center p-3">
+        <div class="col-4">
+            <div class="card border-0 shadow-sm text-center p-2 p-sm-3">
                 <h4 class="fw-bold text-warning mb-1"><?php echo $pending; ?></h4>
-                <small class="text-muted">Pending</small>
+                <small class="text-muted text-truncate d-block">Pending</small>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card border-0 shadow-sm text-center p-3">
+        <div class="col-4">
+            <div class="card border-0 shadow-sm text-center p-2 p-sm-3">
                 <h4 class="fw-bold text-success mb-1"><?php echo $approved; ?></h4>
-                <small class="text-muted">Approved</small>
+                <small class="text-muted text-truncate d-block">Approved</small>
             </div>
         </div>
     </div>
@@ -150,9 +150,9 @@ include $basePath . "layouts/navbar-user.php";
             </div>
             <div class="modal-body">
                 <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <h6 class="fw-bold text-primary border-bottom pb-2">Job Information</h6>
-                        <table class="table table-borderless table-sm">
+                        <table class="table table-borderless table-sm mb-0">
                             <tr><th class="text-muted" style="width:45%;">Job Title</th>  <td id="vmyAppJobTitle">—</td></tr>
                             <tr><th class="text-muted">Company</th>                        <td id="vmyAppCompany">—</td></tr>
                             <tr><th class="text-muted">Hiring Contact</th>                 <td id="vmyAppContactPerson">—</td></tr>
@@ -161,9 +161,9 @@ include $basePath . "layouts/navbar-user.php";
                             <tr><th class="text-muted">Status</th>                         <td id="vmyAppStatus">—</td></tr>
                         </table>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <h6 class="fw-bold text-primary border-bottom pb-2">Your Info</h6>
-                        <table class="table table-borderless table-sm">
+                        <table class="table table-borderless table-sm mb-0">
                             <tr><th class="text-muted" style="width:45%;">Name</th>       <td id="vmyAppName">—</td></tr>
                             <tr><th class="text-muted">Email</th>                          <td id="vmyAppEmail">—</td></tr>
                             <tr><th class="text-muted">Contact</th>                        <td id="vmyAppContact">—</td></tr>
@@ -191,11 +191,11 @@ include $basePath . "layouts/navbar-user.php";
 
                     <div class="col-12">
                         <h6 class="fw-bold text-primary border-bottom pb-2">Education</h6>
-                        <div class="row">
-                            <div class="col-md-3"><small class="text-muted">Elementary</small><div id="vmyAppElem">—</div></div>
-                            <div class="col-md-3"><small class="text-muted">JHS</small><div id="vmyAppJhs">—</div></div>
-                            <div class="col-md-3"><small class="text-muted">SHS</small><div id="vmyAppShs">—</div></div>
-                            <div class="col-md-3"><small class="text-muted">College</small><div id="vmyAppCollege">—</div></div>
+                        <div class="row g-2">
+                            <div class="col-6 col-md-3"><small class="text-muted d-block">Elementary</small><div id="vmyAppElem" class="fw-semibold">—</div></div>
+                            <div class="col-6 col-md-3"><small class="text-muted d-block">JHS</small><div id="vmyAppJhs" class="fw-semibold">—</div></div>
+                            <div class="col-6 col-md-3"><small class="text-muted d-block">SHS</small><div id="vmyAppShs" class="fw-semibold">—</div></div>
+                            <div class="col-6 col-md-3"><small class="text-muted d-block">College</small><div id="vmyAppCollege" class="fw-semibold">—</div></div>
                         </div>
                     </div>
                     <div class="col-12">
@@ -206,7 +206,7 @@ include $basePath . "layouts/navbar-user.php";
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-secondary w-100 w-sm-auto" data-bs-dismiss="modal">
                     <i class="bi bi-x-lg me-1"></i>Close
                 </button>
             </div>

@@ -26,10 +26,12 @@ All handlers live in `handlers/`. They accept `POST` only, return JSON, and requ
 
 ### apply (multipart/form-data)
 
+All fields are required. Age is trapped at 18 to 80 years old (applicant cannot be below 18).
+
 ```
-action, csrf_token, job_id, full_name, email, contact, address,
-birthdate, age, elementary, jhs, shs, college, skills, experience,
-resume (optional file — PDF/DOC/DOCX, max 5 MB)
+action, csrf_token, job_id, full_name, email, contact (11 digits), address,
+birthdate (min 18 yrs old), age, elementary, jhs, shs, college, skills, experience,
+resume (required file — PDF/DOC/DOCX, max 5 MB)
 ```
 
 ### cancel

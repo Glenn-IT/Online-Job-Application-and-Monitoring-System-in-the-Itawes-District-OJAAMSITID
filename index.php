@@ -279,11 +279,11 @@ $totalApps  = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn
                     </a>
                 </li>
             </ul>
-            <div class="d-flex gap-2">
-                <a href="login.php" class="btn btn-outline-light btn-sm px-3 fw-600">
+            <div class="d-flex flex-column flex-lg-row gap-2 mt-2 mt-lg-0">
+                <a href="login.php" class="btn btn-outline-light btn-sm px-3 fw-600 w-100 w-lg-auto text-center">
                     <i class="bi bi-box-arrow-in-right me-1"></i>Log In
                 </a>
-                <a href="register.php" class="btn btn-warning btn-sm px-3 fw-bold text-white">
+                <a href="register.php" class="btn btn-warning btn-sm px-3 fw-bold text-white w-100 w-lg-auto text-center">
                     <i class="bi bi-person-plus me-1"></i>Register
                 </a>
             </div>

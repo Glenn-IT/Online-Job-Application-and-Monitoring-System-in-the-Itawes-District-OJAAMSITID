@@ -66,11 +66,12 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--text); }
 
 /* ── Navbar ──────────────────────────────────── */
 .ojams-navbar {
-    height: var(--navbar-h);
+    min-height: var(--navbar-h);
+    height: auto;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     box-shadow: var(--shadow-sm);
-    padding: 0 1.25rem;
+    padding: 0.5rem 1.25rem;
 }
 
 .ojams-navbar.admin-bar {
@@ -973,5 +974,273 @@ html, body { overflow-x: hidden; }
 /* ── Job detail sticky panel: un-stick on mobile ── */
 @media (max-width: 991.98px) {
     .sticky-top { position: relative !important; top: auto !important; }
+}
+
+/* ── Applicant User Navbar: Mobile styling ──────── */
+@media (max-width: 991.98px) {
+    .ojams-navbar.user-bar .navbar-collapse {
+        background: rgba(30, 27, 75, 0.98);
+        backdrop-filter: blur(8px);
+        padding: 1rem;
+        border-radius: var(--radius);
+        margin-top: 0.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-lg);
+    }
+    .ojams-navbar.user-bar .nav-link {
+        padding: 0.6rem 0.85rem !important;
+        margin-bottom: 0.25rem;
+    }
+    .ojams-navbar.user-bar .dropdown-menu {
+        background: #ffffff;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-lg);
+        margin-top: 0.5rem;
+    }
+    .ojams-navbar.user-bar .dropdown-item {
+        color: var(--text) !important;
+    }
+}
+
+/* ── Prevent auto-zoom on mobile inputs (iOS Safari) ── */
+@media (max-width: 767.98px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    input[type="tel"],
+    textarea,
+    select.form-select {
+        font-size: 16px !important;
+    }
+}
+
+/* ── Modals: Mobile touch & viewport ergonomics ──── */
+@media (max-width: 575.98px) {
+    .modal-dialog {
+        margin: 0.5rem !important;
+    }
+    .modal-content {
+        border-radius: var(--radius) !important;
+    }
+    .modal-header,
+    .modal-footer {
+        padding: 0.75rem 1rem !important;
+    }
+    .modal-body {
+        padding: 1rem 0.85rem !important;
+    }
+    .w-sm-auto {
+        width: 100% !important;
+    }
+}
+
+@media (min-width: 576px) {
+    .w-sm-auto {
+        width: auto !important;
+    }
+}
+
+/* ══════════════════════════════════════════════
+   Modern Job Browsing & Discovery UI
+   ══════════════════════════════════════════════ */
+
+/* Search Hero Banner (Clean Light Theme & High Contrast) */
+.browse-hero-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 55%, #eef2ff 100%);
+    border: 1.5px solid #e2e8f0;
+    border-radius: 20px;
+    color: var(--text);
+    padding: 2.2rem 1.8rem;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+}
+.browse-hero-card::after {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(79, 70, 229, 0.07) 0%, rgba(79, 70, 229, 0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.browse-hero-card h1 {
+    color: #0f172a !important;
+}
+.browse-search-box {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 14px;
+    padding: 0.35rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.browse-search-box:focus-within {
+    border-color: #6366f1;
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.14);
+}
+.browse-search-box .form-control,
+.browse-search-box .form-select {
+    border: none;
+    box-shadow: none !important;
+    font-size: 0.95rem;
+    background: transparent;
+    color: #0f172a;
+}
+.browse-search-box .form-control::placeholder {
+    color: #94a3b8;
+}
+.browse-search-box .btn-search {
+    background: #4f46e5;
+    color: #ffffff;
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 0.65rem 1.4rem;
+    transition: all var(--transition);
+}
+.browse-search-box .btn-search:hover {
+    background: #4338ca;
+    color: #ffffff;
+}
+@media (min-width: 768px) {
+    .border-start-md {
+        border-left: 1.5px solid #e2e8f0 !important;
+    }
+}
+
+/* Quick Filter Pills */
+.filter-pills-scroll {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.filter-pills-scroll::-webkit-scrollbar {
+    display: none;
+}
+.filter-chip {
+    padding: 0.45rem 1.05rem;
+    border-radius: 50px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+.filter-chip:hover {
+    border-color: #4f46e5;
+    color: #4f46e5;
+    background: #eef2ff;
+}
+.filter-chip.active {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.28);
+}
+
+/* Modern Job Card */
+.job-card-modern {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.job-card-modern:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px -4px rgba(79, 70, 229, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+    border-color: #cbd5e1;
+}
+
+/* Company Monogram Avatar */
+.company-monogram {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Soft Modern Tags */
+.badge-tag {
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    line-height: 1.25;
+}
+.badge-tag.tag-fulltime   { background: #eef2ff; color: #4338ca; border: 1px solid #e0e7ff; }
+.badge-tag.tag-parttime   { background: #f0f9ff; color: #0369a1; border: 1px solid #e0f2fe; }
+.badge-tag.tag-contract   { background: #fefce8; color: #a16207; border: 1px solid #fef08a; }
+.badge-tag.tag-internship { background: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
+.badge-tag.tag-freelance  { background: #faf5ff; color: #7e22ce; border: 1px solid #f3e8ff; }
+.badge-tag.tag-salary     { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700; }
+.badge-tag.tag-location   { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+
+/* Interactive Bookmark Button */
+.btn-bookmark {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #94a3b8;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0;
+}
+.btn-bookmark:hover {
+    border-color: #f59e0b;
+    color: #f59e0b;
+    background: #fffbeb;
+    transform: scale(1.05);
+}
+.btn-bookmark.is-saved {
+    background: #fffbeb;
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+/* Job Detail Page Quick Stat Cards */
+.detail-stat-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1rem 1.1rem;
+    transition: all var(--transition);
+}
+.detail-stat-box:hover {
+    background: #ffffff;
+    box-shadow: var(--shadow-sm);
+    border-color: #cbd5e1;
 }
 

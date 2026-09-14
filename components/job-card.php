@@ -1,78 +1,113 @@
 <!-- ============================================
-     Component: Job Card
+     Component: Modern Job Card
      Usage: Pass $job array to render a single card
      ============================================ -->
-<div class="col-md-6 col-lg-4 mb-4">
-    <div class="card h-100 shadow-sm border-0 job-card">
-        <div class="card-body d-flex flex-column">
-            <!-- Job Title -->
-            <h5 class="card-title fw-bold text-primary">
-                <i class="bi bi-briefcase me-2"></i><?php echo $job['title']; ?>
-            </h5>
+<?php
+$cName     = $job['company'] ?? 'Company';
+$words     = preg_split('/\s+/', trim($cName));
+$initials  = (count($words) >= 2 && $words[0] !== '') ? strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1)) : strtoupper(substr($cName, 0, 2));
+$palettes  = [
+    ['bg' => '#eef2ff', 'color' => '#4338ca'],
+    ['bg' => '#f0fdf4', 'color' => '#15803d'],
+    ['bg' => '#f0f9ff', 'color' => '#0369a1'],
+    ['bg' => '#fefce8', 'color' => '#a16207'],
+    ['bg' => '#faf5ff', 'color' => '#7e22ce'],
+    ['bg' => '#fff1f2', 'color' => '#be123c'],
+];
+$palette   = $palettes[abs(crc32($cName)) % count($palettes)];
+$jtSlug    = strtolower(str_replace(['-', ' '], '', $job['job_type'] ?? ''));
+$isOpen    = ($job['status'] ?? 'Open') === 'Open';
+$jobId     = (int)($job['id'] ?? 0);
+$cnt       = (int)($job['applicants'] ?? 0);
+?>
+<div class="col-12 col-md-6 col-lg-4 mb-4">
+    <div class="job-card-modern h-100 p-3 p-sm-4 shadow-sm">
+        
+        <!-- Header: Monogram & Company -->
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+            <div class="d-flex align-items-center gap-3 min-w-0">
+                <div class="company-monogram" style="background: <?= $palette['bg'] ?>; color: <?= $palette['color'] ?>;">
+                    <?= htmlspecialchars($initials) ?>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-muted small fw-semibold text-truncate" title="<?= htmlspecialchars($cName) ?>">
+                        <i class="bi bi-building me-1"></i><?= htmlspecialchars($cName) ?>
+                    </div>
+                    <div class="text-muted" style="font-size: 0.74rem;">
+                        <i class="bi bi-calendar-event me-1"></i><?= htmlspecialchars($job['date_posted'] ?? '') ?>
+                    </div>
+                </div>
+            </div>
+            <span class="badge <?= $isOpen ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle' ?>">
+                <?= $isOpen ? 'Open' : 'Closed' ?>
+            </span>
+        </div>
 
-            <!-- Company -->
-            <h6 class="card-subtitle mb-2 text-muted">
-                <i class="bi bi-building me-1"></i><?php echo $job['company']; ?>
-            </h6>
+        <!-- Title -->
+        <h5 class="fw-bold mb-2" style="font-size: 1.05rem; line-height: 1.35;">
+            <a href="job-detail.php?id=<?= $jobId ?>" class="text-decoration-none text-dark hover-primary text-truncate d-block" title="<?= htmlspecialchars($job['title'] ?? '') ?>">
+                <?= htmlspecialchars($job['title'] ?? '') ?>
+            </a>
+        </h5>
 
-            <!-- Description -->
-            <p class="card-text flex-grow-1">
-                <?php echo $job['description']; ?>
-            </p>
-
-            <!-- Qualification -->
-            <p class="card-text mb-1">
-                <small class="text-muted">
-                    <i class="bi bi-mortarboard me-1"></i>
-                    <strong>Qualifications:</strong> <?php echo $job['qualification']; ?>
-                </small>
-            </p>
-
-            <!-- Hiring Contact Person -->
-            <?php if (!empty($job['contact_person']) || !empty($job['contact_phone'])): ?>
-                <p class="card-text mb-2">
-                    <small class="text-dark">
-                        <i class="bi bi-person-lines-fill me-1 text-primary"></i>
-                        <strong>Hiring Contact:</strong>
-                        <?php echo htmlspecialchars($job['contact_person'] ?? 'Recruiter'); ?>
-                        <?php if (!empty($job['contact_phone'])): ?>
-                            <span class="ms-1 fw-semibold text-primary"><i class="bi bi-telephone-fill ms-1 me-1"></i><?php echo htmlspecialchars($job['contact_phone']); ?></span>
-                        <?php endif; ?>
-                    </small>
-                </p>
+        <!-- Soft Badges -->
+        <div class="d-flex flex-wrap gap-1 mb-3">
+            <?php if (!empty($job['job_type'])): ?>
+            <span class="badge-tag tag-<?= $jtSlug ?>">
+                <i class="bi bi-briefcase"></i><?= htmlspecialchars($job['job_type']) ?>
+            </span>
             <?php endif; ?>
+            <?php if (!empty($job['salary_range'])): ?>
+            <span class="badge-tag tag-salary">
+                <i class="bi bi-cash"></i><?= htmlspecialchars($job['salary_range']) ?>
+            </span>
+            <?php endif; ?>
+            <?php if (!empty($job['location'])): ?>
+            <span class="badge-tag tag-location text-truncate" style="max-width: 160px;" title="<?= htmlspecialchars($job['location']) ?>">
+                <i class="bi bi-geo-alt"></i><?= htmlspecialchars($job['location']) ?>
+            </span>
+            <?php endif; ?>
+        </div>
 
-            <!-- Date Posted, Poster & Status -->
-            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
-                <small class="text-muted">
-                    <i class="bi bi-calendar-event me-1"></i>Posted: <?php echo $job['date_posted']; ?>
-                    <?php if (!empty($job['poster_name'])): ?>
-                        <span class="ms-1 text-secondary">&bull; By <strong><?php echo htmlspecialchars($job['poster_name']); ?></strong> (<?php echo ucfirst($job['poster_role'] ?? 'Admin'); ?>)</span>
-                    <?php endif; ?>
-                </small>
-                <span class="badge <?php echo $job['status'] === 'Open' ? 'bg-success' : 'bg-secondary'; ?>">
-                    <?php echo $job['status']; ?>
-                </span>
-            </div>
+        <!-- Description -->
+        <p class="text-muted small mb-3 flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.55;">
+            <?= htmlspecialchars($job['description'] ?? '') ?>
+        </p>
 
-            <!-- Applicant Count -->
-            <div class="d-flex align-items-center mb-3">
-                <span class="badge bg-light text-dark border me-2">
-                    <i class="bi bi-people-fill text-primary me-1"></i>
-                    <?php echo $job['applicants'] ?? 0; ?> <?php echo ($job['applicants'] ?? 0) == 1 ? 'Applicant' : 'Applicants'; ?>
-                </span>
-            </div>
+        <!-- Requirements -->
+        <div class="mb-3 text-truncate" style="font-size: 0.78rem;">
+            <span class="text-muted">
+                <i class="bi bi-mortarboard me-1 text-primary"></i><strong>Req:</strong> <?= htmlspecialchars($job['qualification'] ?? '') ?>
+            </span>
+        </div>
 
-            <!-- Apply Button -->
-            <?php if ($job['status'] === 'Open'): ?>
-                <button class="btn btn-primary w-100"
+        <!-- Meta -->
+        <div class="pt-2 border-top d-flex justify-content-between align-items-center mb-3 text-muted" style="font-size: 0.78rem;">
+            <span>
+                <i class="bi bi-people-fill text-primary me-1"></i><strong><?= $cnt ?></strong> applicant<?= $cnt !== 1 ? 's' : ''; ?>
+            </span>
+            <?php if (!empty($job['deadline'])): ?>
+            <?php $isPast = strtotime($job['deadline']) < strtotime('today'); ?>
+            <span class="<?= $isPast ? 'text-danger fw-semibold' : 'text-muted' ?>">
+                <i class="bi bi-calendar-x me-1"></i><?= $isPast ? 'Expired' : date('M d', strtotime($job['deadline'])) ?>
+            </span>
+            <?php endif; ?>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex gap-2 pt-1 mt-auto">
+            <a href="job-detail.php?id=<?= $jobId ?>" class="btn btn-outline-primary btn-sm flex-grow-1">
+                <i class="bi bi-eye me-1"></i>Details
+            </a>
+            <?php if ($isOpen): ?>
+                <button class="btn btn-primary btn-sm flex-grow-1"
                         data-bs-toggle="modal"
                         data-bs-target="#applyJobModal"
-                        onclick="setApplyJob(<?php echo $job['id']; ?>, '<?php echo addslashes($job['title']); ?>', '<?php echo addslashes($job['company']); ?>')">
-                    <i class="bi bi-send me-1"></i>Apply Now
+                        onclick="setApplyJob(<?= $jobId ?>, '<?= addslashes($job['title'] ?? '') ?>', '<?= addslashes($cName) ?>')">
+                    <i class="bi bi-send me-1"></i>Apply
                 </button>
             <?php else: ?>
-                <button class="btn btn-secondary w-100" disabled>
+                <button class="btn btn-secondary btn-sm flex-grow-1" disabled>
                     <i class="bi bi-lock me-1"></i>Closed
                 </button>
             <?php endif; ?>

@@ -58,7 +58,7 @@ include $basePath . "layouts/navbar-user.php";
         <!-- Profile Details -->
         <div class="col-md-8 mb-4">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div class="card-header bg-white d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
                     <h5 class="mb-0 fw-bold"><i class="bi bi-info-circle me-2 text-primary"></i>Personal Information</h5>
                     <button class="btn btn-sm btn-outline-primary" id="editProfileBtn" onclick="toggleEditProfile()">
                         <i class="bi bi-pencil me-1"></i>Edit Profile
@@ -66,34 +66,34 @@ include $basePath . "layouts/navbar-user.php";
                 </div>
                 <div class="card-body">
                     <!-- View Mode -->
-                    <div id="profileView">
+                    <div id="profileView" class="table-responsive">
                         <table class="table table-borderless mb-0">
                             <tr>
-                                <th class="text-muted" style="width:35%;"><i class="bi bi-person me-2"></i>Full Name</th>
+                                <th class="text-muted text-nowrap" style="width:35%; min-width: 130px;"><i class="bi bi-person me-2"></i>Full Name</th>
                                 <td id="pvFullName"><?php echo htmlspecialchars($u["full_name"]); ?></td>
                             </tr>
                             <tr>
-                                <th class="text-muted"><i class="bi bi-envelope me-2"></i>Email</th>
-                                <td id="pvEmail"><?php echo htmlspecialchars($u["email"]); ?></td>
+                                <th class="text-muted text-nowrap"><i class="bi bi-envelope me-2"></i>Email</th>
+                                <td id="pvEmail" style="word-break: break-all;"><?php echo htmlspecialchars($u["email"]); ?></td>
                             </tr>
                             <tr>
-                                <th class="text-muted"><i class="bi bi-phone me-2"></i>Contact</th>
+                                <th class="text-muted text-nowrap"><i class="bi bi-phone me-2"></i>Contact</th>
                                 <td id="pvContact"><?php echo htmlspecialchars($u["contact_number"] ?? "—"); ?></td>
                             </tr>
                             <tr>
-                                <th class="text-muted"><i class="bi bi-geo-alt me-2"></i>Address</th>
+                                <th class="text-muted text-nowrap"><i class="bi bi-geo-alt me-2"></i>Address</th>
                                 <td id="pvAddress"><?php echo htmlspecialchars($u["address"] ?? "—"); ?></td>
                             </tr>
                             <tr>
-                                <th class="text-muted"><i class="bi bi-calendar me-2"></i>Birthdate</th>
+                                <th class="text-muted text-nowrap"><i class="bi bi-calendar me-2"></i>Birthdate</th>
                                 <td id="pvBirthdate"><?php echo htmlspecialchars($u["birthdate"] ?? "—"); ?></td>
                             </tr>
                             <tr>
-                                <th class="text-muted"><i class="bi bi-lock me-2"></i>Password</th>
+                                <th class="text-muted text-nowrap"><i class="bi bi-lock me-2"></i>Password</th>
                                 <td>••••••••••</td>
                             </tr>
                             <tr>
-                                <th class="text-muted"><i class="bi bi-patch-question me-2"></i>Security Question</th>
+                                <th class="text-muted text-nowrap"><i class="bi bi-patch-question me-2"></i>Security Question</th>
                                 <td id="pvSecQuestion"><?php echo $currentSecQuestion
                                     ? htmlspecialchars($currentSecQuestion)
                                     : '<span class="text-warning">Not set — edit your profile to add one</span>'; ?></td>
@@ -210,12 +210,12 @@ include $basePath . "layouts/navbar-user.php";
                                 </div>
                             </div>
 
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-primary" id="saveProfileBtn" onclick="saveProfile()">
-                                    <i class="bi bi-save me-1"></i>Save Changes
-                                </button>
-                                <button type="button" class="btn btn-secondary" onclick="toggleEditProfile()">
+                            <div class="d-flex flex-column-reverse flex-sm-row gap-2">
+                                <button type="button" class="btn btn-secondary w-100 w-sm-auto" onclick="toggleEditProfile()">
                                     <i class="bi bi-x-lg me-1"></i>Cancel
+                                </button>
+                                <button type="button" class="btn btn-primary w-100 w-sm-auto" id="saveProfileBtn" onclick="saveProfile()">
+                                    <i class="bi bi-save me-1"></i>Save Changes
                                 </button>
                             </div>
                         </form>

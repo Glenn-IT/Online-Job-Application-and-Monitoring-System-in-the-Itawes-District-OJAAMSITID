@@ -28,25 +28,25 @@
                         <i class="bi bi-person me-1"></i>Personal Information
                     </h6>
                     <div class="row mb-3">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-12 col-md-6 mb-3">
                             <label class="form-label">Full Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="appFullName" placeholder="e.g. Juan Dela Cruz" maxlength="150" required>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-7 col-sm-8 col-md-3 mb-3">
                             <label class="form-label">Birthdate <span class="text-danger">*</span></label>
                             <input type="date" class="form-control" id="appBirthdate" required>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-5 col-sm-4 col-md-3 mb-3">
                             <label class="form-label">Age <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="appAge" placeholder="e.g. 25" required>
+                            <input type="number" class="form-control" id="appAge" placeholder="Auto" readonly required>
                         </div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-8 mb-3">
+                        <div class="col-12 col-md-8 mb-3">
                             <label class="form-label">Address <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="appAddress" placeholder="e.g. 123 Main St, Quezon City" maxlength="500" required>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-12 col-md-4 mb-3">
                             <label class="form-label">Contact Number <span class="text-danger">*</span></label>
                             <input type="tel" class="form-control" id="appContact" placeholder="e.g. 09171234567"
                                    inputmode="numeric" maxlength="11" pattern="\d{11}"
@@ -59,23 +59,23 @@
                         <i class="bi bi-mortarboard me-1"></i>Educational Attainment
                     </h6>
                     <div class="row mb-3">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Elementary</label>
-                            <input type="text" class="form-control" id="appElementary" placeholder="School name" maxlength="200">
+                        <div class="col-12 col-md-6 mb-3">
+                            <label class="form-label">Elementary <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="appElementary" placeholder="School name" maxlength="200" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Junior High School (JHS)</label>
-                            <input type="text" class="form-control" id="appJhs" placeholder="School name" maxlength="200">
+                        <div class="col-12 col-md-6 mb-3">
+                            <label class="form-label">Junior High School (JHS) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="appJhs" placeholder="School name" maxlength="200" required>
                         </div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Senior High School (SHS)</label>
-                            <input type="text" class="form-control" id="appShs" placeholder="School name" maxlength="200">
+                        <div class="col-12 col-md-6 mb-3">
+                            <label class="form-label">Senior High School (SHS) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="appShs" placeholder="School name" maxlength="200" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">College</label>
-                            <input type="text" class="form-control" id="appCollege" placeholder="School name &amp; Course" maxlength="200">
+                        <div class="col-12 col-md-6 mb-3">
+                            <label class="form-label">College <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="appCollege" placeholder="School name &amp; Course" maxlength="200" required>
                         </div>
                     </div>
 
@@ -84,12 +84,12 @@
                         <i class="bi bi-info-circle me-1"></i>Additional Information
                     </h6>
                     <div class="mb-3">
-                        <label class="form-label">Skills</label>
-                        <textarea class="form-control" id="appSkills" rows="3" placeholder="e.g. HTML, CSS, JavaScript, Teamwork, Communication"></textarea>
+                        <label class="form-label">Skills <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="appSkills" rows="3" placeholder="e.g. HTML, CSS, JavaScript, Teamwork, Communication" required></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Work Experience</label>
-                        <textarea class="form-control" id="appExperience" rows="3" placeholder="e.g. Intern at ABC Corp (2024-2025)"></textarea>
+                        <label class="form-label">Work Experience <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="appExperience" rows="3" placeholder="e.g. Intern at ABC Corp (2024-2025) or N/A if none" required></textarea>
                     </div>
 
                     <!-- ── Section: Resume / CV Upload ── -->
@@ -98,10 +98,10 @@
                     </h6>
                     <div class="mb-3">
                         <label class="form-label" for="appResume">
-                            Upload Resume <span class="text-muted fw-normal">(optional)</span>
+                            Upload Resume <span class="text-danger">*</span>
                         </label>
                         <input type="file" class="form-control" id="appResume" name="resume"
-                               accept=".pdf,.doc,.docx">
+                               accept=".pdf,.doc,.docx" required>
                         <div class="form-text">
                             <i class="bi bi-info-circle me-1"></i>
                             Accepted formats: PDF, DOC, DOCX &mdash; Max size: 5 MB
@@ -118,11 +118,11 @@
             </div>
 
             <!-- Footer -->
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <div class="modal-footer d-flex flex-column-reverse flex-sm-row gap-2">
+                <button type="button" class="btn btn-secondary w-100 w-sm-auto" data-bs-dismiss="modal">
                     <i class="bi bi-x-lg me-1"></i>Cancel
                 </button>
-                <button type="button" class="btn btn-primary" id="submitAppBtn" onclick="submitApplication()">
+                <button type="button" class="btn btn-primary w-100 w-sm-auto" id="submitAppBtn" onclick="submitApplication()">
                     <i class="bi bi-send me-1"></i>Submit Application
                 </button>
             </div>
