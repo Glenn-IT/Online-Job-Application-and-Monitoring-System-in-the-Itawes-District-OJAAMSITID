@@ -160,8 +160,9 @@ include $basePath . "layouts/navbar-user.php";
         <div class="position-relative" style="z-index: 2;">
             <div class="row align-items-center mb-3">
                 <div class="col-lg-8">
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle mb-2 px-3 py-1 fw-semibold" style="letter-spacing: 0.5px;">
-                        <i class="bi bi-stars me-1 text-primary"></i>Explore Opportunities
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle mb-2 px-3 py-1 fw-semibold d-inline-flex align-items-center gap-2" style="letter-spacing: 0.5px;">
+                        <img src="<?= $basePath ?>img/Piat-Logo.png" alt="Piat Logo" style="width: 18px; height: 18px; object-fit: contain;">
+                        <span>Municipality of Piat &bull; Explore Opportunities</span>
                     </span>
                     <h1 class="fw-bold mb-2 text-dark" style="font-size: clamp(1.6rem, 3.5vw, 2.3rem); letter-spacing: -0.5px; color: #0f172a !important;">
                         Find the Career You Deserve
@@ -192,14 +193,14 @@ include $basePath . "layouts/navbar-user.php";
                                    value="<?= htmlspecialchars($search, ENT_QUOTES) ?>">
                         </div>
                     </div>
-                    <div class="col-6 col-md-3 border-start-md">
+                    <div class="col-12 col-sm-6 col-md-3 border-start-md">
                         <select class="form-select text-secondary ps-3" name="status">
                             <option value="">Status: All</option>
                             <option value="Open" <?= $statusFilter === 'Open' ? 'selected' : '' ?>>Status: Open Only</option>
                             <option value="Closed" <?= $statusFilter === 'Closed' ? 'selected' : '' ?>>Status: Closed</option>
                         </select>
                     </div>
-                    <div class="col-6 col-md-3">
+                    <div class="col-12 col-sm-6 col-md-3">
                         <?php if ($jobTypeFilter !== ''): ?>
                             <input type="hidden" name="job_type" value="<?= htmlspecialchars($jobTypeFilter, ENT_QUOTES) ?>">
                         <?php endif; ?>
@@ -240,7 +241,7 @@ include $basePath . "layouts/navbar-user.php";
         </div>
 
         <!-- Result count & reset filter button -->
-        <div class="d-flex align-items-center gap-2 flex-shrink-0 text-nowrap">
+        <div class="d-flex align-items-center justify-content-between justify-content-md-end w-100 w-md-auto gap-2 flex-shrink-0 text-nowrap">
             <span class="text-muted small">
                 Showing <strong><?= $filteredTotal ?></strong> job<?= $filteredTotal !== 1 ? 's' : '' ?>
             </span>

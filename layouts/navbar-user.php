@@ -6,7 +6,8 @@
 
         <!-- Brand -->
         <a class="navbar-brand" href="<?php echo $basePath ?? ''; ?>index.php">
-            <i class="bi bi-briefcase-fill me-2"></i>OJAMS
+            <img src="<?php echo $basePath ?? ''; ?>img/Piat-Logo.png" alt="Piat Logo" class="brand-logo">
+            <span>OJAMS</span>
         </a>
 
         <!-- Mobile toggle -->

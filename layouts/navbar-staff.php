@@ -6,7 +6,8 @@
 
         <!-- Brand -->
         <a class="navbar-brand me-auto" href="<?php echo $basePath ?? ''; ?>pages/staff/dashboard.php">
-            <i class="bi bi-briefcase-fill me-2"></i>OJAMS
+            <img src="<?php echo $basePath ?? ''; ?>img/Piat-Logo.png" alt="Piat Logo" class="brand-logo">
+            <span>OJAMS</span>
             <span class="brand-badge bg-warning text-dark ms-1">STAFF</span>
         </a>
 

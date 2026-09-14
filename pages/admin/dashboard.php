@@ -94,11 +94,19 @@ include $basePath . "layouts/navbar-admin.php";
     <?php include $basePath . "layouts/sidebar-admin.php"; ?>
     <main class="admin-main">
         <!-- Page Header -->
-        <div class="mb-4">
-            <h2 class="fw-bold mb-1">
-                <i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard
-            </h2>
-            <p class="text-muted mb-0">Welcome back, <?php echo htmlspecialchars($_SESSION["ojams_user"]["full_name"]); ?>! Here&#39;s an overview of the system.</p>
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <img src="<?= $basePath ?>img/Piat-Logo.png" alt="Piat Logo" style="width: 48px; height: 48px; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.12));">
+                <div>
+                    <h2 class="fw-bold mb-0">
+                        Admin Dashboard
+                    </h2>
+                    <p class="text-muted mb-0 small">Welcome back, <?= htmlspecialchars($_SESSION["ojams_user"]["full_name"]); ?> &bull; Municipality of Piat (Itawes District)</p>
+                </div>
+            </div>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fw-semibold">
+                <i class="bi bi-shield-check me-1"></i>Administrator Mode
+            </span>
         </div>
 
         <!-- Statistics Cards -->

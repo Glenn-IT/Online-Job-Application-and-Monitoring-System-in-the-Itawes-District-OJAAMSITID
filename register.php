@@ -117,6 +117,7 @@ $pageTitle = "OJAMS - Register";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $pageTitle; ?></title>
+    <link rel="icon" type="image/png" href="img/Piat-Logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -212,8 +213,8 @@ $pageTitle = "OJAMS - Register";
 
     <!-- Left: Hero Panel -->
     <div class="auth-hero">
-        <div class="auth-hero-icon">
-            <i class="bi bi-person-plus-fill"></i>
+        <div class="mb-3 text-center">
+            <img src="img/Piat-Logo.png" alt="Piat Logo" style="width: 88px; height: 88px; object-fit: contain; filter: drop-shadow(0 4px 14px rgba(0,0,0,0.35));">
         </div>
         <h1>Join OJAMS</h1>
         <p>Create your free account and start exploring hundreds of job opportunities today.</p>
@@ -230,6 +231,9 @@ $pageTitle = "OJAMS - Register";
         <div class="auth-card">
 
             <div class="auth-card-header">
+                <div class="text-center mb-3">
+                    <img src="img/Piat-Logo.png" alt="Piat Logo" style="width: 64px; height: 64px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.12));">
+                </div>
                 <h2>Create account</h2>
                 <p>Fill in the details below to get started</p>
             </div>

@@ -18,6 +18,7 @@ $_csrfToken = function_exists('generateCsrfToken') ? generateCsrfToken() : '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $pageTitle ?? 'OJAMS - Job Monitoring System'; ?></title>
     <meta name="csrf-token" content="<?php echo htmlspecialchars($_csrfToken, ENT_QUOTES); ?>">
+    <link rel="icon" type="image/png" href="<?php echo $basePath ?? ''; ?>img/Piat-Logo.png">
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

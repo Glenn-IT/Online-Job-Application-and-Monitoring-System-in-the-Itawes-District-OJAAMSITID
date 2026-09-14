@@ -32,6 +32,29 @@ include $basePath . "layouts/navbar-user.php";
             <p class="text-muted mb-0">Track the status of your submitted job applications.</p>
         </div>
     </div>
+
+    <!-- Metric Overview Cards (Mobile 3-column grid) -->
+    <div class="row g-2 g-sm-3 mb-4">
+        <div class="col-4">
+            <div class="card border-0 shadow-sm text-center p-2 p-sm-3 rounded-3" style="background: #eef2ff;">
+                <span class="text-muted small fw-semibold text-truncate d-block" style="font-size: 0.72rem;">Total Submitted</span>
+                <span class="fs-4 fw-bold text-primary"><?= number_format($total) ?></span>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card border-0 shadow-sm text-center p-2 p-sm-3 rounded-3" style="background: #fefce8;">
+                <span class="text-muted small fw-semibold text-truncate d-block" style="font-size: 0.72rem;">Pending Review</span>
+                <span class="fs-4 fw-bold text-warning"><?= number_format($pending) ?></span>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card border-0 shadow-sm text-center p-2 p-sm-3 rounded-3" style="background: #f0fdf4;">
+                <span class="text-muted small fw-semibold text-truncate d-block" style="font-size: 0.72rem;">Approved</span>
+                <span class="fs-4 fw-bold text-success"><?= number_format($approved) ?></span>
+            </div>
+        </div>
+    </div>
+
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">

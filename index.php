@@ -42,6 +42,7 @@ $totalApps  = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $pageTitle; ?></title>
+    <link rel="icon" type="image/png" href="img/Piat-Logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -262,31 +263,15 @@ $totalApps  = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn
 <body>
 
 <!-- ── Navbar ──────────────────────────────────────────────── -->
-<nav class="navbar navbar-expand-lg public-nav sticky-top">
-    <div class="container">
-        <a class="navbar-brand" href="index.php">
-            <i class="bi bi-briefcase-fill me-2"></i>OJAMS
-        </a>
-        <button class="navbar-toggler border-0 text-white" type="button"
-                data-bs-toggle="collapse" data-bs-target="#pubNav">
-            <i class="bi bi-list fs-4"></i>
-        </button>
-        <div class="collapse navbar-collapse" id="pubNav">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item">
-                    <a class="nav-link active fw-semibold" href="index.php">
-                        <i class="bi bi-house me-1"></i>Job Listings
-                    </a>
-                </li>
-            </ul>
-            <div class="d-flex flex-column flex-lg-row gap-2 mt-2 mt-lg-0">
-                <a href="login.php" class="btn btn-outline-light btn-sm px-3 fw-600 w-100 w-lg-auto text-center">
-                    <i class="bi bi-box-arrow-in-right me-1"></i>Log In
-                </a>
-                <a href="register.php" class="btn btn-warning btn-sm px-3 fw-bold text-white w-100 w-lg-auto text-center">
-                    <i class="bi bi-person-plus me-1"></i>Register
-                </a>
-            </div>
+<nav class="navbar public-nav sticky-top py-2">
+    <div class="container d-flex align-items-center justify-content-end">
+        <div class="d-flex align-items-center gap-2">
+            <a href="login.php" class="btn btn-outline-light btn-sm px-3 fw-600">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Log In
+            </a>
+            <a href="register.php" class="btn btn-warning btn-sm px-3 fw-bold text-white">
+                <i class="bi bi-person-plus me-1"></i>Register
+            </a>
         </div>
     </div>
 </nav>
@@ -296,6 +281,10 @@ $totalApps  = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn
     <div class="container position-relative" style="z-index:1">
         <div class="row align-items-center g-4">
             <div class="col-lg-6">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <img src="img/Piat-Logo.png" alt="Piat Logo" style="width: 42px; height: 42px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));">
+                    <span class="text-uppercase fw-semibold text-white text-opacity-75" style="letter-spacing:1px;font-size:.82rem">Municipality of Piat &bull; Itawes District</span>
+                </div>
                 <p class="text-uppercase fw-semibold mb-2" style="opacity:.7;letter-spacing:1.5px;font-size:.8rem">
                     Online Job Application and Monitoring System in the Itawes District
                 </p>
@@ -477,8 +466,8 @@ $totalApps  = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn
 <!-- ── Footer ─────────────────────────────────────────────── -->
 <footer class="public-footer">
     <div class="container">
-        <div class="mb-2">
-            <i class="bi bi-briefcase-fill me-2"></i>
+        <div class="mb-2 d-flex align-items-center justify-content-center gap-2 flex-wrap">
+            <img src="img/Piat-Logo.png" alt="Piat Logo" style="width: 22px; height: 22px; object-fit: contain;">
             <strong style="color:rgba(255,255,255,.9)">OJAMS</strong>
             &nbsp;&mdash;&nbsp;Online Job Application and Monitoring System in the Itawes District
         </div>

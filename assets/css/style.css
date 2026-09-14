@@ -94,6 +94,22 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--text); }
     font-weight: 800;
     letter-spacing: -0.3px;
     color: #fff !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.brand-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    border-radius: 6px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.18));
+    transition: transform var(--transition);
+}
+
+.navbar-brand:hover .brand-logo {
+    transform: scale(1.08);
 }
 
 .ojams-navbar .navbar-brand .brand-badge {
@@ -1243,4 +1259,97 @@ html, body { overflow-x: hidden; }
     box-shadow: var(--shadow-sm);
     border-color: #cbd5e1;
 }
+
+/* ══════════════════════════════════════════════
+   Mobile Responsive Enhancements for Discovery UI
+   ══════════════════════════════════════════════ */
+@media (max-width: 767.98px) {
+    .browse-hero-card {
+        padding: 1.5rem 1.25rem !important;
+        border-radius: 16px !important;
+        margin-bottom: 1.5rem !important;
+    }
+    .browse-hero-card h1 {
+        font-size: 1.45rem !important;
+    }
+    .browse-hero-card p {
+        font-size: 0.88rem !important;
+    }
+    .browse-search-box {
+        padding: 0.5rem !important;
+    }
+    .browse-search-box .btn-search {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .detail-stat-box {
+        padding: 0.75rem 0.85rem !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .browse-hero-card {
+        padding: 1.2rem 1rem !important;
+        border-radius: 14px !important;
+    }
+    .browse-hero-card h1 {
+        font-size: 1.3rem !important;
+        line-height: 1.3 !important;
+    }
+    .filter-pills-scroll {
+        gap: 0.35rem !important;
+        padding-bottom: 0.4rem !important;
+    }
+    .filter-chip {
+        padding: 0.38rem 0.8rem !important;
+        font-size: 0.8rem !important;
+    }
+    .job-card-modern {
+        border-radius: 14px !important;
+    }
+    .company-monogram {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.05rem !important;
+        border-radius: 12px !important;
+    }
+    .btn-bookmark {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        border-radius: 10px !important;
+    }
+    .detail-stat-box {
+        padding: 0.65rem 0.75rem !important;
+        border-radius: 12px !important;
+    }
+    .detail-stat-box span:first-child {
+        font-size: 0.68rem !important;
+    }
+    .detail-stat-box span:last-child {
+        font-size: 0.84rem !important;
+    }
+    .badge-tag {
+        font-size: 0.73rem !important;
+        padding: 0.28rem 0.65rem !important;
+    }
+}
+
+/* Mobile Sticky Action Bar for Job Detail */
+.mobile-sticky-apply-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    padding: 0.65rem 1rem;
+    z-index: 1040;
+}
+
 

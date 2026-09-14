@@ -82,7 +82,7 @@ include $basePath . 'layouts/header.php';
 include $basePath . 'layouts/navbar-user.php';
 ?>
 
-<div class="container py-4" style="max-width: 980px;">
+<div class="container py-4 pb-5 mb-5 mb-lg-0" style="max-width: 980px;">
 
     <!-- Navigation Bar / Breadcrumb -->
     <div class="d-flex align-items-center justify-content-between mb-4">
@@ -353,6 +353,39 @@ include $basePath . 'layouts/navbar-user.php';
             </div>
         </div>
 
+    </div>
+</div>
+
+<!-- Mobile Sticky Bottom Action Bar -->
+<div class="mobile-sticky-apply-bar d-lg-none">
+    <div class="container d-flex align-items-center justify-content-between gap-2 p-0">
+        <div class="min-w-0 flex-grow-1 pe-2">
+            <div class="fw-bold text-dark text-truncate small" style="line-height: 1.25;"><?= htmlspecialchars($job['title']) ?></div>
+            <div class="text-muted text-truncate" style="font-size: 0.74rem;"><i class="bi bi-building me-1"></i><?= htmlspecialchars($company) ?></div>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+            <button type="button" 
+                    class="btn-bookmark <?= $isSaved ? 'is-saved' : '' ?>" 
+                    onclick="toggleSaveJob(this, <?= $jobId ?>)"
+                    title="<?= $isSaved ? 'Remove from saved' : 'Save job' ?>"
+                    aria-label="Bookmark job">
+                <i class="bi <?= $isSaved ? 'bi-bookmark-fill' : 'bi-bookmark' ?>"></i>
+            </button>
+            <?php if ($alreadyApplied): ?>
+                <button class="btn btn-success btn-sm px-3 py-2 fw-semibold" disabled>
+                    <i class="bi bi-check-circle me-1"></i>Applied
+                </button>
+            <?php elseif ($isOpen): ?>
+                <button class="btn btn-primary btn-sm px-3 py-2 fw-semibold shadow-sm"
+                    onclick="openApplyModal(<?= $job['id'] ?>, '<?= htmlspecialchars($job['title'], ENT_QUOTES) ?>', '<?= htmlspecialchars($job['company'], ENT_QUOTES) ?>')">
+                    <i class="bi bi-send-fill me-1"></i>Apply Now
+                </button>
+            <?php else: ?>
+                <button class="btn btn-secondary btn-sm px-3 py-2" disabled>
+                    <i class="bi bi-lock me-1"></i>Closed
+                </button>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
 

@@ -12,6 +12,12 @@ if (file_exists($_envFile)) {
         [$_key, $_val] = explode('=', $_line, 2);
         $_key = trim($_key);
         $_val = trim($_val);
+        if (
+            (str_starts_with($_val, '"') && str_ends_with($_val, '"')) ||
+            (str_starts_with($_val, "'") && str_ends_with($_val, "'"))
+        ) {
+            $_val = substr($_val, 1, -1);
+        }
         if ($_key !== '' && getenv($_key) === false) {
             putenv("{$_key}={$_val}");
             $_ENV[$_key] = $_val;

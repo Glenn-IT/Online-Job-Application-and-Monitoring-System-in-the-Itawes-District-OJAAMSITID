@@ -47,12 +47,15 @@ include $basePath . "layouts/navbar-staff.php";
     <?php include $basePath . "layouts/sidebar-staff.php"; ?>
     <main class="admin-main">
         <!-- Page Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <div>
-                <h2 class="fw-bold mb-1">
-                    <i class="bi bi-speedometer2 me-2 text-warning"></i>Staff Dashboard
-                </h2>
-                <p class="text-muted mb-0 small">Overview of job listings, candidate evaluations, and recruitment workflows.</p>
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <img src="<?= $basePath ?>img/Piat-Logo.png" alt="Piat Logo" style="width: 48px; height: 48px; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.12));">
+                <div>
+                    <h2 class="fw-bold mb-0">
+                        Staff Dashboard
+                    </h2>
+                    <p class="text-muted mb-0 small">Municipality of Piat &bull; Itawes District Staff Recruitment Portal</p>
+                </div>
             </div>
             <div>
                 <a href="applications.php" class="btn btn-warning me-2">

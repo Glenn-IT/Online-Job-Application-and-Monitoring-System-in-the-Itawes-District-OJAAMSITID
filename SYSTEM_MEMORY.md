@@ -67,6 +67,21 @@ Use this matrix to identify all connected files whenever modifying a feature:
 
 ---
 
+### 3.1b System Branding, Official Logo & Visual Identity
+*Responsibilities: Official emblem and municipal seal of the Municipality of Piat across all portals, auth screens, and navigations.*
+
+| Component / Layer | Connected Files |
+| :--- | :--- |
+| **Official Logo Asset** | `img/Piat-Logo.png` |
+| **Shared Favicon** | `layouts/header.php`, `index.php`, `login.php`, `register.php`, `forgot-password.php`, `reset-password.php` |
+| **Navbars** | `layouts/navbar-admin.php`, `layouts/navbar-staff.php`, `layouts/navbar-user.php` (`.brand-logo`); `index.php` (streamlined with direct `Log In` & `Register` actions on desktop & mobile) |
+| **Authentication Screens** | `login.php`, `register.php`, `forgot-password.php`, `reset-password.php` (`.auth-hero` emblem & `.auth-card-header`) |
+| **Dashboards** | `pages/admin/dashboard.php`, `pages/staff/dashboard.php` (page header emblem) |
+| **Public Portal** | `index.php` (hero section badge & footer seal), `pages/user/browse-jobs.php` (hero badge) |
+| **Styles** | `assets/css/style.css` (`.brand-logo` sizing, aspect-ratio, drop shadow, hover transition) |
+
+---
+
 ### 3.2 Job Postings & Opportunity Management
 *Responsibilities: Creating, editing, closing, deleting jobs, categorizing, salary ranges, deadlines, search & filters.*
 
@@ -88,6 +103,7 @@ Use this matrix to identify all connected files whenever modifying a feature:
 4. **Interactive Bookmarking**: Real-time AJAX bookmarking (`toggleSaveJob`) on both card grid (`browse-jobs.php`) and detail page (`job-detail.php`) communicating with `handlers/saved-jobs.php`.
 5. **Job Detail Highlights**: `pages/user/job-detail.php` includes a 6-box quick highlight tile grid (`.detail-stat-box`) displaying Job Type, Salary, Location, Date Posted, Deadline (with expiration alert), and Total Applicants.
 6. **Cross-Navigation**: `layouts/navbar-user.php` provides instant 1-click access to Saved Jobs in both desktop navbar and user dropdown.
+7. **Mobile Ergonomics & Sticky Action Bar**: `pages/user/browse-jobs.php` features responsive input stacking (`col-12 col-sm-6 col-md-3`), compact card padding, and touch targets >=44px. `pages/user/job-detail.php` features a fixed glassmorphic bottom bar (`.mobile-sticky-apply-bar`) for 1-tap applications on mobile without vertical scrolling, plus 3-column overview metrics on `pages/user/my-applications.php`.
 
 *Synchronization Check when modifying Job fields (e.g. adding new field `employment_type` or `department`):*
 1. Add field to `config/database.sql` (`jobs` table).
