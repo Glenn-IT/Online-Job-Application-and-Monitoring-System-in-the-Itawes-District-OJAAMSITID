@@ -92,18 +92,16 @@ Use this matrix to identify all connected files whenever modifying a feature:
 | **Staff Management** | `pages/staff/manage-jobs.php`, `pages/staff/dashboard.php` |
 | **User Job Portal** | `pages/user/browse-jobs.php`, `pages/user/job-detail.php`, `index.php` |
 | **Modals & UI** | `modals/add-job-modal.php` (used for both Add & Edit modes), `components/job-card.php` |
-| **Saved Jobs Bridge** | `handlers/saved-jobs.php` (`toggle`), `pages/user/saved-jobs.php` (redirects to `browse-jobs.php?saved=1`), `layouts/navbar-user.php` |
-| **Frontend Script & Styling** | `assets/css/style.css` (`.browse-hero-card`, `.browse-search-box`, `.filter-pills-scroll`, `.filter-chip`, `.job-card-modern`, `.company-monogram`, `.badge-tag`, `.btn-bookmark`, `.detail-stat-box`) |
-| **Database Tables** | `jobs`, `saved_jobs` |
+| **Frontend Script & Styling** | `assets/css/style.css` (`.browse-hero-card`, `.browse-search-box`, `.filter-pills-scroll`, `.filter-chip`, `.job-card-modern`, `.company-monogram`, `.badge-tag`, `.detail-stat-box`) |
+| **Database Tables** | `jobs` |
 
 *Modern Applicant Job Browsing Architecture:*
 1. **Hero & Unified Search**: `pages/user/browse-jobs.php` features a modern discovery hero card with unified keyword/company/location search, status selector, and responsive action button.
-2. **Scrollable Quick-Filter Chips**: Dynamic pills for All Jobs, Full-time, Part-time, Contract, Internship, Freelance, and Saved Jobs (with real-time count badge).
+2. **Scrollable Quick-Filter Chips**: Dynamic pills for All Jobs, Full-time, Part-time, Contract, Internship, and Freelance.
 3. **Company Monogram & Soft Badges**: Deterministic hashing generates distinctive initials and soft pastel badges (`tag-fulltime`, `tag-parttime`, `tag-contract`, `tag-internship`, `tag-freelance`, `tag-salary`, `tag-location`).
-4. **Interactive Bookmarking**: Real-time AJAX bookmarking (`toggleSaveJob`) on both card grid (`browse-jobs.php`) and detail page (`job-detail.php`) communicating with `handlers/saved-jobs.php`.
+4. **Direct Applicant Flow**: Saved jobs / bookmarking feature was retired from the applicant interface in favor of direct browsing and streamlined 1-tap application.
 5. **Job Detail Highlights**: `pages/user/job-detail.php` includes a 6-box quick highlight tile grid (`.detail-stat-box`) displaying Job Type, Salary, Location, Date Posted, Deadline (with expiration alert), and Total Applicants.
-6. **Cross-Navigation**: `layouts/navbar-user.php` provides instant 1-click access to Saved Jobs in both desktop navbar and user dropdown.
-7. **Mobile Ergonomics & Sticky Action Bar**: `pages/user/browse-jobs.php` features responsive input stacking (`col-12 col-sm-6 col-md-3`), compact card padding, and touch targets >=44px. `pages/user/job-detail.php` features a fixed glassmorphic bottom bar (`.mobile-sticky-apply-bar`) for 1-tap applications on mobile without vertical scrolling, plus 3-column overview metrics on `pages/user/my-applications.php`.
+6. **Mobile Ergonomics & Sticky Action Bar**: `pages/user/browse-jobs.php` features responsive input stacking (`col-12 col-sm-6 col-md-3`), compact card padding, and touch targets >=44px. `pages/user/job-detail.php` features a fixed glassmorphic bottom bar (`.mobile-sticky-apply-bar`) for 1-tap applications on mobile without vertical scrolling, plus 3-column overview metrics on `pages/user/my-applications.php`.
 
 *Synchronization Check when modifying Job fields (e.g. adding new field `employment_type` or `department`):*
 1. Add field to `config/database.sql` (`jobs` table).

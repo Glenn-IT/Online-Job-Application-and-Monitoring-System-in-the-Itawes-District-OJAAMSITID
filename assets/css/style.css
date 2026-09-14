@@ -1218,33 +1218,7 @@ html, body { overflow-x: hidden; }
 .badge-tag.tag-salary     { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700; }
 .badge-tag.tag-location   { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
 
-/* Interactive Bookmark Button */
-.btn-bookmark {
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #e2e8f0;
-    background: #ffffff;
-    color: #94a3b8;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    font-size: 1.1rem;
-    padding: 0;
-}
-.btn-bookmark:hover {
-    border-color: #f59e0b;
-    color: #f59e0b;
-    background: #fffbeb;
-    transform: scale(1.05);
-}
-.btn-bookmark.is-saved {
-    background: #fffbeb;
-    border-color: #f59e0b;
-    color: #f59e0b;
-}
+
 
 /* Job Detail Page Quick Stat Cards */
 .detail-stat-box {

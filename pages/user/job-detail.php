@@ -34,11 +34,6 @@ $dupStmt->execute([$userId, $jobId]);
 $existingApp = $dupStmt->fetch();
 $alreadyApplied = (bool)$existingApp;
 
-// ── Has the user bookmarked this job? ───────────────────────
-$saveCheckStmt = $pdo->prepare("SELECT id FROM saved_jobs WHERE user_id = ? AND job_id = ? LIMIT 1");
-$saveCheckStmt->execute([$userId, $jobId]);
-$isSaved = (bool)$saveCheckStmt->fetch();
-
 // ── Applicant count ──────────────────────────────────────────
 $cntStmt = $pdo->prepare("SELECT COUNT(*) FROM applications WHERE job_id = ?");
 $cntStmt->execute([$jobId]);
@@ -112,13 +107,6 @@ include $basePath . 'layouts/navbar-user.php';
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" 
-                            class="btn-bookmark <?= $isSaved ? 'is-saved' : '' ?>" 
-                            onclick="toggleSaveJob(this, <?= $jobId ?>)"
-                            title="<?= $isSaved ? 'Remove from saved' : 'Save job' ?>"
-                            aria-label="Bookmark job">
-                        <i class="bi <?= $isSaved ? 'bi-bookmark-fill' : 'bi-bookmark' ?>"></i>
-                    </button>
                     <span class="badge fs-6 px-3 py-2 <?= $isOpen ? 'bg-success' : 'bg-secondary' ?>">
                         <?= $isOpen ? 'Open' : 'Closed' ?>
                     </span>
@@ -364,13 +352,6 @@ include $basePath . 'layouts/navbar-user.php';
             <div class="text-muted text-truncate" style="font-size: 0.74rem;"><i class="bi bi-building me-1"></i><?= htmlspecialchars($company) ?></div>
         </div>
         <div class="d-flex align-items-center gap-2 flex-shrink-0">
-            <button type="button" 
-                    class="btn-bookmark <?= $isSaved ? 'is-saved' : '' ?>" 
-                    onclick="toggleSaveJob(this, <?= $jobId ?>)"
-                    title="<?= $isSaved ? 'Remove from saved' : 'Save job' ?>"
-                    aria-label="Bookmark job">
-                <i class="bi <?= $isSaved ? 'bi-bookmark-fill' : 'bi-bookmark' ?>"></i>
-            </button>
             <?php if ($alreadyApplied): ?>
                 <button class="btn btn-success btn-sm px-3 py-2 fw-semibold" disabled>
                     <i class="bi bi-check-circle me-1"></i>Applied
@@ -393,45 +374,6 @@ include $basePath . 'layouts/navbar-user.php';
 
 <script>
 const APP_HANDLER = '../../handlers/applications.php';
-const SAVED_HANDLER = '../../handlers/saved-jobs.php';
-
-// ── Interactive Bookmark / Saved Jobs Toggle ──────────────────
-function toggleSaveJob(btn, jobId) {
-    if (!jobId) return;
-    btn.disabled = true;
-    fetch(SAVED_HANDLER, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            action: 'toggle',
-            job_id: jobId,
-            csrf_token: getCsrfToken()
-        })
-    })
-    .then(r => r.json())
-    .then(res => {
-        btn.disabled = false;
-        if (res.success) {
-            const icon = btn.querySelector('i');
-            if (res.saved) {
-                btn.classList.add('is-saved');
-                if (icon) icon.className = 'bi bi-bookmark-fill';
-                btn.title = 'Remove from saved';
-            } else {
-                btn.classList.remove('is-saved');
-                if (icon) icon.className = 'bi bi-bookmark';
-                btn.title = 'Save job';
-            }
-            showToast(res.message, 'success');
-        } else {
-            showToast(res.message || 'Unable to update bookmark.', 'danger');
-        }
-    })
-    .catch(() => {
-        btn.disabled = false;
-        showToast('Network error updating saved job.', 'danger');
-    });
-}
 
 // ── Age Trapping & Validation ────────────────────────────────
 function computeAge(birthdate) {

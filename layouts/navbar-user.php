@@ -22,15 +22,9 @@
             <!-- Main links -->
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <a class="nav-link <?php echo (($currentPage ?? '') === 'browse-jobs' && empty($_GET['saved'])) ? 'active' : ''; ?>"
+                    <a class="nav-link <?php echo (($currentPage ?? '') === 'browse-jobs') ? 'active' : ''; ?>"
                        href="<?php echo $basePath ?? ''; ?>pages/user/browse-jobs.php">
                         <i class="bi bi-search me-1"></i>Browse Jobs
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?php echo !empty($_GET['saved']) ? 'active' : ''; ?>"
-                       href="<?php echo $basePath ?? ''; ?>pages/user/browse-jobs.php?saved=1">
-                        <i class="bi bi-bookmark-fill me-1"></i>Saved Jobs
                     </a>
                 </li>
                 <li class="nav-item">
@@ -54,12 +48,6 @@
                             </span>
                         </li>
                         <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item <?php echo !empty($_GET['saved']) ? 'active' : ''; ?>"
-                               href="<?php echo $basePath ?? ''; ?>pages/user/browse-jobs.php?saved=1">
-                                <i class="bi bi-bookmark-fill me-2 text-warning"></i>Saved Jobs
-                            </a>
-                        </li>
                         <li>
                             <a class="dropdown-item <?php echo ($currentPage ?? '') === 'profile-settings' ? 'active' : ''; ?>"
                                href="<?php echo $basePath ?? ''; ?>pages/user/profile-settings.php">

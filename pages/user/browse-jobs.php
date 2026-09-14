@@ -9,18 +9,12 @@ $currentPage = "browse-jobs";
 $search        = trim($_GET['search']   ?? '');
 $statusFilter  = $_GET['status']        ?? '';
 $jobTypeFilter = $_GET['job_type']      ?? '';
-$savedFilter   = !empty($_GET['saved']);
 $allowedStatus = ['', 'Open', 'Closed'];
 if (!in_array($statusFilter, $allowedStatus)) $statusFilter = '';
 $allowedTypes  = ['', 'Full-time','Part-time','Contract','Internship','Freelance'];
 if (!in_array($jobTypeFilter, $allowedTypes)) $jobTypeFilter = '';
 
-// ── User Saved Jobs ─────────────────────────────────────────
 $userId = (int)$_SESSION["ojams_user"]["id"];
-$savedStmt = $pdo->prepare("SELECT job_id FROM saved_jobs WHERE user_id = ?");
-$savedStmt->execute([$userId]);
-$savedJobIds = array_column($savedStmt->fetchAll(), "job_id");
-$savedCount  = count($savedJobIds);
 
 // ── Build WHERE clause ───────────────────────────────────────
 $where  = [];
@@ -38,17 +32,6 @@ if ($statusFilter !== '') {
 if ($jobTypeFilter !== '') {
     $where[]  = "j.job_type = ?";
     $params[] = $jobTypeFilter;
-}
-if ($savedFilter) {
-    if (empty($savedJobIds)) {
-        $where[] = "1 = 0"; // No saved jobs, return empty
-    } else {
-        $inPlaceholders = implode(',', array_fill(0, count($savedJobIds), '?'));
-        $where[] = "j.id IN ({$inPlaceholders})";
-        foreach ($savedJobIds as $sId) {
-            $params[] = $sId;
-        }
-    }
 }
 $whereSQL = $where ? "WHERE " . implode(" AND ", $where) : "";
 
@@ -144,7 +127,7 @@ function browseFilterUrl(array $overrides = []): string {
             $q[$k] = $v;
         }
     }
-    if (isset($overrides['job_type']) || isset($overrides['saved']) || isset($overrides['status']) || isset($overrides['search'])) {
+    if (isset($overrides['job_type']) || isset($overrides['status']) || isset($overrides['search'])) {
         unset($q['page']);
     }
     return 'browse-jobs.php' . (!empty($q) ? '?' . http_build_query($q) : '');
@@ -204,9 +187,6 @@ include $basePath . "layouts/navbar-user.php";
                         <?php if ($jobTypeFilter !== ''): ?>
                             <input type="hidden" name="job_type" value="<?= htmlspecialchars($jobTypeFilter, ENT_QUOTES) ?>">
                         <?php endif; ?>
-                        <?php if ($savedFilter): ?>
-                            <input type="hidden" name="saved" value="1">
-                        <?php endif; ?>
                         <button type="submit" class="btn btn-search w-100 py-2">
                             <i class="bi bi-search me-1"></i>Search Jobs
                         </button>
@@ -220,24 +200,16 @@ include $basePath . "layouts/navbar-user.php";
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
         <!-- Scrollable Filter Chips -->
         <div class="filter-pills-scroll flex-grow-1 w-100">
-            <a href="<?= browseFilterUrl(['job_type' => '', 'saved' => '']) ?>" 
-               class="filter-chip <?= ($jobTypeFilter === '' && !$savedFilter) ? 'active' : '' ?>">
+            <a href="<?= browseFilterUrl(['job_type' => '']) ?>" 
+               class="filter-chip <?= ($jobTypeFilter === '') ? 'active' : '' ?>">
                 <i class="bi bi-grid-fill"></i>All Jobs
             </a>
             <?php foreach (['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance'] as $t): ?>
-            <a href="<?= browseFilterUrl(['job_type' => ($jobTypeFilter === $t ? '' : $t), 'saved' => '']) ?>" 
-               class="filter-chip <?= ($jobTypeFilter === $t && !$savedFilter) ? 'active' : '' ?>">
+            <a href="<?= browseFilterUrl(['job_type' => ($jobTypeFilter === $t ? '' : $t)]) ?>" 
+               class="filter-chip <?= ($jobTypeFilter === $t) ? 'active' : '' ?>">
                 <?= htmlspecialchars($t) ?>
             </a>
             <?php endforeach; ?>
-            <a href="<?= browseFilterUrl(['saved' => $savedFilter ? '' : '1']) ?>" 
-               class="filter-chip <?= $savedFilter ? 'active' : '' ?>"
-               title="View bookmarked jobs">
-                <i class="bi bi-bookmark<?= $savedFilter ? '-fill' : '' ?>"></i>Saved Jobs
-                <span class="badge rounded-pill <?= $savedFilter ? 'bg-white text-primary' : 'bg-primary-subtle text-primary' ?> ms-1" style="font-size: 0.72rem;">
-                    <?= $savedCount ?>
-                </span>
-            </a>
         </div>
 
         <!-- Result count & reset filter button -->
@@ -245,7 +217,7 @@ include $basePath . "layouts/navbar-user.php";
             <span class="text-muted small">
                 Showing <strong><?= $filteredTotal ?></strong> job<?= $filteredTotal !== 1 ? 's' : '' ?>
             </span>
-            <?php if ($search !== '' || $statusFilter !== '' || $jobTypeFilter !== '' || $savedFilter): ?>
+            <?php if ($search !== '' || $statusFilter !== '' || $jobTypeFilter !== ''): ?>
             <a href="browse-jobs.php" class="btn btn-outline-secondary btn-sm py-1 px-2" title="Reset all filters">
                 <i class="bi bi-x-circle me-1"></i>Reset
             </a>
@@ -254,7 +226,7 @@ include $basePath . "layouts/navbar-user.php";
     </div>
 
     <!-- ── Active Filter Indicator (if any) ────────────────── -->
-    <?php if ($search !== '' || $statusFilter !== '' || $jobTypeFilter !== '' || $savedFilter): ?>
+    <?php if ($search !== '' || $statusFilter !== '' || $jobTypeFilter !== ''): ?>
     <div class="d-flex flex-wrap align-items-center gap-2 mb-4 p-2 px-3 bg-light rounded-3 border">
         <span class="text-muted small fw-semibold"><i class="bi bi-funnel me-1"></i>Active Filters:</span>
         <?php if ($search !== ''): ?>
@@ -265,9 +237,6 @@ include $basePath . "layouts/navbar-user.php";
         <?php endif; ?>
         <?php if ($jobTypeFilter !== ''): ?>
             <span class="badge bg-white text-dark border">Type: <?= htmlspecialchars($jobTypeFilter) ?></span>
-        <?php endif; ?>
-        <?php if ($savedFilter): ?>
-            <span class="badge bg-white text-warning border"><i class="bi bi-bookmark-fill me-1"></i>Saved Jobs Only</span>
         <?php endif; ?>
         <a href="browse-jobs.php" class="small text-danger text-decoration-none ms-auto fw-semibold">
             Clear all
@@ -284,11 +253,7 @@ include $basePath . "layouts/navbar-user.php";
                 </div>
                 <h4 class="fw-bold text-dark mb-1">No Jobs Found</h4>
                 <p class="text-muted mb-4" style="max-width: 480px; margin: 0 auto;">
-                    <?php if ($savedFilter): ?>
-                        You haven't saved any job postings yet. Click the bookmark icon on any job card to save it for later.
-                    <?php else: ?>
-                        We couldn't find any job postings matching your current search or filter criteria. Try adjusting your search query.
-                    <?php endif; ?>
+                    We couldn't find any job postings matching your current search or filter criteria. Try adjusting your search query.
                 </p>
                 <a href="browse-jobs.php" class="btn btn-primary btn-sm px-3 py-2">
                     <i class="bi bi-arrow-repeat me-1"></i>Browse All Jobs
@@ -298,7 +263,6 @@ include $basePath . "layouts/navbar-user.php";
         <?php foreach ($jobs as $job):
             $jobId          = (int)$job["id"];
             $alreadyApplied = in_array($jobId, $appliedJobIds);
-            $isSaved        = in_array($jobId, $savedJobIds);
             $isOpen         = $job["status"] === "Open";
             $cnt            = $appCounts[$jobId] ?? 0;
             $company        = $job["company"] ?? "Company";
@@ -310,7 +274,7 @@ include $basePath . "layouts/navbar-user.php";
         <div class="col-12 col-md-6 col-lg-4 mb-4">
             <div class="job-card-modern h-100 p-3 p-sm-4 shadow-sm">
                 
-                <!-- Card Header: Company Monogram + Names + Bookmark Toggle -->
+                <!-- Card Header: Company Monogram + Names -->
                 <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
                     <div class="d-flex align-items-center gap-3 min-w-0">
                         <div class="company-monogram" style="background: <?= $palette['bg'] ?>; color: <?= $palette['color'] ?>;">
@@ -325,13 +289,6 @@ include $basePath . "layouts/navbar-user.php";
                             </div>
                         </div>
                     </div>
-                    <button type="button" 
-                            class="btn-bookmark <?= $isSaved ? 'is-saved' : '' ?>" 
-                            onclick="toggleSaveJob(this, <?= $jobId ?>)"
-                            title="<?= $isSaved ? 'Remove from saved' : 'Save job' ?>"
-                            aria-label="Bookmark job">
-                        <i class="bi <?= $isSaved ? 'bi-bookmark-fill' : 'bi-bookmark' ?>"></i>
-                    </button>
                 </div>
 
                 <!-- Job Title & Status -->
@@ -454,45 +411,6 @@ include $basePath . "layouts/navbar-user.php";
 
 <script>
 const APP_HANDLER = "../../handlers/applications.php";
-const SAVED_HANDLER = "../../handlers/saved-jobs.php";
-
-// ── Interactive Bookmark / Saved Jobs Toggle ──────────────────
-function toggleSaveJob(btn, jobId) {
-    if (!jobId) return;
-    btn.disabled = true;
-    fetch(SAVED_HANDLER, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            action: 'toggle',
-            job_id: jobId,
-            csrf_token: getCsrfToken()
-        })
-    })
-    .then(r => r.json())
-    .then(res => {
-        btn.disabled = false;
-        if (res.success) {
-            const icon = btn.querySelector('i');
-            if (res.saved) {
-                btn.classList.add('is-saved');
-                if (icon) icon.className = 'bi bi-bookmark-fill';
-                btn.title = 'Remove from saved';
-            } else {
-                btn.classList.remove('is-saved');
-                if (icon) icon.className = 'bi bi-bookmark';
-                btn.title = 'Save job';
-            }
-            showToast(res.message, 'success');
-        } else {
-            showToast(res.message || 'Unable to update bookmark.', 'danger');
-        }
-    })
-    .catch(() => {
-        btn.disabled = false;
-        showToast('Network error updating saved job.', 'danger');
-    });
-}
 
 // ── Age Trapping & Auto-computation ──────────────────────────
 function computeAge(birthdate) {
