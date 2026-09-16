@@ -97,11 +97,11 @@ function appsSortIcon(string $col): string {
     global $appSortCol, $appSortDir;
     if ($appSortCol !== $col) return '<i class="bi bi-arrow-down-up opacity-50 ms-1 small"></i>';
     return $appSortDir === 'ASC'
-        ? '<i class="bi bi-sort-up-alt text-warning ms-1"></i>'
-        : '<i class="bi bi-sort-down text-warning ms-1"></i>';
+        ? '<i class="bi bi-sort-up-alt text-primary ms-1"></i>'
+        : '<i class="bi bi-sort-down text-primary ms-1"></i>';
 }
 function appsSortTh(string $label, string $col): string {
-    return '<a href="' . appsSortUrl($col) . '" class="text-decoration-none text-white">'
+    return '<a href="' . appsSortUrl($col) . '" class="text-decoration-none text-dark d-inline-flex align-items-center">'
          . htmlspecialchars($label) . appsSortIcon($col) . '</a>';
 }
 

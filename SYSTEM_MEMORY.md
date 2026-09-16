@@ -202,6 +202,7 @@ Use this matrix to identify all connected files whenever modifying a feature:
   - Modals (`apply-job-modal.php`, `view-application-modal.php`): Must use responsive grid columns (`col-12 col-md-6`, `col-7 col-sm-8 col-md-3`, `col-5 col-sm-4 col-md-3`), compact padding, and full-width touch-friendly buttons on small viewports.
   - Tables & Cards (`my-applications.php`, `browse-jobs.php`): Use `.table-responsive` with `.text-nowrap` on actions and compact 3-column summary cards on mobile (`col-4`).
   - Inputs: Sized at 16px minimum on screens `< 768px` to prevent iOS Safari auto-zoom.
+  - Table Headers (`components/table-header.php`, `assets/css/style.css`): Modern light surface (`var(--surface-2)`) header design with uppercase high-contrast text (`#475569`), centered vertical alignment, and clickable sorting anchors (`text-dark` with `text-primary` active indicator). Never apply `.table-dark` or `.text-white` to table headers.
 
 ---
 

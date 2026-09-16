@@ -99,11 +99,11 @@ function staffJobsSortIcon(string $col): string {
     global $jobSortCol, $jobSortDir;
     if ($jobSortCol !== $col) return '<i class="bi bi-arrow-down-up opacity-50 ms-1 small"></i>';
     return $jobSortDir === 'ASC'
-        ? '<i class="bi bi-sort-up-alt text-warning ms-1"></i>'
-        : '<i class="bi bi-sort-down text-warning ms-1"></i>';
+        ? '<i class="bi bi-sort-up-alt text-primary ms-1"></i>'
+        : '<i class="bi bi-sort-down text-primary ms-1"></i>';
 }
 function staffJobsSortTh(string $label, string $col): string {
-    return '<a href="' . staffJobsSortUrl($col) . '" class="text-decoration-none text-white">'
+    return '<a href="' . staffJobsSortUrl($col) . '" class="text-decoration-none text-dark d-inline-flex align-items-center">'
          . htmlspecialchars($label) . staffJobsSortIcon($col) . '</a>';
 }
 
@@ -176,7 +176,7 @@ include $basePath . "layouts/navbar-staff.php";
         <div class="card border-0 shadow-sm">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-dark text-white">
+                    <thead>
                         <tr>
                             <th><?= staffJobsSortTh('Job Title & Company', 'title') ?></th>
                             <th>Posted By</th>

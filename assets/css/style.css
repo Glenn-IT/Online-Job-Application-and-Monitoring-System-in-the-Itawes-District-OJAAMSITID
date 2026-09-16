@@ -461,11 +461,36 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--text); }
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    color: var(--text-muted);
+    color: #475569;
     background: var(--surface-2);
     border-bottom: 1px solid var(--border) !important;
     padding: 0.8rem 1rem;
     white-space: nowrap;
+    vertical-align: middle;
+}
+
+.table thead th a {
+    color: inherit;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 700;
+    transition: color var(--transition);
+}
+
+.table thead th a:hover {
+    color: var(--primary) !important;
+}
+
+.table thead th a.text-white {
+    color: inherit !important;
+}
+
+.table thead th .form-check-input {
+    margin: 0;
+    vertical-align: middle;
+    cursor: pointer;
 }
 
 .table tbody td {

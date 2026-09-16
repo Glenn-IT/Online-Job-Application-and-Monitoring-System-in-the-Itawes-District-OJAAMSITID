@@ -99,11 +99,11 @@ function jobsSortIcon(string $col): string {
     global $jobSortCol, $jobSortDir;
     if ($jobSortCol !== $col) return '<i class="bi bi-arrow-down-up opacity-50 ms-1 small"></i>';
     return $jobSortDir === 'ASC'
-        ? '<i class="bi bi-sort-up-alt text-warning ms-1"></i>'
-        : '<i class="bi bi-sort-down text-warning ms-1"></i>';
+        ? '<i class="bi bi-sort-up-alt text-primary ms-1"></i>'
+        : '<i class="bi bi-sort-down text-primary ms-1"></i>';
 }
 function jobsSortTh(string $label, string $col): string {
-    return '<a href="' . jobsSortUrl($col) . '" class="text-decoration-none text-white">'
+    return '<a href="' . jobsSortUrl($col) . '" class="text-decoration-none text-dark d-inline-flex align-items-center">'
          . htmlspecialchars($label) . jobsSortIcon($col) . '</a>';
 }
 
