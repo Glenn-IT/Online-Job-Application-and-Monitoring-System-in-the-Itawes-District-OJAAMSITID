@@ -392,7 +392,9 @@ function openApplyModal(jobId, title, company) {
     document.getElementById('applicationForm').reset();
     document.getElementById('applicationForm').dataset.jobId = jobId;
     clearAllFieldErrors('applicationForm');
-    document.getElementById('resumeFileInfo')?.classList.add('d-none');
+    ['resume', 'appLetter', 'pds', 'csc', 'tor'].forEach(k => {
+        document.getElementById(k + 'FileInfo')?.classList.add('d-none');
+    });
 
     const sess = <?php echo json_encode([
         'full_name'      => $_SESSION['ojams_user']['full_name'],
@@ -441,22 +443,32 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    const resumeInput = document.getElementById('appResume');
-    if (resumeInput) {
-        resumeInput.addEventListener('change', function () {
-            clearFieldError('appResume');
-            const infoEl = document.getElementById('resumeFileInfo');
-            const nameEl = document.getElementById('resumeFileName');
-            const sizeEl = document.getElementById('resumeFileSize');
-            if (!this.files.length) { infoEl?.classList.add('d-none'); return; }
-            const f = this.files[0];
-            const kb = (f.size / 1024).toFixed(1);
-            const mb = (f.size / (1024 * 1024)).toFixed(2);
-            if (nameEl) nameEl.textContent = f.name;
-            if (sizeEl) sizeEl.textContent = f.size > 1024 * 1024 ? mb + ' MB' : kb + ' KB';
-            infoEl?.classList.remove('d-none');
-        });
-    }
+    // Document file previews
+    const docPreviews = [
+        { input: 'appResume', info: 'resumeFileInfo', name: 'resumeFileName', size: 'resumeFileSize' },
+        { input: 'appLetter', info: 'appLetterFileInfo', name: 'appLetterFileName', size: 'appLetterFileSize' },
+        { input: 'appPds',    info: 'pdsFileInfo',       name: 'pdsFileName',       size: 'pdsFileSize' },
+        { input: 'appCsc',    info: 'cscFileInfo',       name: 'cscFileName',       size: 'cscFileSize' },
+        { input: 'appTor',    info: 'torFileInfo',       name: 'torFileName',       size: 'torFileSize' },
+    ];
+    docPreviews.forEach(dp => {
+        const el = document.getElementById(dp.input);
+        if (el) {
+            el.addEventListener('change', function () {
+                clearFieldError(dp.input);
+                const infoEl = document.getElementById(dp.info);
+                const nameEl = document.getElementById(dp.name);
+                const sizeEl = document.getElementById(dp.size);
+                if (!this.files.length) { infoEl?.classList.add('d-none'); return; }
+                const f = this.files[0];
+                const kb = (f.size / 1024).toFixed(1);
+                const mb = (f.size / (1024 * 1024)).toFixed(2);
+                if (nameEl) nameEl.textContent = f.name;
+                if (sizeEl) sizeEl.textContent = f.size > 1024 * 1024 ? mb + ' MB' : kb + ' KB';
+                infoEl?.classList.remove('d-none');
+            });
+        }
+    });
 });
 
 function submitApplication() {
@@ -511,15 +523,39 @@ function submitApplication() {
     if (!g('appSkills'))     { showFieldError('appSkills', 'Skills are required.'); valid = false; }
     if (!g('appExperience')) { showFieldError('appExperience', 'Work experience is required (enter N/A if none).'); valid = false; }
 
-    // 7. Resume Upload (Required)
+    // 7. Required Document Uploads (All 5 Required)
     const resumeInput = document.getElementById('appResume');
     const resumeFile  = resumeInput?.files ? resumeInput.files[0] : null;
     if (!resumeFile) {
         showFieldError('appResume', 'Resume / CV file is required.'); valid = false;
     }
 
+    const appLetterInput = document.getElementById('appLetter');
+    const appLetterFile  = appLetterInput?.files ? appLetterInput.files[0] : null;
+    if (!appLetterFile) {
+        showFieldError('appLetter', 'Application Letter file is required.'); valid = false;
+    }
+
+    const pdsInput = document.getElementById('appPds');
+    const pdsFile  = pdsInput?.files ? pdsInput.files[0] : null;
+    if (!pdsFile) {
+        showFieldError('appPds', 'Personal Data Sheet (PDS) file is required.'); valid = false;
+    }
+
+    const cscInput = document.getElementById('appCsc');
+    const cscFile  = cscInput?.files ? cscInput.files[0] : null;
+    if (!cscFile) {
+        showFieldError('appCsc', 'Certificate of CSC Eligibility file is required.'); valid = false;
+    }
+
+    const torInput = document.getElementById('appTor');
+    const torFile  = torInput?.files ? torInput.files[0] : null;
+    if (!torFile) {
+        showFieldError('appTor', 'Transcript of Records (TOR) file is required.'); valid = false;
+    }
+
     if (!valid) {
-        showToast('All fields are required. Please fill in all fields correctly.', 'warning');
+        showToast('Please complete all required fields and upload all 5 required documents.', 'warning');
         return;
     }
 
@@ -530,22 +566,26 @@ function submitApplication() {
     showLoadingModal('Submitting application…');
 
     const fd = new FormData();
-    fd.append('action',     'apply');
-    fd.append('csrf_token', getCsrfToken());
-    fd.append('job_id',     jobId);
-    fd.append('full_name',  g('appFullName'));
-    fd.append('email',      '<?php echo htmlspecialchars($_SESSION['ojams_user']['email'], ENT_QUOTES); ?>');
-    fd.append('contact',    g('appContact'));
-    fd.append('address',    g('appAddress'));
-    fd.append('birthdate',  document.getElementById('appBirthdate')?.value ?? '');
-    fd.append('age',        document.getElementById('appAge')?.value ?? '0');
-    fd.append('elementary', g('appElementary'));
-    fd.append('jhs',        g('appJhs'));
-    fd.append('shs',        g('appShs'));
-    fd.append('college',    g('appCollege'));
-    fd.append('skills',     g('appSkills'));
-    fd.append('experience', g('appExperience'));
-    fd.append('resume',     resumeFile);
+    fd.append('action',             'apply');
+    fd.append('csrf_token',         getCsrfToken());
+    fd.append('job_id',             jobId);
+    fd.append('full_name',          g('appFullName'));
+    fd.append('email',              '<?php echo htmlspecialchars($_SESSION['ojams_user']['email'], ENT_QUOTES); ?>');
+    fd.append('contact',            g('appContact'));
+    fd.append('address',            g('appAddress'));
+    fd.append('birthdate',          document.getElementById('appBirthdate')?.value ?? '');
+    fd.append('age',                document.getElementById('appAge')?.value ?? '0');
+    fd.append('elementary',         g('appElementary'));
+    fd.append('jhs',                g('appJhs'));
+    fd.append('shs',                g('appShs'));
+    fd.append('college',            g('appCollege'));
+    fd.append('skills',             g('appSkills'));
+    fd.append('experience',         g('appExperience'));
+    fd.append('resume',             resumeFile);
+    fd.append('application_letter', appLetterFile);
+    fd.append('pds',                pdsFile);
+    fd.append('csc_eligib',         cscFile);
+    fd.append('tor',                torFile);
 
     fetch(APP_HANDLER, { method: 'POST', body: fd })
     .then(r => r.json())

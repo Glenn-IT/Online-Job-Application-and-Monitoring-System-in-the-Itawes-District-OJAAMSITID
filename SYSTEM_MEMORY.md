@@ -114,24 +114,29 @@ Use this matrix to identify all connected files whenever modifying a feature:
 ---
 
 ### 3.3 Application Workflow & Status Tracking
-*Responsibilities: Applying for jobs, uploading resumes, status transitions (Pending -> Under Review -> Interview Scheduled -> Hired / Rejected), notes, scheduling interviews.*
+*Responsibilities: Applying for jobs, uploading documents (Resume, Application Letter, Personal Data Sheet, CSC Eligibility, TOR), status transitions (Pending -> Under Review -> Interview Scheduled -> Hired / Rejected), notes, scheduling interviews.*
 
 | Component / Layer | Connected Files |
 | :--- | :--- |
-| **Backend Handler** | `handlers/applications.php` (Actions: `apply`, `cancel`, `updateStatus`, `scheduleInterview`, `getDetails`, `bulkUpdateStatus`, `bulkDelete`) |
-| **User Pages** | `pages/user/my-applications.php`, `pages/user/job-detail.php` |
-| **Admin & Staff Pages** | `pages/admin/applications.php`, `pages/staff/applications.php`, `pages/admin/dashboard.php`, `pages/staff/dashboard.php` |
+| **Backend Handler** | `handlers/applications.php` (Actions: `apply`, `cancel`, `updateStatus`, `scheduleInterview`, `getDetails`, `updateDocuments`, `bulkUpdateStatus`, `bulkDelete`) |
+| **User Pages** | `pages/user/my-applications.php`, `pages/user/job-detail.php`, `pages/user/browse-jobs.php` |
+| **Admin & Staff Pages** | `pages/admin/applications.php`, `pages/staff/applications.php`, `pages/admin/reports.php`, `pages/admin/dashboard.php`, `pages/staff/dashboard.php` |
 | **Modals** | `modals/apply-job-modal.php`, `modals/view-application-modal.php`, `modals/schedule-interview-modal.php` |
 | **Components** | `components/application-row.php`, `components/stats-card.php` |
 | **Notifications Bridge** | `config/mailer.php` (Email notifications), `config/sms.php` (SMS alerts) |
 | **Upload Directory** | `uploads/resumes/` |
-| **Database Tables** | `applications`, `application_history`, `interviews` |
+| **Database Tables** | `applications`, `resumes` (stores documents with `document_type`: `resume`, `application_letter`, `pds`, `csc_eligib`, `tor`), `application_status_history`, `activity_logs` |
 
-*Synchronization Check when modifying Application status or fields:*
+*Synchronization Check when modifying Application status, fields, or document uploads:*
 1. If status enum/values change: sync `handlers/applications.php`, status badges in `pages/admin/applications.php`, `pages/staff/applications.php`, `pages/user/my-applications.php`, and `components/application-row.php`.
 2. If application fields change (e.g., portfolio URL): sync `modals/apply-job-modal.php`, `handlers/applications.php` (`apply` action), `modals/view-application-modal.php`, and `config/database.sql`.
 3. If interview scheduling changes: sync `modals/schedule-interview-modal.php`, `handlers/applications.php` (`scheduleInterview`), and notification templates in `config/mailer.php` & `config/sms.php`.
 4. **Application Validation & 18+ Age Trapping**: All fields in the application submission (`full_name`, `birthdate`, `address`, `contact`, `elementary`, `jhs`, `shs`, `college`, `skills`, `experience`, and `resume` file) are strictly required. Age trapping enforces `age >= 18` and `<= 80` (rejects `< 18` in datepicker `max` attribute, live JavaScript change listener, client submit validation, and server-side `handlers/applications.php`). Both `pages/user/browse-jobs.php` and `pages/user/job-detail.php` must stay in sync with `modals/apply-job-modal.php`.
+5. **Multi-Document Upload Architecture (All 5 Documents Required)**:
+   - All 5 documents are strictly mandatory upon application submission: `resume` (Resume / CV), `application_letter` (Application Letter), `pds` (Personal Data Sheet - CS Form 212), `csc_eligib` (Certificate of CSC Eligibility), and `tor` (Transcript of Records).
+   - Max file size: 5 MB per document. Formats: PDF, DOC, DOCX (plus JPG, PNG for PDS, CSC Eligib, and TOR).
+   - In `handlers/applications.php`: `apply` strictly validates that all 5 files are provided and records each uploaded document in `resumes` with column `document_type`; `getDetails` returns `documents` mapped by document type; `updateDocuments` permits applicant to upload/update documents while status is `Pending`.
+   - Modals and Pages (`modals/apply-job-modal.php`, `modals/view-application-modal.php`, `pages/admin/applications.php`, `pages/staff/applications.php`, `pages/admin/reports.php`, `pages/user/my-applications.php`, `pages/user/browse-jobs.php`, `pages/user/job-detail.php`) render document cards with 1-click View/Download links (`uploads/resumes/{stored_name}`).
 
 ---
 

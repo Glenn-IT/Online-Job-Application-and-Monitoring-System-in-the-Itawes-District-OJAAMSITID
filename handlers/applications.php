@@ -40,6 +40,93 @@ function logActivity(PDO $pdo, string $action, string $status, ?int $jobId = nul
     $stmt->execute([$action, $status, $uid, $jobId, $appId]);
 }
 
+$documentDefs = [
+    'resume' => [
+        'label'        => 'Resume / CV',
+        'required'     => true,
+        'allowed_exts' => ['pdf', 'doc', 'docx'],
+        'allowed_mimes'=> [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ],
+    ],
+    'application_letter' => [
+        'label'        => 'Application Letter',
+        'required'     => true,
+        'allowed_exts' => ['pdf', 'doc', 'docx'],
+        'allowed_mimes'=> [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ],
+    ],
+    'pds' => [
+        'label'        => 'Personal Data Sheet (PDS)',
+        'required'     => true,
+        'allowed_exts' => ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+        'allowed_mimes'=> [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'image/jpeg',
+            'image/png',
+        ],
+    ],
+    'csc_eligib' => [
+        'label'        => 'CSC Eligibility',
+        'required'     => true,
+        'allowed_exts' => ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+        'allowed_mimes'=> [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'image/jpeg',
+            'image/png',
+        ],
+    ],
+    'tor' => [
+        'label'        => 'Transcript of Records (TOR)',
+        'required'     => true,
+        'allowed_exts' => ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+        'allowed_mimes'=> [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'image/jpeg',
+            'image/png',
+        ],
+    ],
+];
+
+function validateUploadedDoc(array $file, array $def): array {
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return ['ok' => false, 'error' => "{$def['label']} upload failed (code {$file['error']})."];
+    }
+    if ($file['size'] > 5 * 1024 * 1024) {
+        return ['ok' => false, 'error' => "{$def['label']} must be 5 MB or smaller."];
+    }
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!in_array($ext, $def['allowed_exts'], true)) {
+        $allowedStr = strtoupper(implode(', ', $def['allowed_exts']));
+        return ['ok' => false, 'error' => "Only {$allowedStr} files are allowed for {$def['label']}."];
+    }
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime  = $finfo->file($file['tmp_name']);
+    if (!in_array($mime, $def['allowed_mimes'], true)) {
+        $allowedStr = strtoupper(implode(', ', $def['allowed_exts']));
+        return ['ok' => false, 'error' => "Invalid file content for {$def['label']}. Only {$allowedStr} are allowed."];
+    }
+    return [
+        'ok'       => true,
+        'tmp'      => $file['tmp_name'],
+        'original' => basename($file['name']),
+        'size'     => (int)$file['size'],
+        'mime'     => $mime,
+        'ext'      => $ext,
+    ];
+}
+
 // ── ACTION: apply ────────────────────────────────────────────
 if ($action === 'apply') {
     if (!isUser()) {
@@ -189,47 +276,24 @@ if ($action === 'apply') {
         exit;
     }
 
-    // ── Resume / CV Upload (Mandatory) ───────────────────────
-    if (!isset($_FILES['resume']) || $_FILES['resume']['error'] === UPLOAD_ERR_NO_FILE) {
-        echo json_encode(['success' => false, 'message' => 'Resume / CV file is required.']);
-        exit;
+    // ── Document Uploads Validation (Resume required, others optional) ──
+    $uploadedDocs = [];
+    foreach ($documentDefs as $docKey => $def) {
+        $hasFile = isset($_FILES[$docKey]) && $_FILES[$docKey]['error'] !== UPLOAD_ERR_NO_FILE;
+        if (!$hasFile) {
+            if ($def['required']) {
+                echo json_encode(['success' => false, 'message' => "{$def['label']} file is required."]);
+                exit;
+            }
+            continue;
+        }
+        $val = validateUploadedDoc($_FILES[$docKey], $def);
+        if (!$val['ok']) {
+            echo json_encode(['success' => false, 'message' => $val['error']]);
+            exit;
+        }
+        $uploadedDocs[$docKey] = $val;
     }
-    $file = $_FILES['resume'];
-    if ($file['error'] !== UPLOAD_ERR_OK) {
-        echo json_encode(['success' => false, 'message' => 'File upload failed (code ' . $file['error'] . ').']);
-        exit;
-    }
-    // Size limit: 5 MB
-    if ($file['size'] > 5 * 1024 * 1024) {
-        echo json_encode(['success' => false, 'message' => 'Resume must be 5 MB or smaller.']);
-        exit;
-    }
-    // MIME validation (real content check, not just extension)
-    $allowedMimes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    ];
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime  = $finfo->file($file['tmp_name']);
-    if (!in_array($mime, $allowedMimes, true)) {
-        echo json_encode(['success' => false, 'message' => 'Only PDF, DOC, and DOCX files are allowed for resume.']);
-        exit;
-    }
-    // Extension cross-check
-    $ext         = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    $allowedExts = ['pdf', 'doc', 'docx'];
-    if (!in_array($ext, $allowedExts, true)) {
-        echo json_encode(['success' => false, 'message' => 'Only PDF, DOC, and DOCX files are allowed for resume.']);
-        exit;
-    }
-    $uploadedFile = [
-        'tmp'      => $file['tmp_name'],
-        'original' => basename($file['name']),
-        'size'     => $file['size'],
-        'mime'     => $mime,
-        'ext'      => $ext,
-    ];
 
     $stmt = $pdo->prepare("
         INSERT INTO applications
@@ -244,22 +308,24 @@ if ($action === 'apply') {
     ]);
     $newAppId = (int)$pdo->lastInsertId();
 
-    // ── Move uploaded file and record it ────────────────────
-    if ($uploadedFile) {
+    // ── Move uploaded documents and record them ────────────────
+    if (!empty($uploadedDocs)) {
         $uploadDir = __DIR__ . '/../uploads/resumes/';
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }
-        $storedName = $userId . '_' . $jobId . '_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $uploadedFile['ext'];
-        if (move_uploaded_file($uploadedFile['tmp'], $uploadDir . $storedName)) {
-            $pdo->prepare("
-                INSERT INTO resumes (application_id, user_id, original_name, stored_name, file_size, mime_type)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ")->execute([
-                $newAppId, $userId,
-                $uploadedFile['original'], $storedName,
-                $uploadedFile['size'], $uploadedFile['mime'],
-            ]);
+        foreach ($uploadedDocs as $docKey => $doc) {
+            $storedName = $userId . '_' . $jobId . '_' . $docKey . '_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $doc['ext'];
+            if (move_uploaded_file($doc['tmp'], $uploadDir . $storedName)) {
+                $pdo->prepare("
+                    INSERT INTO resumes (application_id, user_id, document_type, original_name, stored_name, file_size, mime_type)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ")->execute([
+                    $newAppId, $userId, $docKey,
+                    $doc['original'], $storedName,
+                    $doc['size'], $doc['mime'],
+                ]);
+            }
         }
     }
 
@@ -407,13 +473,25 @@ if ($action === 'scheduleInterview') {
     exit;
 }
 
-// ── ACTION: getDetails (admin or staff) ──────────────────────
+// ── ACTION: getDetails (admin, staff, or applicant) ─────────
 if ($action === 'getDetails') {
-    if (!isAdmin() && !isStaff()) {
-        echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
+    $appId = (int)($body['id'] ?? 0);
+    if ($appId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid application ID.']);
         exit;
     }
-    $appId = (int)($body['id'] ?? 0);
+    if (!isAdmin() && !isStaff()) {
+        if (!isUser()) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
+            exit;
+        }
+        $own = $pdo->prepare("SELECT id FROM applications WHERE id = ? AND user_id = ?");
+        $own->execute([$appId, $userId]);
+        if (!$own->fetch()) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
+            exit;
+        }
+    }
     $stmt  = $pdo->prepare("
         SELECT a.*, j.title as job_title, j.company, j.contact_person, j.contact_phone
         FROM applications a
@@ -439,11 +517,103 @@ if ($action === 'getDetails') {
     $histStmt->execute([$appId]);
     $history = $histStmt->fetchAll();
 
-    $resumeStmt = $pdo->prepare("SELECT original_name, stored_name FROM resumes WHERE application_id = ? LIMIT 1");
-    $resumeStmt->execute([$appId]);
-    $resume = $resumeStmt->fetch();
+    // Fetch all documents uploaded for this application
+    $docsStmt = $pdo->prepare("
+        SELECT id, document_type, original_name, stored_name, file_size, mime_type, uploaded_at 
+        FROM resumes 
+        WHERE application_id = ? 
+        ORDER BY id ASC
+    ");
+    $docsStmt->execute([$appId]);
+    $allDocs = $docsStmt->fetchAll();
 
-    echo json_encode(['success' => true, 'data' => $app, 'history' => $history, 'resume' => $resume ?: null]);
+    $documents = [];
+    foreach ($allDocs as $doc) {
+        $documents[$doc['document_type']] = $doc;
+    }
+    $resume = $documents['resume'] ?? ($allDocs[0] ?? null);
+
+    echo json_encode([
+        'success'       => true,
+        'data'          => $app,
+        'history'       => $history,
+        'resume'        => $resume ?: null,
+        'documents'     => $documents,
+        'all_documents' => $allDocs
+    ]);
+    exit;
+}
+
+// ── ACTION: updateDocuments (applicant updates files for Pending app) ──
+if ($action === 'updateDocuments') {
+    if (!isUser()) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
+        exit;
+    }
+    $appId = (int)($body['id'] ?? 0);
+    if ($appId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid application ID.']);
+        exit;
+    }
+    $check = $pdo->prepare("SELECT id, job_id, status FROM applications WHERE id = ? AND user_id = ?");
+    $check->execute([$appId, $userId]);
+    $app = $check->fetch();
+    if (!$app) {
+        echo json_encode(['success' => false, 'message' => 'Application not found.']);
+        exit;
+    }
+    if ($app['status'] !== 'Pending') {
+        echo json_encode(['success' => false, 'message' => 'Documents cannot be modified after an application has been reviewed.']);
+        exit;
+    }
+
+    $uploadedDocs = [];
+    foreach ($documentDefs as $docKey => $def) {
+        if (isset($_FILES[$docKey]) && $_FILES[$docKey]['error'] !== UPLOAD_ERR_NO_FILE) {
+            $val = validateUploadedDoc($_FILES[$docKey], $def);
+            if (!$val['ok']) {
+                echo json_encode(['success' => false, 'message' => $val['error']]);
+                exit;
+            }
+            $uploadedDocs[$docKey] = $val;
+        }
+    }
+
+    if (empty($uploadedDocs)) {
+        echo json_encode(['success' => false, 'message' => 'No documents were uploaded to update.']);
+        exit;
+    }
+
+    $uploadDir = __DIR__ . '/../uploads/resumes/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    foreach ($uploadedDocs as $docKey => $doc) {
+        $storedName = $userId . '_' . $app['job_id'] . '_' . $docKey . '_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $doc['ext'];
+        if (move_uploaded_file($doc['tmp'], $uploadDir . $storedName)) {
+            $existing = $pdo->prepare("SELECT id, stored_name FROM resumes WHERE application_id = ? AND document_type = ?");
+            $existing->execute([$appId, $docKey]);
+            $oldDoc = $existing->fetch();
+            if ($oldDoc) {
+                if (file_exists($uploadDir . $oldDoc['stored_name'])) {
+                    @unlink($uploadDir . $oldDoc['stored_name']);
+                }
+                $pdo->prepare("
+                    UPDATE resumes 
+                    SET original_name = ?, stored_name = ?, file_size = ?, mime_type = ?, uploaded_at = NOW() 
+                    WHERE id = ?
+                ")->execute([$doc['original'], $storedName, $doc['size'], $doc['mime'], $oldDoc['id']]);
+            } else {
+                $pdo->prepare("
+                    INSERT INTO resumes (application_id, user_id, document_type, original_name, stored_name, file_size, mime_type)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ")->execute([$appId, $userId, $docKey, $doc['original'], $storedName, $doc['size'], $doc['mime']]);
+            }
+        }
+    }
+
+    echo json_encode(['success' => true, 'message' => 'Documents updated successfully.']);
     exit;
 }
 

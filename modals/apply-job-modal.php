@@ -92,26 +92,108 @@
                         <textarea class="form-control" id="appExperience" rows="3" placeholder="e.g. Intern at ABC Corp (2024-2025) or N/A if none" required></textarea>
                     </div>
 
-                    <!-- ── Section: Resume / CV Upload ── -->
-                    <h6 class="fw-bold text-primary border-bottom pb-2 mb-3 mt-4">
-                        <i class="bi bi-paperclip me-1"></i>Resume / CV
-                    </h6>
-                    <div class="mb-3">
-                        <label class="form-label" for="appResume">
-                            Upload Resume <span class="text-danger">*</span>
-                        </label>
-                        <input type="file" class="form-control" id="appResume" name="resume"
-                               accept=".pdf,.doc,.docx" required>
-                        <div class="form-text">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Accepted formats: PDF, DOC, DOCX &mdash; Max size: 5 MB
+                    <!-- ── Section: Documents & Requirements ── -->
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3 mt-4">
+                        <h6 class="fw-bold text-primary mb-0">
+                            <i class="bi bi-paperclip me-1"></i>Required Documents <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-2">All 5 Required</span>
+                        </h6>
+                        <span class="text-muted small">Max 5 MB per document</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- 1. Resume / CV (Mandatory) -->
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold" for="appResume">
+                                <i class="bi bi-file-earmark-person me-1 text-primary"></i>Resume / Curriculum Vitae <span class="text-danger">*</span>
+                            </label>
+                            <input type="file" class="form-control" id="appResume" name="resume"
+                                   accept=".pdf,.doc,.docx" required>
+                            <div class="form-text">
+                                PDF, DOC, DOCX &bull; <strong class="text-danger">Required</strong>
+                            </div>
+                            <div id="resumeFileInfo" class="mt-2 d-none">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                    <i class="bi bi-file-earmark-check me-1"></i>
+                                    <span id="resumeFileName"></span>
+                                    <span id="resumeFileSize" class="ms-1 text-muted"></span>
+                                </span>
+                            </div>
                         </div>
-                        <div id="resumeFileInfo" class="mt-2 d-none">
-                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-                                <i class="bi bi-file-earmark-check me-1"></i>
-                                <span id="resumeFileName"></span>
-                                <span id="resumeFileSize" class="ms-1 text-muted"></span>
-                            </span>
+
+                        <!-- 2. Application Letter (Mandatory) -->
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold" for="appLetter">
+                                <i class="bi bi-envelope-paper me-1 text-primary"></i>Application Letter <span class="text-danger">*</span>
+                            </label>
+                            <input type="file" class="form-control" id="appLetter" name="application_letter"
+                                   accept=".pdf,.doc,.docx" required>
+                            <div class="form-text">
+                                PDF, DOC, DOCX &bull; <strong class="text-danger">Required</strong>
+                            </div>
+                            <div id="appLetterFileInfo" class="mt-2 d-none">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                    <i class="bi bi-file-earmark-check me-1"></i>
+                                    <span id="appLetterFileName"></span>
+                                    <span id="appLetterFileSize" class="ms-1 text-muted"></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 3. Personal Data Sheet (PDS) (Mandatory) -->
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold" for="appPds">
+                                <i class="bi bi-card-checklist me-1 text-primary"></i>Personal Data Sheet (PDS) <span class="text-danger">*</span>
+                            </label>
+                            <input type="file" class="form-control" id="appPds" name="pds"
+                                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+                            <div class="form-text">
+                                CS Form 212 &bull; PDF, Word, JPG, PNG &bull; <strong class="text-danger">Required</strong>
+                            </div>
+                            <div id="pdsFileInfo" class="mt-2 d-none">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                    <i class="bi bi-file-earmark-check me-1"></i>
+                                    <span id="pdsFileName"></span>
+                                    <span id="pdsFileSize" class="ms-1 text-muted"></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 4. CSC Eligibility (Mandatory) -->
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold" for="appCsc">
+                                <i class="bi bi-award me-1 text-primary"></i>Certificate of CSC Eligibility <span class="text-danger">*</span>
+                            </label>
+                            <input type="file" class="form-control" id="appCsc" name="csc_eligib"
+                                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+                            <div class="form-text">
+                                Career Service / PRC / RA 1080 &bull; PDF, JPG, PNG &bull; <strong class="text-danger">Required</strong>
+                            </div>
+                            <div id="cscFileInfo" class="mt-2 d-none">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                    <i class="bi bi-file-earmark-check me-1"></i>
+                                    <span id="cscFileName"></span>
+                                    <span id="cscFileSize" class="ms-1 text-muted"></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 5. Transcript of Records (TOR) (Mandatory) -->
+                        <div class="col-12">
+                            <label class="form-label fw-semibold" for="appTor">
+                                <i class="bi bi-journal-bookmark me-1 text-primary"></i>Transcript of Records (TOR) <span class="text-danger">*</span>
+                            </label>
+                            <input type="file" class="form-control" id="appTor" name="tor"
+                                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+                            <div class="form-text">
+                                Official College / Academic TOR &bull; PDF, Word, JPG, PNG &bull; <strong class="text-danger">Required</strong>
+                            </div>
+                            <div id="torFileInfo" class="mt-2 d-none">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                    <i class="bi bi-file-earmark-check me-1"></i>
+                                    <span id="torFileName"></span>
+                                    <span id="torFileSize" class="ms-1 text-muted"></span>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </form>

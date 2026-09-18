@@ -654,16 +654,73 @@ function viewAppDetails(appId) {
             interviewRow.style.display = "none";
         }
 
-        // ── Resume ──────────────────────────────────────────
-        const resumeRow = document.getElementById("viewAppResumeRow");
-        const resumeDiv = document.getElementById("viewAppResume");
-        if (res.resume && resumeDiv) {
-            resumeRow.style.display = "";
-            resumeDiv.innerHTML = `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-                <i class="bi bi-file-earmark-check me-1"></i>${res.resume.original_name}
-            </span>`;
-        } else if (resumeRow) {
-            resumeRow.style.display = "none";
+        // ── Documents & Requirements ─────────────────────────
+        const docsListEl  = document.getElementById("viewAppDocumentsList");
+        const docsCountEl = document.getElementById("viewAppDocsCount");
+        const docTypesConfig = [
+            { key: 'resume',             label: 'Resume / Curriculum Vitae',    icon: 'bi-file-earmark-person' },
+            { key: 'application_letter', label: 'Application Letter',           icon: 'bi-envelope-paper' },
+            { key: 'pds',                label: 'Personal Data Sheet (PDS)',    icon: 'bi-card-checklist' },
+            { key: 'csc_eligib',         label: 'Certificate of CSC Eligib.',  icon: 'bi-award' },
+            { key: 'tor',                label: 'Transcript of Records (TOR)',  icon: 'bi-journal-bookmark' },
+        ];
+
+        const docsMap = res.documents || {};
+        if (!docsMap.resume && res.resume) {
+            docsMap.resume = res.resume;
+        }
+
+        let attachedCount = 0;
+        if (docsListEl) {
+            let docsHtml = '';
+            docTypesConfig.forEach(cfg => {
+                const doc = docsMap[cfg.key];
+                if (doc) {
+                    attachedCount++;
+                    const sizeStr = doc.file_size ? (doc.file_size > 1024 * 1024 ? (doc.file_size / (1024 * 1024)).toFixed(2) + ' MB' : Math.round(doc.file_size / 1024) + ' KB') : '';
+                    const fileUrl = `../../uploads/resumes/${encodeURIComponent(doc.stored_name)}`;
+                    docsHtml += `
+                    <div class="col-12 col-md-6">
+                        <div class="border rounded-3 p-2 bg-light d-flex justify-content-between align-items-center h-100">
+                            <div class="d-flex align-items-center me-2 text-truncate">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle p-2 me-2 rounded-2">
+                                    <i class="bi ${cfg.icon} fs-6"></i>
+                                </span>
+                                <div class="text-truncate">
+                                    <div class="fw-semibold small text-truncate" title="${cfg.label}">${cfg.label}</div>
+                                    <div class="text-muted small text-truncate" style="font-size:0.75rem;" title="${doc.original_name}">
+                                        ${doc.original_name} ${sizeStr ? `(${sizeStr})` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <a href="${fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary text-nowrap flex-shrink-0" title="Open or Download document">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>View
+                            </a>
+                        </div>
+                    </div>`;
+                } else {
+                    docsHtml += `
+                    <div class="col-12 col-md-6">
+                        <div class="border border-dashed rounded-3 p-2 bg-white d-flex justify-content-between align-items-center h-100 opacity-75">
+                            <div class="d-flex align-items-center me-2 text-truncate">
+                                <span class="badge bg-secondary-subtle text-muted border border-secondary-subtle p-2 me-2 rounded-2">
+                                    <i class="bi ${cfg.icon} fs-6"></i>
+                                </span>
+                                <div class="text-truncate">
+                                    <div class="text-muted small text-truncate">${cfg.label}</div>
+                                    <div class="text-muted fst-italic small" style="font-size:0.72rem;">Not submitted</div>
+                                </div>
+                            </div>
+                            <span class="badge bg-light text-muted border small flex-shrink-0">None</span>
+                        </div>
+                    </div>`;
+                }
+            });
+            docsListEl.innerHTML = docsHtml;
+        }
+        if (docsCountEl) {
+            docsCountEl.textContent = `${attachedCount} Attached`;
+            docsCountEl.className = attachedCount > 0 ? "badge bg-primary-subtle text-primary border border-primary-subtle fw-medium" : "badge bg-light text-muted border fw-normal";
         }
 
         // ── Status History Timeline ──────────────────────────

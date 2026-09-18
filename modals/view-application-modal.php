@@ -66,10 +66,21 @@
                         </div>
                     </div>
 
-                    <!-- Resume -->
-                    <div class="col-12" id="viewAppResumeRow" style="display:none;">
-                        <h6 class="fw-bold text-primary border-bottom pb-2">Resume / CV</h6>
-                        <div id="viewAppResume"></div>
+                    <!-- Uploaded Documents & Requirements -->
+                    <div class="col-12" id="viewAppDocumentsSection">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-paperclip me-1"></i>Applicant Documents &amp; Requirements</span>
+                            <span class="badge bg-light text-dark border fw-normal" id="viewAppDocsCount">0 Attached</span>
+                        </h6>
+                        <!-- Legacy containers preserved for backwards compatibility -->
+                        <div id="viewAppResumeRow" style="display:none;">
+                            <div id="viewAppResume"></div>
+                        </div>
+                        <div class="row g-2" id="viewAppDocumentsList">
+                            <div class="col-12 text-muted small py-2">
+                                <i class="bi bi-hourglass-split me-1"></i>Loading documents…
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Status History -->

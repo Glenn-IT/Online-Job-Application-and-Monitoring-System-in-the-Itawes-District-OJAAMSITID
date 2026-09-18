@@ -232,19 +232,21 @@ INSERT INTO activity_logs (action, status, performed_by, created_at) VALUES
 ('Application of Carlos Reyes marked as Rejected',                         'Rejected', 1, '2026-03-20 11:20:00');
 
 -- ============================================================
--- TABLE: resumes
--- Stores uploaded resume/CV files linked to applications.
+-- TABLE: resumes (Application Documents)
+-- Stores uploaded resume/CV, application letter, PDS, CSC eligib, TOR files linked to applications.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS resumes (
   id              INT UNSIGNED  NOT NULL AUTO_INCREMENT,
   application_id  INT UNSIGNED  NOT NULL,
   user_id         INT UNSIGNED  NOT NULL,
+  document_type   VARCHAR(50)   NOT NULL DEFAULT 'resume', -- 'resume', 'application_letter', 'pds', 'csc_eligib', 'tor'
   original_name   VARCHAR(255)  NOT NULL,
   stored_name     VARCHAR(255)  NOT NULL,
   file_size       INT UNSIGNED  NOT NULL,
   mime_type       VARCHAR(100)  NOT NULL,
   uploaded_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
+  INDEX idx_resumes_app_doc (application_id, document_type),
   CONSTRAINT fk_resumes_application FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE,
   CONSTRAINT fk_resumes_user        FOREIGN KEY (user_id)        REFERENCES users(id)        ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
