@@ -33,14 +33,42 @@ Before starting the defense presentation, prepare your presentation workstation:
 1. **Browser Setup**:
    * **Window 1 (Main Browser):** Logged in as **Staff** or **Admin**.
    * **Window 2 (Incognito / Private Window):** Ready for the **Jobseeker** live demo. This eliminates logging in and out between role transitions.
-2. **Account Credentials**:
-   * **Admin Account:** `admin@ojams.gov.ph` (Full system governance and report exports)
-   * **Staff Account:** `staff@ojams.gov.ph` (HR officer role: job posting, dossier review, interview scheduling)
-   * **Test Applicant:** Pre-registered account or fresh registration.
-3. **Database Seed Data**:
-   * Ensure [config/database.sql](file:///C:/xampp/htdocs/OJAMS/config/database.sql) has at least 3–4 open jobs across categories (*Full-time, Part-time, Contract*) so the discovery page looks active and populated.
-4. **Sample Documents Ready**:
-   * Keep a folder on your desktop containing sample PDF/DOC test files named `Sample_Resume.pdf`, `Sample_Application_Letter.pdf`, `Sample_PDS_CSForm212.pdf`, `Sample_CSC_Eligibility.pdf`, and `Sample_TOR.pdf`.
+2. **Standard Accounts**:
+   * **Admin Account:** `admin@ojams.com` | Password: `password123`
+   * **All 10 Sample Jobseekers:** Password is uniform: `password123`
+3. **Database Seed Script**:
+   * Available at [`scripts/seed_demo_data.php`](file:///C:/xampp/htdocs/OJAMS/scripts/seed_demo_data.php). Run via `php scripts/seed_demo_data.php` at any time to re-populate fresh demo data.
+
+### 👥 The 10 Seeded Jobseekers & Live Applications
+All jobseekers are pre-configured with realistic Itawes District profiles, legal civil service ages (18+), and complete 5-document dossiers in [`uploads/resumes/`](file:///C:/xampp/htdocs/OJAMS/uploads/resumes/):
+
+| # | Applicant Name | Email (`password123`) | Location | Applied Position | Status |
+| :- | :--- | :--- | :--- | :--- | :--- |
+| 1 | **Maria Lourdes Santos** | `maria.santos@gmail.com` | Piat | Administrative Aide IV | **Approved** (Interview: Oct 5, 9:30 AM) |
+| 2 | **Juan Carlos Dela Cruz** | `juan.delacruz@gmail.com` | Piat | Municipal IT Support | **Approved** (Interview: Oct 6, 2:00 PM) |
+| 3 | **Carlos Miguel Reyes** | `carlos.reyes@gmail.com` | Tuao | Revenue Collection Clerk | **Pending** (Ready for live review) |
+| 4 | **Ana Patricia Garcia** | `ana.garcia@gmail.com` | Solana | Agricultural Technologist | **Pending** (Ready for live review) |
+| 5 | **Pedro Jose Mendoza** | `pedro.mendoza@gmail.com` | Piat | Disaster Risk Reduction Officer | **Approved** (Interview: Oct 8, 10:00 AM) |
+| 6 | **Elena Marie Torres** | `elena.torres@gmail.com` | Piat | Rural Health Midwife II | **Pending** (Ready for live review) |
+| 7 | **Mark Anthony Bautista** | `mark.bautista@gmail.com` | Tuao | Community Tourism Coordinator | **Approved** (Interview: Oct 9, 11:00 AM) |
+| 8 | **Grace Anne Aquino** | `grace.aquino@gmail.com` | Piat | Data Encoder (Closed Job) | **Rejected** (Historical record) |
+| 9 | **Christian Paul Ramos** | `christian.ramos@gmail.com` | Sto. Niño | Engineering Aide (Closed Job) | **Approved** (Appointed / Archived) |
+| 10 | **Jessica Mae Flores** | `jessica.flores@gmail.com` | Tuao | Environmental Inspector (Closed) | **Rejected** (Historical record) |
+
+### 💼 The 10 Seeded Jobs (7 Open & 3 Closed)
+
+| # | Job Title | Office / Entity | Type | Location | Status | Closing Date |
+| :- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | **Administrative Aide IV** | LGU Piat | Full-time | Piat | **Open** | Nov 30, 2026 |
+| 2 | **Municipal IT Support** | MIS - LGU Piat | Full-time | Piat | **Open** | Dec 15, 2026 |
+| 3 | **Revenue Collection Clerk II** | Municipal Treasury | Contract | Tuao | **Open** | Nov 15, 2026 |
+| 4 | **Agricultural Technologist** | Agriculture Office | Full-time | Solana | **Open** | Nov 20, 2026 |
+| 5 | **Disaster Risk Reduction Aide** | MDRRMO Piat | Full-time | Piat | **Open** | Nov 25, 2026 |
+| 6 | **Rural Health Midwife II** | Rural Health Unit | Full-time | Tuao | **Open** | Dec 05, 2026 |
+| 7 | **Community Tourism Coordinator** | Tourism Council | Contract | Piat | **Open** | Nov 10, 2026 |
+| 8 | **Data Encoder / Civil Registry** | Civil Registrar | Part-time | Piat | **Closed** | Aug 31, 2026 |
+| 9 | **Engineering Aide / CAD** | Engineering Office | Full-time | Solana | **Closed** | Aug 15, 2026 |
+| 10 | **Environmental Inspector** | MENRO Tuao | Contract | Tuao | **Closed** | Sep 01, 2026 |
 
 ---
 

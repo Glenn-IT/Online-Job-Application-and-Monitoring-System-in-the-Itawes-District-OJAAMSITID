@@ -211,6 +211,18 @@ Use this matrix to identify all connected files whenever modifying a feature:
 
 ---
 
+### 3.8 Demonstration Tools, Scripts & Capstone Presentation Guides
+*Responsibilities: Capstone defense presentation flows, demo data generators, applicant seed records, and evaluation scripts.*
+
+| Component / Layer | Connected Files |
+| :--- | :--- |
+| **Capstone Walkthrough Guide** | `docs/CAPSTONE-PRESENTATION-WALKTHROUGH.md` |
+| **Data Seeder Script** | `scripts/seed_demo_data.php` (Populates 10 users, 10 open/closed jobs, applications, and all 5 mandatory civil service documents) |
+| **Reference Tables & Accounts** | `docs/CAPSTONE-PRESENTATION-WALKTHROUGH.md` (Table of 10 users, locations, applications, credentials, and job status matrix) |
+| **Uploads Directory** | `uploads/resumes/demo_civil_service_doc.pdf` |
+
+---
+
 ## 4. Standard Request/Response & Code Patterns
 
 ### 4.1 JSON API Response Format
