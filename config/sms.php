@@ -136,3 +136,29 @@ function sendApplicationStatusSms(string $phone, string $applicantName, string $
 
     return sendSms($phone, $message);
 }
+
+/**
+ * Sends SMS notification when Admin or Staff requests missing documents or an application update
+ */
+function sendMissingDocsNoticeSms(string $phone, string $applicantName, string $jobTitle, string $company, string $messageText = '', array $missingDocs = []): bool {
+    if (empty(trim($phone))) {
+        return false;
+    }
+
+    $docsSummary = '';
+    if (!empty($missingDocs)) {
+        $docsSummary = ' Required: ' . implode(', ', $missingDocs) . '.';
+    }
+
+    $cleanCustom = '';
+    if (!empty($messageText)) {
+        $cleanCustom = ' Note: ' . trim(preg_replace("/\s+/", " ", $messageText));
+        if (strlen($cleanCustom) > 120) {
+            $cleanCustom = substr($cleanCustom, 0, 117) . '...';
+        }
+    }
+
+    $sms = "OJAMS Notice: Hi {$applicantName}, your application for {$jobTitle} at {$company} requires document updates.{$docsSummary}{$cleanCustom} Please log in to OJAMS to update your files.";
+
+    return sendSms($phone, $sms);
+}

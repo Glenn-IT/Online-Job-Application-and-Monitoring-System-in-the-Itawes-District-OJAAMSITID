@@ -81,10 +81,17 @@
 
                     <!-- Uploaded Documents & Requirements -->
                     <div class="col-12" id="viewAppDocumentsSection">
-                        <h6 class="fw-bold text-primary border-bottom pb-2 d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-paperclip me-1"></i>Applicant Documents &amp; Requirements</span>
-                            <span class="badge bg-light text-dark border fw-normal" id="viewAppDocsCount">0 Attached</span>
-                        </h6>
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2 flex-wrap gap-2">
+                            <h6 class="fw-bold text-primary mb-0">
+                                <i class="bi bi-paperclip me-1"></i>Applicant Documents &amp; Requirements
+                            </h6>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-light text-dark border fw-normal" id="viewAppDocsCount">0 Attached</span>
+                                <button type="button" class="btn btn-sm btn-outline-warning" id="viewAppRequestDocsBtn" onclick="openMessageModalFromDetails()" title="Message Applicant / Request Missing Documents">
+                                    <i class="bi bi-chat-left-dots me-1"></i>Request Docs
+                                </button>
+                            </div>
+                        </div>
                         <!-- Legacy containers preserved for backwards compatibility -->
                         <div id="viewAppResumeRow" style="display:none;">
                             <div id="viewAppResume"></div>

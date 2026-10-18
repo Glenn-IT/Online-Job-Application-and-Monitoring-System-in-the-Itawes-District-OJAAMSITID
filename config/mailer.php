@@ -272,3 +272,63 @@ HTML;
     $html = getEmailTemplate("Staff Account Approved", $content, "Account Active", "#16a34a");
     return sendEmail($toEmail, $staffName, $subject, $html);
 }
+
+/**
+ * Sends notification when an Admin or Staff messages an applicant regarding missing documents or updates
+ */
+function sendMissingDocsNoticeEmail(string $toEmail, string $applicantName, string $jobTitle, string $company, string $subject, string $message, array $missingDocs = []): bool {
+    $mailSubject = !empty(trim($subject)) ? trim($subject) : "Action Required: Missing Documents for {$jobTitle}";
+    $portalUrl   = BASE_URL . '/pages/user/my-applications.php';
+
+    $missingSection = '';
+    if (!empty($missingDocs)) {
+        $docListItems = '';
+        foreach ($missingDocs as $docName) {
+            $docListItems .= '<li style="margin-bottom:4px; font-weight:600; color:#92400e;">' . htmlspecialchars($docName) . '</li>';
+        }
+        $missingSection = <<<HTML
+        <div style="background-color:#fffbeb; border-left:4px solid #d97706; padding:15px; margin:20px 0; border-radius:6px; border:1px solid #fde68a;">
+            <h4 style="margin:0 0 8px 0; color:#b45309; font-size:15px;">
+                ⚠️ Required Documents Needed:
+            </h4>
+            <p style="margin:0 0 8px 0; color:#92400e; font-size:13px;">
+                Our recruitment officers identified that the following document(s) are missing, incomplete, or require an update:
+            </p>
+            <ul style="margin:0; padding-left:22px; font-size:14px;">
+                {$docListItems}
+            </ul>
+        </div>
+HTML;
+    }
+
+    $formattedMessage = nl2br(htmlspecialchars($message));
+    $instructionsSection = <<<HTML
+    <div style="background-color:#f8fafc; border-left:4px solid #4f46e5; padding:16px 18px; margin:20px 0; border-radius:6px; border:1px solid #e2e8f0;">
+        <h4 style="margin:0 0 6px 0; color:#1e1b4b; font-size:14px; font-weight:700;">
+            Message from Recruitment Team:
+        </h4>
+        <p style="margin:0; color:#334155; font-size:14px; line-height:1.6;">
+            {$formattedMessage}
+        </p>
+    </div>
+HTML;
+
+    $content = <<<HTML
+    <p>Dear <strong>{$applicantName}</strong>,</p>
+    <p>We are contacting you regarding your application for the position of <strong>{$jobTitle}</strong> at <strong>{$company}</strong>.</p>
+    
+    {$missingSection}
+    {$instructionsSection}
+
+    <p style="color:#475569; font-size:14px;">
+        Please log in to your OJAMS applicant portal as soon as possible and upload your updated documents to avoid delays in your application review.
+    </p>
+
+    <div style="text-align:center; margin:30px 0 10px 0;">
+        <a href="{$portalUrl}" style="background-color:#d97706; color:#ffffff; padding:12px 28px; font-weight:700; text-decoration:none; border-radius:8px; display:inline-block;">Update My Documents</a>
+    </div>
+HTML;
+
+    $html = getEmailTemplate("Document Update Notice", $content, "Action Required", "#d97706");
+    return sendEmail($toEmail, $applicantName, $mailSubject, $html);
+}

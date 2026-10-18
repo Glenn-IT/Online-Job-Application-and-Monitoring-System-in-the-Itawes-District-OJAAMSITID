@@ -495,6 +495,81 @@ if ($action === 'scheduleInterview') {
     exit;
 }
 
+// ── ACTION: notifyApplicant (admin or staff) ──────────────────
+if ($action === 'notifyApplicant') {
+    if (!isAdmin() && !isStaff()) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
+        exit;
+    }
+
+    $appId       = (int)($body['id'] ?? $body['app_id'] ?? 0);
+    $subject     = trim($body['subject'] ?? '');
+    $message     = trim($body['message'] ?? '');
+    $missingKeys = (array)($body['missing_docs'] ?? []);
+    $sendEmail   = !isset($body['send_email']) || (bool)$body['send_email'];
+    $sendSms     = !isset($body['send_sms'])   || (bool)$body['send_sms'];
+
+    if ($appId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid application ID.']);
+        exit;
+    }
+
+    if (empty($message)) {
+        echo json_encode(['success' => false, 'message' => 'Please provide instructions or a message for the applicant.']);
+        exit;
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT a.id, a.full_name, a.email, a.contact, a.job_id, j.title, j.company
+        FROM applications a
+        JOIN jobs j ON j.id = a.job_id
+        WHERE a.id = ?
+    ");
+    $stmt->execute([$appId]);
+    $app = $stmt->fetch();
+    if (!$app) {
+        echo json_encode(['success' => false, 'message' => 'Application not found.']);
+        exit;
+    }
+
+    // Map doc keys to readable labels if keys were passed
+    $docNames = [];
+    foreach ($missingKeys as $key) {
+        if (isset($documentDefs[$key])) {
+            $docNames[] = $documentDefs[$key]['label'];
+        } elseif (!empty(trim($key))) {
+            $docNames[] = trim($key);
+        }
+    }
+
+    $emailSent = false;
+    $smsSent   = false;
+
+    if ($sendEmail && !empty($app['email'])) {
+        $mailSubject = !empty($subject) ? $subject : "Action Required: Missing Documents for {$app['title']}";
+        $emailSent = sendMissingDocsNoticeEmail($app['email'], $app['full_name'], $app['title'], $app['company'], $mailSubject, $message, $docNames);
+    }
+
+    if ($sendSms && !empty($app['contact'])) {
+        $smsSent = sendMissingDocsNoticeSms($app['contact'], $app['full_name'], $app['title'], $app['company'], $message, $docNames);
+    }
+
+    // Activity log
+    $docsInfo = !empty($docNames) ? ' (' . implode(', ', $docNames) . ')' : '';
+    logActivity($pdo, "Sent document notice to {$app['full_name']}{$docsInfo} for \"{$app['title']}\"", 'Notice', (int)$app['job_id'], $appId);
+
+    $channels = [];
+    if ($emailSent) $channels[] = "Email";
+    if ($smsSent)   $channels[] = "SMS";
+    $channelText = !empty($channels) ? " via " . implode(" & ", $channels) : "";
+
+    echo json_encode([
+        'success' => true,
+        'message' => "Notice sent to {$app['full_name']}{$channelText} successfully."
+    ]);
+    exit;
+}
+
 // ── ACTION: getDetails (admin, staff, or applicant) ─────────
 if ($action === 'getDetails') {
     $appId = (int)($body['id'] ?? 0);

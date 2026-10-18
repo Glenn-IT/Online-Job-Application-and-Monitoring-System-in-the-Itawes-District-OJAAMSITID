@@ -124,12 +124,12 @@ Use this matrix to identify all connected files whenever modifying a feature:
 
 | Component / Layer | Connected Files |
 | :--- | :--- |
-| **Backend Handler** | `handlers/applications.php` (Actions: `apply`, `cancel`, `updateStatus`, `scheduleInterview`, `getDetails`, `updateDocuments`, `bulkUpdateStatus`, `bulkDelete`), `handlers/saved-jobs.php` (`save_draft`, `get_draft`) |
+| **Backend Handler** | `handlers/applications.php` (Actions: `apply`, `cancel`, `updateStatus`, `scheduleInterview`, `notifyApplicant`, `getDetails`, `updateDocuments`, `bulkUpdateStatus`, `bulkDelete`), `handlers/saved-jobs.php` (`save_draft`, `get_draft`) |
 | **User Pages** | `pages/user/my-applications.php`, `pages/user/job-detail.php`, `pages/user/browse-jobs.php`, `pages/user/saved-jobs.php` |
 | **Admin & Staff Pages** | `pages/admin/applications.php`, `pages/staff/applications.php`, `pages/admin/reports.php`, `pages/admin/dashboard.php`, `pages/staff/dashboard.php` |
-| **Modals** | `modals/apply-job-modal.php` (includes "Save as Draft" button & document upload previews), `modals/view-application-modal.php`, `modals/schedule-interview-modal.php`, `modals/reject-application-modal.php` |
+| **Modals** | `modals/apply-job-modal.php` (includes "Save as Draft" button & document upload previews), `modals/view-application-modal.php`, `modals/schedule-interview-modal.php`, `modals/reject-application-modal.php`, `modals/message-applicant-modal.php` |
 | **Components** | `components/application-row.php`, `components/stats-card.php` |
-| **Notifications Bridge** | `config/mailer.php` (Email notifications), `config/sms.php` (SMS alerts) |
+| **Notifications Bridge** | `config/mailer.php` (Email notifications: `sendMissingDocsNoticeEmail`, `sendApplicationStatusEmail`), `config/sms.php` (SMS alerts: `sendMissingDocsNoticeSms`, `sendApplicationStatusSms`) |
 | **Upload Directory** | `uploads/resumes/` |
 | **Database Tables** | `applications` (`interview_date`, `interview_notes`, `rejection_reason`), `resumes` (stores documents with `document_type`: `resume`, `application_letter`, `pds`, `csc_eligib`, `tor`, `diploma`), `saved_jobs` (`draft_data`), `application_status_history`, `activity_logs` |
 
@@ -150,6 +150,13 @@ Use this matrix to identify all connected files whenever modifying a feature:
      - Personalized Email via PHPMailer (`sendApplicationStatusEmail` in `config/mailer.php`) with prominent feedback callout box.
      - Personalized SMS via PhilSMS (`sendApplicationStatusSms` in `config/sms.php`) including reason summary.
    - The rejection reason is displayed in applicant's portal `pages/user/my-applications.php` and in `modals/view-application-modal.php`.
+7. **Applicant Notice & Missing Documents Messaging Architecture (Email & SMS)**:
+   - Admin and Staff can message applicants directly regarding missing documents, illegible/unclear scans, or requesting application updates via `modals/message-applicant-modal.php` triggered from table row button ("Notice") or directly inside the document viewer (`modals/view-application-modal.php` -> "Request Docs").
+   - The modal provides quick templates ("Missing Required Documents", "Document Resubmission / File Unreadable", "General Application Update", "Custom Message") and checkboxes for the 6 required documents (`resume`, `application_letter`, `pds`, `csc_eligib`, `tor`, `diploma`), with auto-detection of missing files from `viewAppDetails`.
+   - Dispatches dual-channel notifications:
+     - Branded Gmail notification (`sendMissingDocsNoticeEmail` in `config/mailer.php`) listing requested documents and direct button CTA to `my-applications.php`.
+     - PhilSMS alert (`sendMissingDocsNoticeSms` in `config/sms.php`) prompting the candidate to update credentials.
+   - Action logged in `activity_logs` with document summary.
 
 ---
 
@@ -174,14 +181,14 @@ Use this matrix to identify all connected files whenever modifying a feature:
 ---
 
 ### 3.5 Communications: Gmail SMTP Mailer & SMS Service
-*Responsibilities: Dispatching transactional emails and SMS notifications for application alerts, password resets, interview invites.*
+*Responsibilities: Dispatching transactional emails and SMS notifications for application alerts, password resets, interview invites, and applicant notices.*
 
 | Component / Layer | Connected Files |
 | :--- | :--- |
-| **Mailer Engine** | `config/mailer.php` (PHPMailer wrapper, HTML templates, Gmail SMTP config) |
-| **SMS Engine** | `config/sms.php` (SMS gateway integration, template generator) |
+| **Mailer Engine** | `config/mailer.php` (PHPMailer wrapper, HTML templates, Gmail SMTP config: `sendMissingDocsNoticeEmail`, `sendApplicationStatusEmail`, `sendApplicationSubmittedEmail`, `sendStaffAccountApprovedEmail`, `sendPasswordResetEmail`) |
+| **SMS Engine** | `config/sms.php` (PhilSMS gateway integration: `sendMissingDocsNoticeSms`, `sendApplicationStatusSms`, `sendApplicationSubmittedSms`) |
 | **Configuration** | `.env`, `.env.example`, `config/config.php` |
-| **Call Sites** | `handlers/applications.php` (Application submit, Status change, Interview scheduled), `forgot-password.php` (Reset token link) |
+| **Call Sites** | `handlers/applications.php` (Application submit, Status change, Interview scheduled, Notice / Missing docs), `forgot-password.php` (Reset token link) |
 
 *Synchronization Check when updating Notification hooks:*
 1. Ensure both Email (`config/mailer.php`) and SMS (`config/sms.php`) triggers receive correct variables (e.g., `$applicantEmail`, `$applicantName`, `$jobTitle`, `$interviewDate`, `$interviewNotes`).

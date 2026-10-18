@@ -324,6 +324,18 @@ include $basePath . "layouts/navbar-staff.php";
                                                 <i class="bi bi-pencil-square"></i>
                                             </button>
                                         <?php endif; ?>
+                                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                            onclick="openMessageApplicantModal(<?= htmlspecialchars(json_encode([
+                                                'id' => (int)$app['id'],
+                                                'full_name' => $app['full_name'],
+                                                'job_title' => $app['job_title'],
+                                                'company' => $app['company'],
+                                                'email' => $app['email'] ?? '',
+                                                'contact' => $app['contact'] ?? '',
+                                                'status' => $app['status']
+                                            ]), ENT_QUOTES, 'UTF-8') ?>)" title="Message Applicant / Request Documents">
+                                            <i class="bi bi-chat-left-dots"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -361,6 +373,7 @@ include $basePath . "layouts/navbar-staff.php";
 include $basePath . "modals/view-application-modal.php";
 include $basePath . "modals/schedule-interview-modal.php";
 include $basePath . "modals/reject-application-modal.php";
+include $basePath . "modals/message-applicant-modal.php";
 ?>
 
 <script>
@@ -739,6 +752,12 @@ function viewApplicationDetails(appId) {
             });
             docsListEl.innerHTML = docsHtml;
         }
+
+        // Save application details and missing document keys for the message modal
+        window.currentApplicationDetails = app;
+        const missingKeys = docTypesConfig.filter(cfg => !docsMap[cfg.key]).map(cfg => cfg.key);
+        window.currentMissingDocKeys = missingKeys;
+
         if (docsCountEl) {
             docsCountEl.textContent = `${attachedCount} Attached`;
             docsCountEl.className = attachedCount > 0 ? "badge bg-primary-subtle text-primary border border-primary-subtle fw-medium" : "badge bg-light text-muted border fw-normal";
@@ -785,6 +804,140 @@ function viewApplicationDetails(appId) {
     .catch(() => {
         if (histEl) histEl.innerHTML = '<p class="text-danger small">Failed to load details.</p>';
         showToast("Failed to load application details.", "danger");
+    });
+}
+
+// ── Message Applicant & Request Documents ────────────────────
+function openMessageApplicantModal(data, preselectedDocs = []) {
+    document.getElementById('messageAppId').value = data.id;
+    document.getElementById('messageApplicantName').textContent = data.full_name || 'Applicant';
+    document.getElementById('messageJobTitle').textContent = (data.job_title || '') + (data.company ? ' at ' + data.company : '');
+    
+    const statusEl = document.getElementById('messageAppStatus');
+    if (statusEl) {
+        statusEl.textContent = data.status || 'Pending';
+        const cls = data.status === 'Approved' ? 'bg-success' : data.status === 'Rejected' ? 'bg-danger' : 'bg-warning text-dark';
+        statusEl.className = 'badge ' + cls;
+    }
+
+    const emailEl = document.getElementById('messageApplicantEmail');
+    if (emailEl) emailEl.textContent = data.email || 'No email provided';
+    const emailCheck = document.getElementById('messageSendEmail');
+    if (emailCheck) {
+        emailCheck.disabled = !data.email;
+        emailCheck.checked = !!data.email;
+    }
+
+    const contactEl = document.getElementById('messageApplicantContact');
+    if (contactEl) contactEl.textContent = data.contact || 'No phone provided';
+    const smsCheck = document.getElementById('messageSendSms');
+    if (smsCheck) {
+        smsCheck.disabled = !data.contact;
+        smsCheck.checked = !!data.contact;
+    }
+
+    // Reset document checkboxes and mark preselected ones
+    document.querySelectorAll('.msg-doc-check').forEach(cb => {
+        cb.checked = Array.isArray(preselectedDocs) && preselectedDocs.includes(cb.value);
+    });
+
+    const templateSelect = document.getElementById('messageTemplateSelect');
+    if (templateSelect) {
+        templateSelect.value = (preselectedDocs && preselectedDocs.length > 0) ? 'missing_docs' : 'missing_docs';
+        onMessageTemplateChange(templateSelect.value);
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('messageApplicantModal'));
+    modal.show();
+}
+
+function openMessageModalFromDetails() {
+    if (!window.currentApplicationDetails) return;
+    const viewModalEl = document.getElementById('viewApplicationModal');
+    if (viewModalEl) {
+        const viewModal = bootstrap.Modal.getInstance(viewModalEl);
+        if (viewModal) viewModal.hide();
+    }
+    setTimeout(() => {
+        openMessageApplicantModal(window.currentApplicationDetails, window.currentMissingDocKeys || []);
+    }, 350);
+}
+
+function onMessageTemplateChange(templateKey) {
+    const subjectInput = document.getElementById('messageSubject');
+    const bodyTextarea = document.getElementById('messageBody');
+    if (!subjectInput || !bodyTextarea) return;
+
+    switch (templateKey) {
+        case 'missing_docs':
+            subjectInput.value = "Action Required: Missing Application Documents";
+            bodyTextarea.value = "Good day. Upon reviewing your submitted job application, we noticed that one or more required documents are missing or incomplete. Please see the requested document checklist above and log in to your OJAMS account to upload the required credentials so we can proceed with your evaluation.";
+            break;
+        case 'unclear_docs':
+            subjectInput.value = "Action Required: Document Resubmission / Clarification";
+            bodyTextarea.value = "Good day. During the credential verification process, our recruitment team found that one or more of your uploaded files are unreadable, expired, or incomplete. Please review the highlighted documents and re-upload clear scanned copies in PDF or image format on your applicant portal.";
+            break;
+        case 'general_update':
+            subjectInput.value = "Action Required: Application Update Needed";
+            bodyTextarea.value = "Good day. We are currently evaluating your job application and require an update regarding your credentials and contact information. Please log in to your OJAMS applicant portal to review and update your submission.";
+            break;
+        case 'custom':
+            subjectInput.value = "Notice Regarding Your Job Application";
+            bodyTextarea.value = "";
+            bodyTextarea.focus();
+            break;
+    }
+}
+
+function handleSendMessageSubmit(e) {
+    e.preventDefault();
+    const id = parseInt(document.getElementById('messageAppId').value);
+    const subject = document.getElementById('messageSubject').value.trim();
+    const message = document.getElementById('messageBody').value.trim();
+    const sendEmail = document.getElementById('messageSendEmail').checked;
+    const sendSms = document.getElementById('messageSendSms').checked;
+    const btn = document.getElementById('messageSubmitBtn');
+
+    if (!id || !message) {
+        showToast('Please enter instructions or a message for the applicant.', 'warning');
+        return;
+    }
+
+    if (!sendEmail && !sendSms) {
+        showToast('Please select at least one delivery channel (Email or SMS).', 'warning');
+        return;
+    }
+
+    const missingDocs = [...document.querySelectorAll('.msg-doc-check:checked')].map(cb => cb.value);
+
+    btnLoading(btn, true, 'Sending Notice…');
+    showLoadingModal();
+
+    fetch(APP_HANDLER_STAFF, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "notifyApplicant",
+            id: id,
+            subject: subject,
+            message: message,
+            missing_docs: missingDocs,
+            send_email: sendEmail,
+            send_sms: sendSms,
+            csrf_token: getCsrfToken()
+        })
+    })
+    .then(r => r.json())
+    .then(res => {
+        btnLoading(btn, false);
+        hideLoadingModal();
+        bootstrap.Modal.getInstance(document.getElementById('messageApplicantModal'))?.hide();
+        showToast(res.message, res.success ? "success" : "danger");
+    })
+    .catch(() => {
+        btnLoading(btn, false);
+        hideLoadingModal();
+        showToast("Failed to send notice.", "danger");
     });
 }
 </script>
