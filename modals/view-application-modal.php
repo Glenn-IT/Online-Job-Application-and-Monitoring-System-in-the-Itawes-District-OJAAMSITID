@@ -118,7 +118,12 @@
             </div>
 
             <!-- Footer -->
-            <div class="modal-footer">
+            <div class="modal-footer d-flex justify-content-between">
+                <div>
+                    <button type="button" class="btn btn-outline-warning" id="viewAppSetPendingBtn" style="display:none;" onclick="setAppPendingFromDetails()">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Set to Pending
+                    </button>
+                </div>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-lg me-1"></i>Close
                 </button>

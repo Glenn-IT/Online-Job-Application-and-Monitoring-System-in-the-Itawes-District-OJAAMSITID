@@ -394,7 +394,7 @@ if ($action === 'updateStatus') {
     $interviewNotes  = !empty($body['interview_notes']) ? trim($body['interview_notes']) : null;
     $rejectionReason = !empty($body['rejection_reason']) ? trim($body['rejection_reason']) : null;
 
-    if ($appId <= 0 || !in_array($status, ['Approved', 'Rejected'])) {
+    if ($appId <= 0 || !in_array($status, ['Approved', 'Rejected', 'Pending'])) {
         echo json_encode(['success' => false, 'message' => 'Invalid parameters.']);
         exit;
     }
@@ -418,6 +418,9 @@ if ($action === 'updateStatus') {
     if ($status === 'Approved') {
         $pdo->prepare("UPDATE applications SET status = ?, interview_date = ?, interview_notes = ?, rejection_reason = NULL WHERE id = ?")
             ->execute([$status, $interviewDate, $interviewNotes, $appId]);
+    } elseif ($status === 'Pending') {
+        $pdo->prepare("UPDATE applications SET status = 'Pending', interview_date = NULL, interview_notes = NULL, rejection_reason = NULL WHERE id = ?")
+            ->execute([$appId]);
     } else {
         $pdo->prepare("UPDATE applications SET status = ?, interview_date = NULL, interview_notes = NULL, rejection_reason = ? WHERE id = ?")
             ->execute([$status, $rejectionReason, $appId]);
@@ -432,6 +435,8 @@ if ($action === 'updateStatus') {
         $logMsg = !empty($interviewDate)
             ? "Application of {$app['full_name']} Approved with Interview scheduled on {$interviewDate}"
             : "Application of {$app['full_name']} Approved for \"{$app['title']}\"";
+    } elseif ($status === 'Pending') {
+        $logMsg = "Application of {$app['full_name']} reset to Pending for \"{$app['title']}\"";
     } else {
         $logMsg = !empty($rejectionReason)
             ? "Application of {$app['full_name']} Rejected: {$rejectionReason}"
@@ -449,7 +454,8 @@ if ($action === 'updateStatus') {
         sendApplicationStatusSms($app['contact'], $app['full_name'], $app['title'], $app['company'], $status, $interviewDate, $interviewNotes, $rejectionReason);
     }
 
-    echo json_encode(['success' => true, 'message' => "Application {$status}."]);
+    $resMsg = $status === 'Pending' ? "Application status reset to Pending review." : "Application {$status}.";
+    echo json_encode(['success' => true, 'message' => $resMsg]);
     exit;
 }
 
@@ -720,7 +726,7 @@ if ($action === 'bulkUpdateStatus') {
     $ids             = array_filter(array_map('intval', (array)($body['ids'] ?? [])));
     $status          = $body['status'] ?? '';
     $rejectionReason = !empty($body['rejection_reason']) ? trim($body['rejection_reason']) : null;
-    if (empty($ids) || !in_array($status, ['Approved', 'Rejected'], true)) {
+    if (empty($ids) || !in_array($status, ['Approved', 'Rejected', 'Pending'], true)) {
         echo json_encode(['success' => false, 'message' => 'Invalid parameters.']); exit;
     }
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
@@ -733,6 +739,9 @@ if ($action === 'bulkUpdateStatus') {
     if ($status === 'Approved') {
         $pdo->prepare("UPDATE applications SET status = ?, rejection_reason = NULL WHERE id IN ({$placeholders})")
             ->execute(array_merge([$status], array_values($ids)));
+    } elseif ($status === 'Pending') {
+        $pdo->prepare("UPDATE applications SET status = 'Pending', interview_date = NULL, interview_notes = NULL, rejection_reason = NULL WHERE id IN ({$placeholders})")
+            ->execute(array_values($ids));
     } else {
         $pdo->prepare("UPDATE applications SET status = ?, interview_date = NULL, interview_notes = NULL, rejection_reason = ? WHERE id IN ({$placeholders})")
             ->execute(array_merge([$status, $rejectionReason], array_values($ids)));

@@ -157,6 +157,12 @@ Use this matrix to identify all connected files whenever modifying a feature:
      - Branded Gmail notification (`sendMissingDocsNoticeEmail` in `config/mailer.php`) listing requested documents and direct button CTA to `my-applications.php`.
      - PhilSMS alert (`sendMissingDocsNoticeSms` in `config/sms.php`) prompting the candidate to update credentials.
    - Action logged in `activity_logs` with document summary.
+8. **Application Revert to Pending Architecture**:
+   - Admins and Staff can revert any reviewed application (`Approved` or `Rejected`) back to `Pending` directly from the Actions column (`setAppPending(id, name)`), from the application viewer modal (`#viewAppSetPendingBtn` -> `setAppPendingFromDetails()`), or via bulk selection (`bulkAppAction('Pending')` / `bulkUpdate('Pending')`).
+   - On submission, `handlers/applications.php` updates `applications.status = 'Pending'`, clears `interview_date = NULL, interview_notes = NULL, rejection_reason = NULL`, logs the transition in `application_status_history` and `activity_logs`, and dispatches:
+     - Email notification via PHPMailer (`sendApplicationStatusEmail` in `config/mailer.php`) informing the applicant that their application is back under review.
+     - SMS alert via PhilSMS (`sendApplicationStatusSms` in `config/sms.php`).
+   - Reverting to Pending re-enables candidate document modifications on `pages/user/my-applications.php`.
 
 ---
 

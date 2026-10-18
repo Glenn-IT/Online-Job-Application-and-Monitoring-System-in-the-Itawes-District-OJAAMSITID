@@ -198,6 +198,9 @@ include $basePath . "layouts/navbar-staff.php";
                     <button type="button" class="btn btn-sm btn-outline-danger disabled" id="bulkRejectBtn" onclick="bulkUpdate('Rejected')">
                         <i class="bi bi-x-circle me-1"></i>Reject Selected
                     </button>
+                    <button type="button" class="btn btn-sm btn-outline-warning disabled" id="bulkPendingBtn" onclick="bulkUpdate('Pending')">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Set Pending
+                    </button>
                 </div>
             </div>
 
@@ -324,7 +327,14 @@ include $basePath . "layouts/navbar-staff.php";
                                                 <i class="bi bi-pencil-square"></i>
                                             </button>
                                         <?php endif; ?>
-                                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                        <?php if ($app['status'] !== 'Pending'): ?>
+                                            <button type="button" class="btn btn-sm btn-outline-warning me-1"
+                                                onclick="setAppPending(<?= (int)$app['id'] ?>, <?= htmlspecialchars(json_encode($app['full_name']), ENT_QUOTES, 'UTF-8') ?>)"
+                                                title="Reset status to Pending">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                        <button type="button" class="btn btn-sm btn-outline-info"
                                             onclick="openMessageApplicantModal(<?= htmlspecialchars(json_encode([
                                                 'id' => (int)$app['id'],
                                                 'full_name' => $app['full_name'],
@@ -389,6 +399,7 @@ function updateBulkBtnState() {
     const hasChecked = checked.length > 0;
     document.getElementById('bulkApproveBtn')?.classList.toggle('disabled', !hasChecked);
     document.getElementById('bulkRejectBtn')?.classList.toggle('disabled', !hasChecked);
+    document.getElementById('bulkPendingBtn')?.classList.toggle('disabled', !hasChecked);
 }
 
 function openApproveModal(data) {
@@ -547,12 +558,15 @@ function handleRejectSubmit(e) {
 
 function updateAppStatus(appId, status) {
     const isApprove = status === 'Approved';
+    const isPending = status === 'Pending';
     showConfirmModal({
-        title: isApprove ? "Approve Application" : "Reject Application",
-        message: `Are you sure you want to mark this application as ${status}?`,
-        confirmBtnText: isApprove ? "Yes, Approve" : "Yes, Reject",
-        confirmBtnClass: isApprove ? "btn-success" : "btn-danger",
-        icon: isApprove ? "bi-check-circle-fill" : "bi-x-circle-fill",
+        title: isApprove ? "Approve Application" : (isPending ? "Reset Application to Pending" : "Reject Application"),
+        message: isPending 
+            ? "Are you sure you want to reset this application to <span class=\"badge bg-warning text-dark\">Pending</span> review? This will clear any scheduled interview or rejection feedback."
+            : `Are you sure you want to mark this application as ${status}?`,
+        confirmBtnText: isApprove ? "Yes, Approve" : (isPending ? "Yes, Set to Pending" : "Yes, Reject"),
+        confirmBtnClass: isApprove ? "btn-success" : (isPending ? "btn-warning text-dark" : "btn-danger"),
+        icon: isApprove ? "bi-check-circle-fill" : (isPending ? "bi-arrow-counterclockwise" : "bi-x-circle-fill"),
         onConfirm: () => {
             showLoadingModal();
             fetch(APP_HANDLER_STAFF, {
@@ -564,7 +578,7 @@ function updateAppStatus(appId, status) {
             .then(data => {
                 hideLoadingModal();
                 if (data.success) {
-                    showToast(`Application marked as ${status}!`, 'success');
+                    showToast(data.message, 'success');
                     setTimeout(() => location.reload(), 800);
                 } else {
                     showToast(data.message || 'Action failed.', 'danger');
@@ -578,16 +592,58 @@ function updateAppStatus(appId, status) {
     });
 }
 
+function setAppPending(id, applicantName = 'this applicant') {
+    const safeName = String(applicantName).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    showConfirmModal({
+        title: "Reset Status to Pending",
+        message: `Are you sure you want to reset the application of <strong>${safeName}</strong> back to <span class="badge bg-warning text-dark">Pending</span>?<br><small class="text-muted">This will reset any scheduled interview or rejection feedback and allow candidate re-evaluation.</small>`,
+        confirmBtnText: "Yes, Set to Pending",
+        confirmBtnClass: "btn-warning text-dark",
+        icon: "bi-arrow-counterclockwise",
+        onConfirm: () => {
+            showLoadingModal();
+            fetch(APP_HANDLER_STAFF, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "updateStatus", id: id, status: "Pending", csrf_token: getCsrfToken() })
+            })
+            .then(r => r.json())
+            .then(res => {
+                hideLoadingModal();
+                showToast(res.message, res.success ? "success" : "danger");
+                if (res.success) setTimeout(() => location.reload(), 800);
+            })
+            .catch(() => {
+                hideLoadingModal();
+                showToast("Request failed.", "danger");
+            });
+        }
+    });
+}
+
+function setAppPendingFromDetails() {
+    if (!window.currentApplicationDetails) return;
+    const viewModalEl = document.getElementById('viewApplicationModal');
+    if (viewModalEl) {
+        bootstrap.Modal.getInstance(viewModalEl)?.hide();
+    }
+    setTimeout(() => {
+        setAppPending(window.currentApplicationDetails.id, window.currentApplicationDetails.full_name);
+    }, 350);
+}
+
 function bulkUpdate(status) {
     const checked = Array.from(document.querySelectorAll('.app-checkbox:checked')).map(cb => parseInt(cb.value));
     if (checked.length === 0) return;
     const isApprove = status === 'Approved';
+    const isPending = status === 'Pending';
+    const label = isApprove ? 'approve' : (isPending ? 'reset to pending' : 'reject');
     showConfirmModal({
-        title: isApprove ? "Bulk Approve Applications" : "Bulk Reject Applications",
-        message: `Are you sure you want to mark ${checked.length} application(s) as ${status}?`,
-        confirmBtnText: isApprove ? "Yes, Approve Selected" : "Yes, Reject Selected",
-        confirmBtnClass: isApprove ? "btn-success" : "btn-danger",
-        icon: isApprove ? "bi-check-circle-fill" : "bi-x-circle-fill",
+        title: isApprove ? "Bulk Approve Applications" : (isPending ? "Bulk Reset to Pending" : "Bulk Reject Applications"),
+        message: `Are you sure you want to ${label} ${checked.length} application(s)?`,
+        confirmBtnText: isApprove ? "Yes, Approve Selected" : (isPending ? "Yes, Set to Pending" : "Yes, Reject Selected"),
+        confirmBtnClass: isApprove ? "btn-success" : (isPending ? "btn-warning text-dark" : "btn-danger"),
+        icon: isApprove ? "bi-check-circle-fill" : (isPending ? "bi-arrow-counterclockwise" : "bi-x-circle-fill"),
         onConfirm: () => {
             showLoadingModal();
             fetch(APP_HANDLER_STAFF, {
@@ -612,6 +668,7 @@ function bulkUpdate(status) {
         }
     });
 }
+
 
 function viewApplicationDetails(appId) {
     const histEl = document.getElementById("viewAppHistory");
@@ -653,6 +710,11 @@ function viewApplicationDetails(appId) {
             const cls = app.status === "Approved" ? "bg-success" : app.status === "Rejected" ? "bg-danger" : "bg-warning text-dark";
             statusEl.className = "badge " + cls;
             statusEl.textContent = app.status;
+        }
+
+        const pendingBtn = document.getElementById("viewAppSetPendingBtn");
+        if (pendingBtn) {
+            pendingBtn.style.display = app.status !== "Pending" ? "inline-block" : "none";
         }
 
         // ── Interview Schedule ──────────────────────────────

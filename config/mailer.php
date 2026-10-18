@@ -128,11 +128,14 @@ HTML;
  */
 function sendApplicationStatusEmail(string $toEmail, string $applicantName, string $jobTitle, string $company, string $status, ?string $interviewDate = null, ?string $interviewNotes = null, ?string $rejectionReason = null): bool {
     $isApproved = ($status === 'Approved');
-    $badgeText  = $isApproved ? 'Application Approved 🎉' : 'Application Status Update';
-    $badgeColor = $isApproved ? '#16a34a' : '#dc2626';
+    $isPending  = ($status === 'Pending');
+    $badgeText  = $isApproved ? 'Application Approved 🎉' : ($isPending ? 'Pending Review ⏳' : 'Application Status Update');
+    $badgeColor = $isApproved ? '#16a34a' : ($isPending ? '#d97706' : '#dc2626');
     $subject    = $isApproved
         ? "Congratulations! Your application for {$jobTitle} has been Approved"
-        : "Update regarding your application for {$jobTitle}";
+        : ($isPending
+            ? "Status Update: Your application for {$jobTitle} is Pending Review"
+            : "Update regarding your application for {$jobTitle}");
 
     $portalUrl = BASE_URL . '/pages/user/my-applications.php';
 
@@ -177,6 +180,20 @@ HTML;
         
         <div style="text-align:center; margin:30px 0 10px 0;">
             <a href="{$portalUrl}" style="background-color:#4f46e5; color:#ffffff; padding:12px 28px; font-weight:700; text-decoration:none; border-radius:8px; display:inline-block;">View My Applications</a>
+        </div>
+HTML;
+    } elseif ($isPending) {
+        $content = <<<HTML
+        <p>Dear <strong>{$applicantName}</strong>,</p>
+        <p>This is to notify you that your application for the position of <strong>{$jobTitle}</strong> at <strong>{$company}</strong> has been reset to <span style="color:#d97706; font-weight:700;">PENDING REVIEW</span>.</p>
+        
+        <div style="background-color:#fffbeb; border-left:4px solid #d97706; padding:15px; margin:20px 0; border-radius:6px; border:1px solid #fef3c7;">
+            <h4 style="margin:0 0 6px 0; color:#92400e; font-size:14px; font-weight:700;">Status Information:</h4>
+            <p style="margin:0; color:#78350f; font-size:14px;">Our recruitment team is re-evaluating candidate qualifications. You can review your submission and track your application status directly on your OJAMS portal.</p>
+        </div>
+
+        <div style="text-align:center; margin:30px 0 10px 0;">
+            <a href="{$portalUrl}" style="background-color:#d97706; color:#ffffff; padding:12px 28px; font-weight:700; text-decoration:none; border-radius:8px; display:inline-block;">View My Applications</a>
         </div>
 HTML;
     } else {

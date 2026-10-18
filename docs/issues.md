@@ -1,32 +1,35 @@
 # OJAMS Issues & Feature Tracking
 
-## [RESOLVED] Missing Documents & Applicant Notice Messaging Feature (Admin & Staff)
+## [RESOLVED] Add Pending Function on Action (Admin & Staff)
 
 ### Request:
-Admin side on `http://localhost/OJAMS/pages/admin/applications.php`:
-> "can you add a feature that the admin can message the applicant if he is missing a Required documents or needed an update add a SMS function and gmail on that ok"
+`http://localhost/OJAMS/pages/admin/applications.php`:
+> "can you adda a pending function on the action"
 
 ### Implementation Summary:
-1. **Email Bridge (`config/mailer.php`)**:
-   - Added `sendMissingDocsNoticeEmail()` with branded HTML template, amber "Action Required" badge, dynamic checklist of missing documents, admin instructions/notes, and direct CTA button linking the applicant to `pages/user/my-applications.php` to update their documents.
+1. **Backend Handler (`handlers/applications.php`)**:
+   - Updated `updateStatus` and `bulkUpdateStatus` to validate and accept `'Pending'`.
+   - Clears `interview_date = NULL, interview_notes = NULL, rejection_reason = NULL` upon reverting an application to `Pending`.
+   - Records transition in `application_status_history` and logs event in `activity_logs`.
+   - Dispatches email and SMS status alerts informing candidate their application is under pending review.
 
-2. **SMS Gateway (`config/sms.php`)**:
-   - Added `sendMissingDocsNoticeSms()` using PhilSMS API with normalized Philippine phone number formatting, candidate name, missing document list summary, custom admin instructions, and prompt to log in and upload credentials.
+2. **Email Bridge (`config/mailer.php`)**:
+   - Added support for `Pending` status in `sendApplicationStatusEmail()` with amber "Pending Review ⏳" badge (`#d97706`), branded content, and tracking button.
 
-3. **Backend Handler (`handlers/applications.php`)**:
-   - Implemented `notifyApplicant` action accessible to Admin and Staff.
-   - Validates CSRF token, application ID, non-empty instructions, and channel options (`send_email`, `send_sms`).
-   - Maps document keys to readable names, dispatches Gmail email and/or PhilSMS SMS notifications, and logs the action to `activity_logs`.
+3. **SMS Gateway Bridge (`config/sms.php`)**:
+   - Added support for `Pending` status in `sendApplicationStatusSms()` notifying candidate via PhilSMS.
 
-4. **Message Modal (`modals/message-applicant-modal.php`)**:
-   - Implemented `#messageApplicantModal` with candidate summary dossier, quick notice template dropdown (Missing Required Documents, Unclear/Illegible Scans, General Update, Custom), checkboxes for all 6 required documents (`resume`, `application_letter`, `pds`, `csc_eligib`, `tor`, `diploma`), subject, instructions textarea, and Email/SMS channel toggles.
+4. **Admin Applications Page (`pages/admin/applications.php`)**:
+   - Added a **Pending** action button (`<i class="bi bi-arrow-counterclockwise"></i> Pending`) to table rows for any application whose status is not currently `Pending`.
+   - Restyled the Notice button as `btn-outline-info` for clear visual distinction across actions (*Approve = Green, Reject = Red, Pending = Warning/Amber, Notice = Cyan/Info, View = Blue*).
+   - Added `setAppPending(id, applicantName)` with confirmation modal and feedback toast.
+   - Added `Set Pending All` to the bulk selection toolbar and updated `bulkAppAction('Pending')`.
 
-5. **Document Viewer Integration (`modals/view-application-modal.php`)**:
-   - Added "Request Docs" quick button in the document header so reviewers inspecting uploaded files can launch the message modal with missing documents automatically pre-checked.
+5. **Staff Applications Page (`pages/staff/applications.php`)**:
+   - Implemented matching **Pending** action button on table rows, `setAppPending()`, bulk selection `bulkPendingBtn`, and `bulkUpdate('Pending')`.
 
-6. **Admin & Staff Frontends (`pages/admin/applications.php` & `pages/staff/applications.php`)**:
-   - Added table row "Notice" action button with modal launcher.
-   - Wired JS handlers: `openMessageApplicantModal()`, `openMessageModalFromDetails()`, `onMessageTemplateChange()`, and `handleSendMessageSubmit()`.
+6. **View Application Modal (`modals/view-application-modal.php`)**:
+   - Added a **Set to Pending** button (`#viewAppSetPendingBtn`) in the modal footer so reviewers can revert an application to Pending directly while viewing applicant credentials.
 
-7. **System Architecture Synchronized (`SYSTEM_MEMORY.md`)**:
-   - Synchronized Feature-to-File Matrix, communications bridge, and multi-document notice architecture.
+7. **System Memory Synchronized (`SYSTEM_MEMORY.md`)**:
+   - Documented Point 8 in Section 3.3 for the Application Revert to Pending Architecture.

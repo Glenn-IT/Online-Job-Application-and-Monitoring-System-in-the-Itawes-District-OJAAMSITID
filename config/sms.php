@@ -125,6 +125,8 @@ function sendApplicationStatusSms(string $phone, string $applicantName, string $
         } else {
             $message = "OJAMS: Congratulations {$applicantName}! Your application for {$jobTitle} at {$company} has been APPROVED. The hiring team will contact you soon.";
         }
+    } elseif ($status === "Pending") {
+        $message = "OJAMS: Hi {$applicantName}, your application for {$jobTitle} at {$company} has been set to Pending review. Please check your OJAMS portal for updates.";
     } else {
         if (!empty($rejectionReason)) {
             $cleanReason = trim(preg_replace("/\s+/", " ", $rejectionReason));
