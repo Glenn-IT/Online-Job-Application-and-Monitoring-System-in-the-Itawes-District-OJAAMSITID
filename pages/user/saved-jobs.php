@@ -419,7 +419,7 @@ function openApplyModal(jobId, title, company) {
     document.getElementById("applicationForm").reset();
     document.getElementById("applicationForm").dataset.jobId = jobId;
     clearAllFieldErrors("applicationForm");
-    ['resume', 'appLetter', 'pds', 'csc', 'tor'].forEach(k => {
+    ['resume', 'appLetter', 'pds', 'csc', 'tor', 'diploma'].forEach(k => {
         document.getElementById(k + "FileInfo")?.classList.add("d-none");
     });
 
@@ -580,7 +580,7 @@ function submitApplication() {
     if (!g("appSkills"))     { showFieldError("appSkills", "Skills are required."); valid = false; }
     if (!g("appExperience")) { showFieldError("appExperience", "Work experience is required."); valid = false; }
 
-    const docs = ['appResume', 'appLetter', 'appPds', 'appCsc', 'appTor'];
+    const docs = ['appResume', 'appLetter', 'appPds', 'appCsc', 'appTor', 'appDiploma'];
     docs.forEach(id => {
         const inp = document.getElementById(id);
         if (!inp || !inp.files || !inp.files[0]) {
@@ -590,7 +590,7 @@ function submitApplication() {
     });
 
     if (!valid) {
-        showToast("Please complete all required fields and upload all 5 documents.", "warning");
+        showToast("Please complete all required fields and upload all 6 required documents.", "warning");
         return;
     }
 
@@ -615,6 +615,7 @@ function submitApplication() {
     fd.append("pds", document.getElementById("appPds").files[0]);
     fd.append("csc_eligib", document.getElementById("appCsc").files[0]);
     fd.append("tor", document.getElementById("appTor").files[0]);
+    fd.append("diploma", document.getElementById("appDiploma").files[0]);
 
     const submitBtn = document.getElementById("submitAppBtn");
     btnLoading(submitBtn, true, "Submitting…");
@@ -665,7 +666,8 @@ document.addEventListener("DOMContentLoaded", function () {
         { input: 'appLetter', info: 'appLetterFileInfo', name: 'appLetterFileName', size: 'appLetterFileSize' },
         { input: 'appPds', info: 'pdsFileInfo', name: 'pdsFileName', size: 'pdsFileSize' },
         { input: 'appCsc', info: 'cscFileInfo', name: 'cscFileName', size: 'cscFileSize' },
-        { input: 'appTor', info: 'torFileInfo', name: 'torFileName', size: 'torFileName' }
+        { input: 'appTor', info: 'torFileInfo', name: 'torFileName', size: 'torFileSize' },
+        { input: 'appDiploma', info: 'diplomaFileInfo', name: 'diplomaFileName', size: 'diplomaFileSize' }
     ];
     docPreviews.forEach(p => {
         const inp = document.getElementById(p.input);

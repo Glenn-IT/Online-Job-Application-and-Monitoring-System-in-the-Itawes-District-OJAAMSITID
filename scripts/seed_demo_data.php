@@ -551,6 +551,7 @@ try {
         'pds'                => 'Civil_Service_Form_212_PDS.pdf',
         'csc_eligib'         => 'CSC_Eligibility_Certificate.pdf',
         'tor'                => 'Official_Transcript_of_Records_TOR.pdf',
+        'diploma'            => 'College_Diploma_Certificate.pdf',
     ];
 
     foreach ($applicationsData as $app) {

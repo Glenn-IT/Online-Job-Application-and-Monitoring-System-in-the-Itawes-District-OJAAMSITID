@@ -97,6 +97,18 @@ $documentDefs = [
             'image/png',
         ],
     ],
+    'diploma' => [
+        'label'        => 'College Diploma / Certificate of Graduation',
+        'required'     => true,
+        'allowed_exts' => ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+        'allowed_mimes'=> [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'image/jpeg',
+            'image/png',
+        ],
+    ],
 ];
 
 function validateUploadedDoc(array $file, array $def): array {

@@ -271,9 +271,13 @@ include $basePath . "layouts/navbar-user.php";
                                         <label class="form-label small fw-semibold">CSC Eligibility (PDF, Word, Images)</label>
                                         <input type="file" class="form-control form-control-sm" id="upCsc" name="csc_eligib" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
                                     </div>
-                                    <div class="col-12">
+                                    <div class="col-12 col-md-6">
                                         <label class="form-label small fw-semibold">Transcript of Records (PDF, Word, Images)</label>
                                         <input type="file" class="form-control form-control-sm" id="upTor" name="tor" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label small fw-semibold">College Diploma / Certificate (PDF, Word, Images)</label>
+                                        <input type="file" class="form-control form-control-sm" id="upDiploma" name="diploma" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
                                     </div>
                                 </div>
                                 <div class="text-end">
@@ -333,6 +337,7 @@ function renderMyAppDocuments(documents, fallbackResume) {
         { key: 'pds',                label: 'Personal Data Sheet (PDS)',    icon: 'bi-card-checklist' },
         { key: 'csc_eligib',         label: 'Certificate of CSC Eligib.',  icon: 'bi-award' },
         { key: 'tor',                label: 'Transcript of Records (TOR)',  icon: 'bi-journal-bookmark' },
+        { key: 'diploma',            label: 'College Diploma / Certificate', icon: 'bi-mortarboard-fill' },
     ];
 
     const docsMap = documents || {};
@@ -479,13 +484,14 @@ function submitUpdatedDocs() {
     const appId = document.getElementById("updateDocsAppId")?.value;
     if (!appId) return;
 
-    const resumeFile = document.getElementById("upResume")?.files?.[0];
-    const letterFile = document.getElementById("upAppLetter")?.files?.[0];
-    const pdsFile    = document.getElementById("upPds")?.files?.[0];
-    const cscFile    = document.getElementById("upCsc")?.files?.[0];
-    const torFile    = document.getElementById("upTor")?.files?.[0];
+    const resumeFile  = document.getElementById("upResume")?.files?.[0];
+    const letterFile  = document.getElementById("upAppLetter")?.files?.[0];
+    const pdsFile     = document.getElementById("upPds")?.files?.[0];
+    const cscFile     = document.getElementById("upCsc")?.files?.[0];
+    const torFile     = document.getElementById("upTor")?.files?.[0];
+    const diplomaFile = document.getElementById("upDiploma")?.files?.[0];
 
-    if (!resumeFile && !letterFile && !pdsFile && !cscFile && !torFile) {
+    if (!resumeFile && !letterFile && !pdsFile && !cscFile && !torFile && !diplomaFile) {
         showToast("Please select at least one document to upload or update.", "warning");
         return;
     }
@@ -495,11 +501,12 @@ function submitUpdatedDocs() {
     fd.append("csrf_token", getCsrfToken());
     fd.append("id", appId);
 
-    if (resumeFile) fd.append("resume", resumeFile);
-    if (letterFile) fd.append("application_letter", letterFile);
-    if (pdsFile)    fd.append("pds", pdsFile);
-    if (cscFile)    fd.append("csc_eligib", cscFile);
-    if (torFile)    fd.append("tor", torFile);
+    if (resumeFile)  fd.append("resume", resumeFile);
+    if (letterFile)  fd.append("application_letter", letterFile);
+    if (pdsFile)     fd.append("pds", pdsFile);
+    if (cscFile)     fd.append("csc_eligib", cscFile);
+    if (torFile)     fd.append("tor", torFile);
+    if (diplomaFile) fd.append("diploma", diplomaFile);
 
     const btn = document.getElementById("saveUpdatedDocsBtn");
     btnLoading(btn, true, "Uploading…");

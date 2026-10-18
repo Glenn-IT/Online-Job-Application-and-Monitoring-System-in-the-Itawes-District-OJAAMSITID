@@ -95,7 +95,7 @@
                     <!-- ── Section: Documents & Requirements ── -->
                     <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3 mt-4">
                         <h6 class="fw-bold text-primary mb-0">
-                            <i class="bi bi-paperclip me-1"></i>Required Documents <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-2">All 5 Required</span>
+                            <i class="bi bi-paperclip me-1"></i>Required Documents <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-2">All 6 Required</span>
                         </h6>
                         <span class="text-muted small">Max 5 MB per document</span>
                     </div>
@@ -178,20 +178,39 @@
                         </div>
 
                         <!-- 5. Transcript of Records (TOR) (Mandatory) -->
-                        <div class="col-12">
+                        <div class="col-12 col-md-6">
                             <label class="form-label fw-semibold" for="appTor">
                                 <i class="bi bi-journal-bookmark me-1 text-primary"></i>Transcript of Records (TOR) <span class="text-danger">*</span>
                             </label>
                             <input type="file" class="form-control" id="appTor" name="tor"
                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
                             <div class="form-text">
-                                Official College / Academic TOR &bull; PDF, Word, JPG, PNG &bull; <strong class="text-danger">Required</strong>
+                                Official Academic TOR &bull; PDF, Word, JPG, PNG &bull; <strong class="text-danger">Required</strong>
                             </div>
                             <div id="torFileInfo" class="mt-2 d-none">
                                 <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
                                     <i class="bi bi-file-earmark-check me-1"></i>
                                     <span id="torFileName"></span>
                                     <span id="torFileSize" class="ms-1 text-muted"></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 6. College Diploma / Certificate of Graduation (Mandatory) -->
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold" for="appDiploma">
+                                <i class="bi bi-mortarboard-fill me-1 text-primary"></i>College Diploma / Certificate <span class="text-danger">*</span>
+                            </label>
+                            <input type="file" class="form-control" id="appDiploma" name="diploma"
+                                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+                            <div class="form-text">
+                                Diploma / Certificate of Graduation &bull; PDF, Word, JPG, PNG &bull; <strong class="text-danger">Required</strong>
+                            </div>
+                            <div id="diplomaFileInfo" class="mt-2 d-none">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                    <i class="bi bi-file-earmark-check me-1"></i>
+                                    <span id="diplomaFileName"></span>
+                                    <span id="diplomaFileSize" class="ms-1 text-muted"></span>
                                 </span>
                             </div>
                         </div>

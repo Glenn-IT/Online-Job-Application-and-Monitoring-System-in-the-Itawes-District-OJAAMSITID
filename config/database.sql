@@ -251,7 +251,7 @@ CREATE TABLE IF NOT EXISTS resumes (
   id              INT UNSIGNED  NOT NULL AUTO_INCREMENT,
   application_id  INT UNSIGNED  NOT NULL,
   user_id         INT UNSIGNED  NOT NULL,
-  document_type   VARCHAR(50)   NOT NULL DEFAULT 'resume', -- 'resume', 'application_letter', 'pds', 'csc_eligib', 'tor'
+  document_type   VARCHAR(50)   NOT NULL DEFAULT 'resume', -- 'resume', 'application_letter', 'pds', 'csc_eligib', 'tor', 'diploma'
   original_name   VARCHAR(255)  NOT NULL,
   stored_name     VARCHAR(255)  NOT NULL,
   file_size       INT UNSIGNED  NOT NULL,

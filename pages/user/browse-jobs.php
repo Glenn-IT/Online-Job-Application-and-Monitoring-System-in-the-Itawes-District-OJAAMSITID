@@ -456,7 +456,7 @@ function openApplyModal(jobId, title, company) {
     document.getElementById("applicationForm").reset();
     document.getElementById("applicationForm").dataset.jobId = jobId;
     clearAllFieldErrors("applicationForm");
-    ['resume', 'appLetter', 'pds', 'csc', 'tor'].forEach(k => {
+    ['resume', 'appLetter', 'pds', 'csc', 'tor', 'diploma'].forEach(k => {
         document.getElementById(k + "FileInfo")?.classList.add("d-none");
     });
 
@@ -568,6 +568,7 @@ document.addEventListener("DOMContentLoaded", function () {
         { input: 'appPds',    info: 'pdsFileInfo',       name: 'pdsFileName',       size: 'pdsFileSize' },
         { input: 'appCsc',    info: 'cscFileInfo',       name: 'cscFileName',       size: 'cscFileSize' },
         { input: 'appTor',    info: 'torFileInfo',       name: 'torFileName',       size: 'torFileSize' },
+        { input: 'appDiploma',info: 'diplomaFileInfo',   name: 'diplomaFileName',   size: 'diplomaFileSize' },
     ];
     docPreviews.forEach(dp => {
         const el = document.getElementById(dp.input);
@@ -672,8 +673,14 @@ function submitApplication() {
         showFieldError("appTor", "Transcript of Records (TOR) file is required."); valid = false;
     }
 
+    const diplomaInput = document.getElementById("appDiploma");
+    const diplomaFile  = diplomaInput?.files ? diplomaInput.files[0] : null;
+    if (!diplomaFile) {
+        showFieldError("appDiploma", "College Diploma / Certificate file is required."); valid = false;
+    }
+
     if (!valid) {
-        showToast("Please complete all required fields and upload all 5 required documents.", "warning");
+        showToast("Please complete all required fields and upload all 6 required documents.", "warning");
         return;
     }
 
@@ -704,6 +711,7 @@ function submitApplication() {
     fd.append("pds",                pdsFile);
     fd.append("csc_eligib",         cscFile);
     fd.append("tor",                torFile);
+    fd.append("diploma",            diplomaFile);
 
     fetch(APP_HANDLER, { method: "POST", body: fd })
     .then(r => r.json())

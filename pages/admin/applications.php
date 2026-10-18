@@ -593,6 +593,7 @@ function viewAppDetails(appId) {
             { key: 'pds',                label: 'Personal Data Sheet (PDS)',    icon: 'bi-card-checklist' },
             { key: 'csc_eligib',         label: 'Certificate of CSC Eligib.',  icon: 'bi-award' },
             { key: 'tor',                label: 'Transcript of Records (TOR)',  icon: 'bi-journal-bookmark' },
+            { key: 'diploma',            label: 'College Diploma / Certificate', icon: 'bi-mortarboard-fill' },
         ];
 
         const docsMap = res.documents || {};
