@@ -14,14 +14,14 @@ $stmt = $pdo->prepare("
            j.id AS job_id, j.title, j.company, j.description, j.qualification,
            j.job_type, j.location, j.salary_range, j.status, j.deadline, j.date_posted,
            u.full_name AS poster_name,
-           (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.id AND a.user_id = :userId) AS already_applied
+           (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.id AND a.user_id = ?) AS already_applied
     FROM saved_jobs sj
     JOIN jobs j ON j.id = sj.job_id
     LEFT JOIN users u ON u.id = j.created_by
-    WHERE sj.user_id = :userId
+    WHERE sj.user_id = ?
     ORDER BY sj.saved_at DESC
 ");
-$stmt->execute([":userId" => $userId]);
+$stmt->execute([$userId, $userId]);
 $savedJobs = $stmt->fetchAll();
 
 $totalSaved  = count($savedJobs);
@@ -70,7 +70,7 @@ include $basePath . "layouts/navbar-user.php";
 <style>
 .saved-hero {
     background: linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%);
-    color: #fff;
+    color: #ffffff !important;
     border-radius: 16px;
     padding: 2.2rem 2rem;
     position: relative;
@@ -85,17 +85,70 @@ include $basePath . "layouts/navbar-user.php";
     background: rgba(255,255,255,0.05);
     border-radius: 50%;
 }
+.saved-hero-badge {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    color: #ffffff !important;
+    border-radius: 50px;
+    padding: 0.38rem 0.95rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    letter-spacing: 0.4px;
+    margin-bottom: 0.75rem;
+    backdrop-filter: blur(4px);
+}
+.saved-hero h2 {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    font-size: 1.85rem;
+    letter-spacing: -0.3px;
+    margin-bottom: 0.5rem;
+}
+.saved-hero p {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 0.98rem;
+    line-height: 1.55;
+    margin-bottom: 1.25rem;
+}
 .saved-stat-chip {
-    background: rgba(255,255,255,0.14);
-    border: 1px solid rgba(255,255,255,0.22);
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 50px;
     padding: 0.4rem 1rem;
     font-size: 0.85rem;
     font-weight: 600;
-    color: #fff;
+    color: #ffffff !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    backdrop-filter: blur(4px);
+}
+.saved-stat-chip strong {
+    color: #ffffff !important;
+    font-weight: 800;
+}
+.saved-hero-btn {
+    background: #fbbf24 !important;
+    border: 1px solid #f59e0b !important;
+    color: #1e1b4b !important;
+    font-weight: 700 !important;
+    padding: 0.65rem 1.4rem;
+    border-radius: 10px;
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.saved-hero-btn:hover {
+    background: #f59e0b !important;
+    color: #0f172a !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(245, 158, 11, 0.45);
 }
 .saved-job-card {
     border: none;
@@ -168,11 +221,12 @@ include $basePath . "layouts/navbar-user.php";
     <div class="saved-hero">
         <div class="row align-items-center g-3">
             <div class="col-lg-8">
-                <span class="badge bg-white bg-opacity-20 text-white mb-2 px-3 py-1.5 fw-semibold" style="letter-spacing:0.5px">
-                    <i class="bi bi-bookmark-star-fill me-1 text-warning"></i>Applicant Workspace
-                </span>
-                <h2 class="fw-bold mb-2">Saved Jobs &amp; Draft Applications</h2>
-                <p class="mb-3 text-white text-opacity-85" style="max-width: 580px;">
+                <div class="saved-hero-badge">
+                    <i class="bi bi-bookmark-star-fill text-warning"></i>
+                    <span>Applicant Workspace</span>
+                </div>
+                <h2>Saved Jobs &amp; Draft Applications</h2>
+                <p style="max-width: 580px;">
                     Review your bookmarked opportunities or pick up right where you left off on pending application drafts.
                 </p>
                 <div class="d-flex flex-wrap gap-2">
@@ -191,8 +245,8 @@ include $basePath . "layouts/navbar-user.php";
                 </div>
             </div>
             <div class="col-lg-4 text-lg-end">
-                <a href="browse-jobs.php" class="btn btn-warning text-white fw-bold px-4 py-2.5 shadow-sm">
-                    <i class="bi bi-search me-1"></i>Explore More Jobs
+                <a href="browse-jobs.php" class="saved-hero-btn">
+                    <i class="bi bi-search"></i>Explore More Jobs
                 </a>
             </div>
         </div>
@@ -351,8 +405,8 @@ include $basePath . "layouts/navbar-user.php";
 <?php include $basePath . "modals/apply-job-modal.php"; ?>
 
 <script>
-const SAVED_JOBS_HANDLER   = "<?php echo BASE_URL; ?>/handlers/saved-jobs.php";
-const APPLICATIONS_HANDLER = "<?php echo BASE_URL; ?>/handlers/applications.php";
+const SAVED_JOBS_HANDLER   = "../../handlers/saved-jobs.php";
+const APPLICATIONS_HANDLER = "../../handlers/applications.php";
 
 function getCsrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.content
@@ -387,32 +441,37 @@ function filterSaved(type, btn) {
 }
 
 function removeSavedJob(jobId, btn) {
-    if (!confirm('Remove this job and any saved application draft from your list?')) return;
-    btnLoading(btn, true);
+    showConfirmModal({
+        title: "Remove Saved Job",
+        message: "Are you sure you want to remove this job and any saved application draft from your list?",
+        confirmBtnText: "Remove",
+        confirmBtnClass: "btn-danger",
+        onConfirm: () => {
+            btnLoading(btn, true, "");
 
-    fetch(SAVED_JOBS_HANDLER, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'remove', job_id: jobId, csrf_token: getCsrfToken() })
-    })
-    .then(r => r.json())
-    .then(res => {
-        if (res.success) {
-            showToast(res.message, 'success');
-            const cardCol = btn.closest('.saved-item');
-            cardCol?.remove();
-            if (document.querySelectorAll('.saved-item').length === 0) {
-                location.reload();
-            }
-        } else {
-            showToast(res.message || 'Failed to remove job.', 'danger');
+            fetch(SAVED_JOBS_HANDLER, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'remove', job_id: jobId, csrf_token: getCsrfToken() })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    showToast(res.message, 'success');
+                    const cardCol = btn.closest('.saved-item');
+                    cardCol?.remove();
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showToast(res.message || 'Failed to remove job.', 'danger');
+                }
+            })
+            .catch(() => showToast('Request error.', 'danger'))
+            .finally(() => btnLoading(btn, false));
         }
-    })
-    .catch(() => showToast('Request error.', 'danger'))
-    .finally(() => btnLoading(btn, false));
+    });
 }
 
-// ── Open Apply Modal (Fresh or From Profile) ───────────────────
+// ── Open Apply Modal (Fresh or From Profile + Draft Restore) ───
 function openApplyModal(jobId, title, company) {
     document.getElementById("applyJobTitle").textContent   = title;
     document.getElementById("applyJobCompany").textContent = company;
@@ -456,13 +515,8 @@ function openApplyModal(jobId, title, company) {
     if (sess.birthdate && ageEl) {
         ageEl.value = computeAge(sess.birthdate);
     }
-    new bootstrap.Modal(document.getElementById("applyJobModal")).show();
-}
 
-// ── Continue Application from Saved Draft ──────────────────────
-function continueDraft(jobId, title, company) {
-    openApplyModal(jobId, title, company);
-
+    // Check if a saved draft exists for this job and restore it
     fetch(SAVED_JOBS_HANDLER, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -472,25 +526,31 @@ function continueDraft(jobId, title, company) {
     .then(res => {
         if (res.success && res.has_draft && res.draft) {
             const d = res.draft;
-            const setV = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined) el.value = v; };
-            if (d.full_name)   setV("appFullName",   d.full_name);
+            const setVal = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null && v !== "") el.value = v; };
+            if (d.full_name)   setVal("appFullName",   d.full_name);
             if (d.birthdate) {
-                setV("appBirthdate", d.birthdate);
-                const ageEl = document.getElementById("appAge");
+                setVal("appBirthdate", d.birthdate);
                 if (ageEl) ageEl.value = computeAge(d.birthdate);
             }
-            if (d.address)     setV("appAddress",    d.address);
-            if (d.contact)     setV("appContact",    d.contact);
-            if (d.elementary)  setV("appElementary", d.elementary);
-            if (d.jhs)         setV("appJhs",        d.jhs);
-            if (d.shs)         setV("appShs",        d.shs);
-            if (d.college)     setV("appCollege",    d.college);
-            if (d.skills)      setV("appSkills",     d.skills);
-            if (d.experience)  setV("appExperience", d.experience);
+            if (d.address)     setVal("appAddress",    d.address);
+            if (d.contact)     setVal("appContact",    d.contact);
+            if (d.elementary)  setVal("appElementary", d.elementary);
+            if (d.jhs)         setVal("appJhs",        d.jhs);
+            if (d.shs)         setVal("appShs",        d.shs);
+            if (d.college)     setVal("appCollege",    d.college);
+            if (d.skills)      setVal("appSkills",     d.skills);
+            if (d.experience)  setVal("appExperience", d.experience);
             showToast("Draft restored! You can continue editing your application.", "info");
         }
     })
     .catch(() => {});
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById("applyJobModal")).show();
+}
+
+// ── Continue Application from Saved Draft ──────────────────────
+function continueDraft(jobId, title, company) {
+    openApplyModal(jobId, title, company);
 }
 
 // ── Save Application as Draft Handler ──────────────────────────
@@ -594,12 +654,20 @@ function submitApplication() {
         return;
     }
 
+    const submitBtn = document.getElementById("submitAppBtn");
+    btnLoading(submitBtn, true, "Submitting…");
+
+    bootstrap.Modal.getInstance(document.getElementById("applyJobModal"))?.hide();
+    showLoadingModal("Submitting application…");
+
     const fd = new FormData();
     fd.append("action", "apply");
     fd.append("job_id", jobId);
+    fd.append("csrf_token", getCsrfToken());
     fd.append("full_name", g("appFullName"));
-    fd.append("address", g("appAddress"));
+    fd.append("email", "<?php echo htmlspecialchars($_SESSION['ojams_user']['email'] ?? '', ENT_QUOTES); ?>");
     fd.append("contact", contactVal);
+    fd.append("address", g("appAddress"));
     fd.append("birthdate", bdVal);
     fd.append("age", computeAge(bdVal));
     fd.append("elementary", g("appElementary"));
@@ -608,7 +676,6 @@ function submitApplication() {
     fd.append("college", g("appCollege"));
     fd.append("skills", g("appSkills"));
     fd.append("experience", g("appExperience"));
-    fd.append("csrf_token", getCsrfToken());
 
     fd.append("resume", document.getElementById("appResume").files[0]);
     fd.append("application_letter", document.getElementById("appLetter").files[0]);
@@ -617,25 +684,22 @@ function submitApplication() {
     fd.append("tor", document.getElementById("appTor").files[0]);
     fd.append("diploma", document.getElementById("appDiploma").files[0]);
 
-    const submitBtn = document.getElementById("submitAppBtn");
-    btnLoading(submitBtn, true, "Submitting…");
-
     fetch(APPLICATIONS_HANDLER, {
         method: "POST",
         body: fd
     })
     .then(r => r.json())
     .then(res => {
+        hideLoadingModal();
+        showToast(res.message, res.success ? "success" : "danger");
         if (res.success) {
-            showToast(res.message, "success");
-            const modalEl = document.getElementById("applyJobModal");
-            bootstrap.Modal.getInstance(modalEl)?.hide();
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            showToast(res.message || "Submission failed.", "danger");
+            setTimeout(() => location.reload(), 1200);
         }
     })
-    .catch(() => showToast("Request error during submission.", "danger"))
+    .catch(() => {
+        hideLoadingModal();
+        showToast("Request error during submission.", "danger");
+    })
     .finally(() => btnLoading(submitBtn, false));
 }
 
