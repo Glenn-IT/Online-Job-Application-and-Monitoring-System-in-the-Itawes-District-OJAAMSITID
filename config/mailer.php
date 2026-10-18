@@ -126,7 +126,7 @@ HTML;
  * Sends notification when application status changes (Approved / Rejected)
  * Supports interview scheduling details for approved applications.
  */
-function sendApplicationStatusEmail(string $toEmail, string $applicantName, string $jobTitle, string $company, string $status, ?string $interviewDate = null, ?string $interviewNotes = null): bool {
+function sendApplicationStatusEmail(string $toEmail, string $applicantName, string $jobTitle, string $company, string $status, ?string $interviewDate = null, ?string $interviewNotes = null, ?string $rejectionReason = null): bool {
     $isApproved = ($status === 'Approved');
     $badgeText  = $isApproved ? 'Application Approved 🎉' : 'Application Status Update';
     $badgeColor = $isApproved ? '#16a34a' : '#dc2626';
@@ -180,11 +180,28 @@ HTML;
         </div>
 HTML;
     } else {
+        $rejectionSection = '';
+        if (!empty($rejectionReason)) {
+            $formattedReason = nl2br(htmlspecialchars($rejectionReason));
+            $rejectionSection = <<<HTML
+        <div style="background-color:#fef2f2; border-left:4px solid #ef4444; padding:18px 20px; margin:20px 0; border-radius:6px; border:1px solid #fecaca;">
+            <h4 style="margin:0 0 8px 0; color:#991b1b; font-size:15px; font-weight:700;">
+                Feedback / Reason for Decision:
+            </h4>
+            <p style="margin:0; color:#7f1d1d; font-size:14px; line-height:1.5;">
+                {$formattedReason}
+            </p>
+        </div>
+HTML;
+        }
+
         $content = <<<HTML
         <p>Dear <strong>{$applicantName}</strong>,</p>
         <p>Thank you for taking the time to apply for the position of <strong>{$jobTitle}</strong> at <strong>{$company}</strong>.</p>
         <p>After careful evaluation of all candidates, we regret to inform you that we will not be moving forward with your application at this time.</p>
         
+        {$rejectionSection}
+
         <div style="background-color:#f8fafc; border-left:4px solid #94a3b8; padding:15px; margin:20px 0; border-radius:4px;">
             <p style="margin:0; color:#475569; font-size:14px;">We encourage you to continue browsing other job openings on OJAMS that match your skills and experience.</p>
         </div>

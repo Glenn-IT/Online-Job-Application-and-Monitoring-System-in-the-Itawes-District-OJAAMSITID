@@ -66,6 +66,19 @@
                         </div>
                     </div>
 
+                    <!-- Rejection Feedback (if rejected) -->
+                    <div class="col-12" id="viewAppRejectionRow" style="display:none;">
+                        <div class="alert alert-danger d-flex align-items-start gap-3 mb-0 border-danger-subtle">
+                            <i class="bi bi-x-circle-fill fs-3 text-danger"></i>
+                            <div class="flex-grow-1">
+                                <h6 class="alert-heading fw-bold mb-1 text-danger">
+                                    <i class="bi bi-info-circle me-1"></i>Rejection Reason &amp; Feedback
+                                </h6>
+                                <p class="mb-0 text-dark" id="viewAppRejectionReason">—</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Uploaded Documents & Requirements -->
                     <div class="col-12" id="viewAppDocumentsSection">
                         <h6 class="fw-bold text-primary border-bottom pb-2 d-flex justify-content-between align-items-center">

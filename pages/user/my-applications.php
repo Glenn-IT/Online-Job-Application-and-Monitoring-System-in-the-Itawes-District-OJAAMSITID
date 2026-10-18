@@ -93,6 +93,10 @@ include $basePath . "layouts/navbar-user.php";
                                         <div class="mt-1 small text-success fw-semibold text-nowrap">
                                             <i class="bi bi-calendar2-check me-1"></i><?= date('M d, Y h:i A', strtotime($app['interview_date'])) ?>
                                         </div>
+                                    <?php elseif ($app["status"] === "Rejected" && !empty($app["rejection_reason"])): ?>
+                                        <div class="mt-1 small text-danger text-truncate" style="max-width:200px;" title="<?= htmlspecialchars($app['rejection_reason']) ?>">
+                                            <i class="bi bi-info-circle me-1"></i><?= htmlspecialchars($app['rejection_reason']) ?>
+                                        </div>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-nowrap">
@@ -208,6 +212,19 @@ include $basePath . "layouts/navbar-user.php";
                                 <div id="vmyAppInterviewNotesWrap" style="display:none;">
                                     <p class="mb-0 text-muted small"><strong>Instructions / Venue:</strong> <span id="vmyAppInterviewNotes" class="text-dark">—</span></p>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rejection Feedback (if rejected) -->
+                    <div class="col-12" id="vmyAppRejectionRow" style="display:none;">
+                        <div class="alert alert-danger d-flex align-items-start gap-3 mb-0 border-danger-subtle">
+                            <i class="bi bi-x-circle-fill fs-3 text-danger"></i>
+                            <div class="flex-grow-1">
+                                <h6 class="alert-heading fw-bold mb-1 text-danger">
+                                    <i class="bi bi-info-circle me-1"></i>Application Status Feedback
+                                </h6>
+                                <p class="mb-0 text-dark" id="vmyAppRejectionReason">—</p>
                             </div>
                         </div>
                     </div>
@@ -447,6 +464,16 @@ function viewMyApp(appId) {
         }
     } else if (interviewRow) {
         interviewRow.style.display = "none";
+    }
+
+    // ── Rejection Feedback ──────────────────────────────
+    const rejectionRow = document.getElementById("vmyAppRejectionRow");
+    const rejectionReasonEl = document.getElementById("vmyAppRejectionReason");
+    if (app.status === "Rejected" && app.rejection_reason) {
+        if (rejectionRow) rejectionRow.style.display = "";
+        if (rejectionReasonEl) rejectionReasonEl.textContent = app.rejection_reason;
+    } else if (rejectionRow) {
+        rejectionRow.style.display = "none";
     }
 
     // Toggle update documents section

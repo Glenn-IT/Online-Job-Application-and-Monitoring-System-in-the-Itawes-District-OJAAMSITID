@@ -127,11 +127,11 @@ Use this matrix to identify all connected files whenever modifying a feature:
 | **Backend Handler** | `handlers/applications.php` (Actions: `apply`, `cancel`, `updateStatus`, `scheduleInterview`, `getDetails`, `updateDocuments`, `bulkUpdateStatus`, `bulkDelete`), `handlers/saved-jobs.php` (`save_draft`, `get_draft`) |
 | **User Pages** | `pages/user/my-applications.php`, `pages/user/job-detail.php`, `pages/user/browse-jobs.php`, `pages/user/saved-jobs.php` |
 | **Admin & Staff Pages** | `pages/admin/applications.php`, `pages/staff/applications.php`, `pages/admin/reports.php`, `pages/admin/dashboard.php`, `pages/staff/dashboard.php` |
-| **Modals** | `modals/apply-job-modal.php` (includes "Save as Draft" button & document upload previews), `modals/view-application-modal.php`, `modals/schedule-interview-modal.php` |
+| **Modals** | `modals/apply-job-modal.php` (includes "Save as Draft" button & document upload previews), `modals/view-application-modal.php`, `modals/schedule-interview-modal.php`, `modals/reject-application-modal.php` |
 | **Components** | `components/application-row.php`, `components/stats-card.php` |
 | **Notifications Bridge** | `config/mailer.php` (Email notifications), `config/sms.php` (SMS alerts) |
 | **Upload Directory** | `uploads/resumes/` |
-| **Database Tables** | `applications`, `resumes` (stores documents with `document_type`: `resume`, `application_letter`, `pds`, `csc_eligib`, `tor`, `diploma`), `saved_jobs` (`draft_data`), `application_status_history`, `activity_logs` |
+| **Database Tables** | `applications` (`interview_date`, `interview_notes`, `rejection_reason`), `resumes` (stores documents with `document_type`: `resume`, `application_letter`, `pds`, `csc_eligib`, `tor`, `diploma`), `saved_jobs` (`draft_data`), `application_status_history`, `activity_logs` |
 
 *Synchronization Check when modifying Application status, fields, or document uploads:*
 1. If status enum/values change: sync `handlers/applications.php`, status badges in `pages/admin/applications.php`, `pages/staff/applications.php`, `pages/user/my-applications.php`, and `components/application-row.php`.
@@ -143,6 +143,13 @@ Use this matrix to identify all connected files whenever modifying a feature:
    - Max file size: 5 MB per document. Formats: PDF, DOC, DOCX (plus JPG, PNG for PDS, CSC Eligib, TOR, and Diploma).
    - In `handlers/applications.php`: `apply` strictly validates that all 6 files are provided and records each uploaded document in `resumes` with column `document_type`; `getDetails` returns `documents` mapped by document type; `updateDocuments` permits applicant to upload/update documents while status is `Pending`.
    - Modals and Pages (`modals/apply-job-modal.php`, `modals/view-application-modal.php`, `pages/admin/applications.php`, `pages/staff/applications.php`, `pages/admin/reports.php`, `pages/user/my-applications.php`, `pages/user/browse-jobs.php`, `pages/user/job-detail.php`, `pages/user/saved-jobs.php`) render document cards with 1-click View/Download links (`uploads/resumes/{stored_name}`).
+6. **Application Rejection & Candidate Feedback Architecture**:
+   - Just like with Approvals (`modals/schedule-interview-modal.php`), Rejecting an application triggers `modals/reject-application-modal.php` on both Admin and Staff sides (`openRejectModal(data)`).
+   - The modal provides a categorized primary reason dropdown (e.g. qualifications mismatch, position filled, missing credentials, experience alignment, interview outcome) and custom constructive feedback textarea.
+   - On submission, `handlers/applications.php` updates `applications.rejection_reason`, resets any interview date/notes, and dispatches:
+     - Personalized Email via PHPMailer (`sendApplicationStatusEmail` in `config/mailer.php`) with prominent feedback callout box.
+     - Personalized SMS via PhilSMS (`sendApplicationStatusSms` in `config/sms.php`) including reason summary.
+   - The rejection reason is displayed in applicant's portal `pages/user/my-applications.php` and in `modals/view-application-modal.php`.
 
 ---
 

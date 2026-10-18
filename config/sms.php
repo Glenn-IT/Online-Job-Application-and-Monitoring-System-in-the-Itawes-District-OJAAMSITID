@@ -108,7 +108,7 @@ function sendApplicationSubmittedSms(string $phone, string $applicantName, strin
 /**
  * Sends SMS notification for application status change (Approved / Rejected) and interview scheduling
  */
-function sendApplicationStatusSms(string $phone, string $applicantName, string $jobTitle, string $company, string $status, ?string $interviewDate = null, ?string $interviewNotes = null): bool {
+function sendApplicationStatusSms(string $phone, string $applicantName, string $jobTitle, string $company, string $status, ?string $interviewDate = null, ?string $interviewNotes = null, ?string $rejectionReason = null): bool {
     if (empty(trim($phone))) {
         return false;
     }
@@ -118,7 +118,7 @@ function sendApplicationStatusSms(string $phone, string $applicantName, string $
             $formattedDate = date("M d, Y h:i A", strtotime($interviewDate));
             $message = "OJAMS: Congratulations {$applicantName}! Your application for {$jobTitle} at {$company} is APPROVED. Interview scheduled on {$formattedDate}.";
             if (!empty($interviewNotes)) {
-                $cleanNotes = trim(preg_replace("/\\s+/", " ", $interviewNotes));
+                $cleanNotes = trim(preg_replace("/\s+/", " ", $interviewNotes));
                 $message .= " Notes: {$cleanNotes}.";
             }
             $message .= " Check portal for details.";
@@ -126,7 +126,12 @@ function sendApplicationStatusSms(string $phone, string $applicantName, string $
             $message = "OJAMS: Congratulations {$applicantName}! Your application for {$jobTitle} at {$company} has been APPROVED. The hiring team will contact you soon.";
         }
     } else {
-        $message = "OJAMS: Hi {$applicantName}, thank you for applying for {$jobTitle} at {$company}. We regret to inform you that your application was not selected. Keep applying on OJAMS!";
+        if (!empty($rejectionReason)) {
+            $cleanReason = trim(preg_replace("/\s+/", " ", $rejectionReason));
+            $message = "OJAMS: Hi {$applicantName}, thank you for applying for {$jobTitle} at {$company}. Your application was not selected. Feedback: {$cleanReason}. Check portal for details.";
+        } else {
+            $message = "OJAMS: Hi {$applicantName}, thank you for applying for {$jobTitle} at {$company}. We regret to inform you that your application was not selected. Keep applying on OJAMS!";
+        }
     }
 
     return sendSms($phone, $message);

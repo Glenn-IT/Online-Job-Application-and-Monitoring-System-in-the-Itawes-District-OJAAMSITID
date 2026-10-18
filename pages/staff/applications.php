@@ -261,6 +261,13 @@ include $basePath . "layouts/navbar-staff.php";
                                             </div>
                                         <?php elseif ($app['status'] === 'Approved'): ?>
                                             <span class="badge bg-secondary-subtle text-secondary">Not scheduled</span>
+                                        <?php elseif ($app['status'] === 'Rejected' && !empty($app['rejection_reason'])): ?>
+                                            <div class="badge bg-danger-subtle text-danger border border-danger-subtle text-wrap text-start p-2" style="max-width:200px;">
+                                                <div class="fw-semibold"><i class="bi bi-x-circle me-1"></i>Feedback Sent</div>
+                                                <div class="small fw-normal text-muted text-truncate" title="<?= htmlspecialchars($app['rejection_reason']) ?>">
+                                                    <?= htmlspecialchars($app['rejection_reason']) ?>
+                                                </div>
+                                            </div>
                                         <?php else: ?>
                                             <span class="text-muted small">—</span>
                                         <?php endif; ?>
@@ -295,8 +302,26 @@ include $basePath . "layouts/navbar-staff.php";
                                             </button>
                                         <?php endif; ?>
                                         <?php if ($app['status'] !== 'Rejected'): ?>
-                                            <button type="button" class="btn btn-sm btn-danger" onclick="updateAppStatus(<?= $app['id'] ?>, 'Rejected')" title="Reject">
+                                            <button type="button" class="btn btn-sm btn-danger me-1"
+                                                onclick="openRejectModal(<?= htmlspecialchars(json_encode([
+                                                    'id' => (int)$app['id'],
+                                                    'full_name' => $app['full_name'],
+                                                    'job_title' => $app['job_title'],
+                                                    'company' => $app['company'],
+                                                    'rejection_reason' => $app['rejection_reason'] ?? ''
+                                                ]), ENT_QUOTES, 'UTF-8') ?>)" title="Reject & Send Feedback">
                                                 <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        <?php else: ?>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary me-1"
+                                                onclick="openRejectModal(<?= htmlspecialchars(json_encode([
+                                                    'id' => (int)$app['id'],
+                                                    'full_name' => $app['full_name'],
+                                                    'job_title' => $app['job_title'],
+                                                    'company' => $app['company'],
+                                                    'rejection_reason' => $app['rejection_reason'] ?? ''
+                                                ]), ENT_QUOTES, 'UTF-8') ?>)" title="View / Update Rejection Reason">
+                                                <i class="bi bi-pencil-square"></i>
                                             </button>
                                         <?php endif; ?>
                                     </td>
@@ -335,6 +360,7 @@ include $basePath . "layouts/navbar-staff.php";
 <?php 
 include $basePath . "modals/view-application-modal.php";
 include $basePath . "modals/schedule-interview-modal.php";
+include $basePath . "modals/reject-application-modal.php";
 ?>
 
 <script>
@@ -407,6 +433,95 @@ function handleApproveSubmit(e) {
         btnLoading(btn, false);
         hideLoadingModal();
         bootstrap.Modal.getInstance(document.getElementById('approveAppModal'))?.hide();
+        showToast(res.message, res.success ? "success" : "danger");
+        if (res.success) setTimeout(() => location.reload(), 800);
+    })
+    .catch(() => {
+        btnLoading(btn, false);
+        hideLoadingModal();
+        showToast("Request failed.", "danger");
+    });
+}
+
+function openRejectModal(data) {
+    document.getElementById('rejectAppId').value = data.id;
+    document.getElementById('rejectApplicantName').textContent = data.full_name || 'Applicant';
+    document.getElementById('rejectJobTitle').textContent = (data.job_title || '') + (data.company ? ' at ' + data.company : '');
+
+    const selectEl = document.getElementById('rejectReasonSelect');
+    const notesEl = document.getElementById('rejectNotes');
+    
+    if (data.rejection_reason) {
+        let matched = false;
+        for (let opt of selectEl.options) {
+            if (opt.value && opt.value !== 'other' && data.rejection_reason.startsWith(opt.value)) {
+                selectEl.value = opt.value;
+                matched = true;
+                const remaining = data.rejection_reason.replace(opt.value, '').replace(/^[:\s\-]+/, '').trim();
+                notesEl.value = remaining;
+                break;
+            }
+        }
+        if (!matched) {
+            selectEl.value = 'other';
+            notesEl.value = data.rejection_reason;
+        }
+    } else {
+        selectEl.selectedIndex = 0;
+        notesEl.value = '';
+    }
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('rejectAppModal')).show();
+}
+
+function onRejectReasonChange(select) {
+    const notesEl = document.getElementById('rejectNotes');
+    if (select.value === 'other') {
+        notesEl.setAttribute('required', 'required');
+        notesEl.focus();
+    } else {
+        notesEl.removeAttribute('required');
+    }
+}
+
+function handleRejectSubmit(e) {
+    e.preventDefault();
+    const id = parseInt(document.getElementById('rejectAppId').value);
+    const selectEl = document.getElementById('rejectReasonSelect');
+    const primaryReason = selectEl.value;
+    const notes = document.getElementById('rejectNotes').value.trim();
+    const btn = document.getElementById('rejectSubmitBtn');
+
+    if (!id || !primaryReason) {
+        showToast('Please select a primary reason for rejection.', 'warning');
+        return;
+    }
+
+    let fullReason = primaryReason === 'other' ? notes : (notes ? primaryReason + ': ' + notes : primaryReason);
+    if (!fullReason) {
+        showToast('Please provide a reason or explanation.', 'warning');
+        return;
+    }
+
+    btnLoading(btn, true, 'Rejecting & Notifying…');
+    showLoadingModal();
+
+    fetch(APP_HANDLER_STAFF, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "updateStatus",
+            id: id,
+            status: "Rejected",
+            rejection_reason: fullReason,
+            csrf_token: getCsrfToken()
+        })
+    })
+    .then(r => r.json())
+    .then(res => {
+        btnLoading(btn, false);
+        hideLoadingModal();
+        bootstrap.Modal.getInstance(document.getElementById('rejectAppModal'))?.hide();
         showToast(res.message, res.success ? "success" : "danger");
         if (res.success) setTimeout(() => location.reload(), 800);
     })
@@ -547,6 +662,16 @@ function viewApplicationDetails(appId) {
             }
         } else if (interviewRow) {
             interviewRow.style.display = "none";
+        }
+
+        // ── Rejection Feedback ──────────────────────────────
+        const rejectionRow = document.getElementById("viewAppRejectionRow");
+        const rejectionReasonEl = document.getElementById("viewAppRejectionReason");
+        if (app.status === "Rejected" && app.rejection_reason) {
+            if (rejectionRow) rejectionRow.style.display = "";
+            if (rejectionReasonEl) rejectionReasonEl.textContent = app.rejection_reason;
+        } else if (rejectionRow) {
+            rejectionRow.style.display = "none";
         }
 
         // ── Documents & Requirements ─────────────────────────

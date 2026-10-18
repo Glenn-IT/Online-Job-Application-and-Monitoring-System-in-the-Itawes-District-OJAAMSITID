@@ -388,10 +388,11 @@ if ($action === 'updateStatus') {
         echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
         exit;
     }
-    $appId          = (int)($body['id'] ?? 0);
-    $status         = $body['status'] ?? '';
-    $interviewDate  = !empty($body['interview_date']) ? trim($body['interview_date']) : null;
-    $interviewNotes = !empty($body['interview_notes']) ? trim($body['interview_notes']) : null;
+    $appId           = (int)($body['id'] ?? 0);
+    $status          = $body['status'] ?? '';
+    $interviewDate   = !empty($body['interview_date']) ? trim($body['interview_date']) : null;
+    $interviewNotes  = !empty($body['interview_notes']) ? trim($body['interview_notes']) : null;
+    $rejectionReason = !empty($body['rejection_reason']) ? trim($body['rejection_reason']) : null;
 
     if ($appId <= 0 || !in_array($status, ['Approved', 'Rejected'])) {
         echo json_encode(['success' => false, 'message' => 'Invalid parameters.']);
@@ -415,11 +416,11 @@ if ($action === 'updateStatus') {
     $oldStatus = $oldRow->fetchColumn();
 
     if ($status === 'Approved') {
-        $pdo->prepare("UPDATE applications SET status = ?, interview_date = ?, interview_notes = ? WHERE id = ?")
+        $pdo->prepare("UPDATE applications SET status = ?, interview_date = ?, interview_notes = ?, rejection_reason = NULL WHERE id = ?")
             ->execute([$status, $interviewDate, $interviewNotes, $appId]);
     } else {
-        $pdo->prepare("UPDATE applications SET status = ?, interview_date = NULL, interview_notes = NULL WHERE id = ?")
-            ->execute([$status, $appId]);
+        $pdo->prepare("UPDATE applications SET status = ?, interview_date = NULL, interview_notes = NULL, rejection_reason = ? WHERE id = ?")
+            ->execute([$status, $rejectionReason, $appId]);
     }
 
     $pdo->prepare("
@@ -427,19 +428,25 @@ if ($action === 'updateStatus') {
         VALUES (?, ?, ?, ?)
     ")->execute([$appId, $oldStatus ?: null, $status, $_SESSION['ojams_user']['id']]);
 
-    $logMsg = ($status === 'Approved' && !empty($interviewDate))
-        ? "Application of {$app['full_name']} Approved with Interview scheduled on {$interviewDate}"
-        : "Application of {$app['full_name']} marked as {$status} for \"{$app['title']}\"";
+    if ($status === 'Approved') {
+        $logMsg = !empty($interviewDate)
+            ? "Application of {$app['full_name']} Approved with Interview scheduled on {$interviewDate}"
+            : "Application of {$app['full_name']} Approved for \"{$app['title']}\"";
+    } else {
+        $logMsg = !empty($rejectionReason)
+            ? "Application of {$app['full_name']} Rejected: {$rejectionReason}"
+            : "Application of {$app['full_name']} marked as Rejected for \"{$app['title']}\"";
+    }
     logActivity($pdo, $logMsg, $status, (int)$app['job_id'], $appId);
 
-    // Send email notification to applicant via Gmail with interview details
+    // Send email notification to applicant via Gmail with status details
     if (!empty($app['email'])) {
-        sendApplicationStatusEmail($app['email'], $app['full_name'], $app['title'], $app['company'], $status, $interviewDate, $interviewNotes);
+        sendApplicationStatusEmail($app['email'], $app['full_name'], $app['title'], $app['company'], $status, $interviewDate, $interviewNotes, $rejectionReason);
     }
 
-    // Send SMS notification to applicant via PhilSMS with interview details
+    // Send SMS notification to applicant via PhilSMS with status details
     if (!empty($app['contact'])) {
-        sendApplicationStatusSms($app['contact'], $app['full_name'], $app['title'], $app['company'], $status, $interviewDate, $interviewNotes);
+        sendApplicationStatusSms($app['contact'], $app['full_name'], $app['title'], $app['company'], $status, $interviewDate, $interviewNotes, $rejectionReason);
     }
 
     echo json_encode(['success' => true, 'message' => "Application {$status}."]);
@@ -635,8 +642,9 @@ if ($action === 'updateDocuments') {
 // ── ACTION: bulkUpdateStatus (admin or staff) ────────────────
 if ($action === 'bulkUpdateStatus') {
     if (!isAdmin() && !isStaff()) { echo json_encode(['success' => false, 'message' => 'Unauthorized.']); exit; }
-    $ids    = array_filter(array_map('intval', (array)($body['ids'] ?? [])));
-    $status = $body['status'] ?? '';
+    $ids             = array_filter(array_map('intval', (array)($body['ids'] ?? [])));
+    $status          = $body['status'] ?? '';
+    $rejectionReason = !empty($body['rejection_reason']) ? trim($body['rejection_reason']) : null;
     if (empty($ids) || !in_array($status, ['Approved', 'Rejected'], true)) {
         echo json_encode(['success' => false, 'message' => 'Invalid parameters.']); exit;
     }
@@ -647,8 +655,13 @@ if ($action === 'bulkUpdateStatus') {
     $oldStmt->execute(array_values($ids));
     $oldStatuses = $oldStmt->fetchAll(PDO::FETCH_KEY_PAIR); // [id => status]
 
-    $pdo->prepare("UPDATE applications SET status = ? WHERE id IN ({$placeholders})")
-        ->execute(array_merge([$status], array_values($ids)));
+    if ($status === 'Approved') {
+        $pdo->prepare("UPDATE applications SET status = ?, rejection_reason = NULL WHERE id IN ({$placeholders})")
+            ->execute(array_merge([$status], array_values($ids)));
+    } else {
+        $pdo->prepare("UPDATE applications SET status = ?, interview_date = NULL, interview_notes = NULL, rejection_reason = ? WHERE id IN ({$placeholders})")
+            ->execute(array_merge([$status, $rejectionReason], array_values($ids)));
+    }
 
     $adminId  = $_SESSION['ojams_user']['id'];
     $histStmt = $pdo->prepare("
@@ -670,10 +683,10 @@ if ($action === 'bulkUpdateStatus') {
     $bulkApplicants = $emailStmt->fetchAll();
     foreach ($bulkApplicants as $bApp) {
         if (!empty($bApp['email'])) {
-            sendApplicationStatusEmail($bApp['email'], $bApp['full_name'], $bApp['title'], $bApp['company'], $status);
+            sendApplicationStatusEmail($bApp['email'], $bApp['full_name'], $bApp['title'], $bApp['company'], $status, null, null, $rejectionReason);
         }
         if (!empty($bApp['contact'])) {
-            sendApplicationStatusSms($bApp['contact'], $bApp['full_name'], $bApp['title'], $bApp['company'], $status);
+            sendApplicationStatusSms($bApp['contact'], $bApp['full_name'], $bApp['title'], $bApp['company'], $status, null, null, $rejectionReason);
         }
     }
 

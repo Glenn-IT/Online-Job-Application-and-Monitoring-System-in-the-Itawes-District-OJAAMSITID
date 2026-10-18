@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS applications (
   status        ENUM('Pending','Approved','Rejected') NOT NULL DEFAULT 'Pending',
   interview_date  DATETIME        DEFAULT NULL,     -- Date and time of interview for approved applicants
   interview_notes TEXT            DEFAULT NULL,     -- Interview instructions, venue, or online link
+  rejection_reason TEXT           DEFAULT NULL,     -- Reason and feedback for rejected applications
   date_applied  DATE            NOT NULL,
   updated_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
