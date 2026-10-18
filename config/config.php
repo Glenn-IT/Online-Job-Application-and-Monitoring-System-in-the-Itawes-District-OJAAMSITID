@@ -91,7 +91,7 @@ define('PER_PAGE_USER',  12);   // Job cards per page on Browse Jobs
 define('PER_PAGE_ADMIN', 15);   // Rows per page on admin tables
 
 // ── Login brute-force protection ────────────────────────────
-define('LOGIN_MAX_ATTEMPTS',    5);
+define('LOGIN_MAX_ATTEMPTS',    3);
 define('LOGIN_LOCKOUT_SECONDS', 30);
 
 // ── Password-change throttle ────────────────────────────────

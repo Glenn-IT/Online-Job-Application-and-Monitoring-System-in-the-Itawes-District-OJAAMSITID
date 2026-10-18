@@ -15,6 +15,8 @@ if (isLoggedIn()) {
 }
 
 $error = '';
+$isLocked = false;
+$lockoutSecsLeft = 0;
 
 $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR']
     ?? $_SERVER['HTTP_X_REAL_IP']
@@ -22,24 +24,29 @@ $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR']
     ?? '0.0.0.0';
 $clientIp = trim(explode(',', $clientIp)[0]);
 
+// ── Check active lockout (for both GET and POST) ──────────────
+$lockStmt = $pdo->prepare("
+    SELECT attempts, last_attempt_at
+    FROM login_attempts
+    WHERE ip = ? AND last_attempt_at > DATE_SUB(NOW(), INTERVAL ? SECOND)
+");
+$lockStmt->execute([$clientIp, LOGIN_LOCKOUT_SECONDS]);
+$lockRow = $lockStmt->fetch();
+
+if ($lockRow && $lockRow['attempts'] >= LOGIN_MAX_ATTEMPTS) {
+    $retryAfter = (new DateTime($lockRow['last_attempt_at']))
+        ->modify('+' . LOGIN_LOCKOUT_SECONDS . ' seconds');
+    $lockoutSecsLeft = max(1, (int)ceil($retryAfter->getTimestamp() - time()));
+    $isLocked = true;
+    $error = "Too many failed attempts (" . LOGIN_MAX_ATTEMPTS . " of " . LOGIN_MAX_ATTEMPTS . "). Account locked. Please wait {$lockoutSecsLeft} second(s).";
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email    = trim($_POST['email']    ?? '');
     $password = trim($_POST['password'] ?? '');
 
-    // ── Check lockout ────────────────────────────────────────
-    $lockStmt = $pdo->prepare("
-        SELECT attempts, last_attempt_at
-        FROM login_attempts
-        WHERE ip = ? AND last_attempt_at > DATE_SUB(NOW(), INTERVAL ? SECOND)
-    ");
-    $lockStmt->execute([$clientIp, LOGIN_LOCKOUT_SECONDS]);
-    $lockRow = $lockStmt->fetch();
-
-    if ($lockRow && $lockRow['attempts'] >= LOGIN_MAX_ATTEMPTS) {
-        $retryAfter = (new DateTime($lockRow['last_attempt_at']))
-            ->modify('+' . LOGIN_LOCKOUT_SECONDS . ' seconds');
-        $secsLeft = max(1, (int)ceil($retryAfter->getTimestamp() - time()));
-        $error = "Too many failed attempts. Please try again in {$secsLeft} second(s).";
+    if ($isLocked) {
+        $error = "Too many failed attempts (" . LOGIN_MAX_ATTEMPTS . " of " . LOGIN_MAX_ATTEMPTS . "). Account locked. Please wait {$lockoutSecsLeft} second(s).";
     } elseif ($email === '' || $password === '') {
         $error = 'Please enter both email and password.';
     } else {
@@ -66,13 +73,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $attStmt = $pdo->prepare("SELECT attempts FROM login_attempts WHERE ip = ?");
             $attStmt->execute([$clientIp]);
             $attRow   = $attStmt->fetch();
-            $attempts = $attRow['attempts'] ?? 1;
-            $remaining = LOGIN_MAX_ATTEMPTS - $attempts;
+            $attempts = (int)($attRow['attempts'] ?? 1);
+            $remaining = max(0, LOGIN_MAX_ATTEMPTS - $attempts);
 
             if ($remaining > 0) {
-                $error = "Invalid email or password. {$remaining} attempt(s) remaining before lockout.";
+                $error = "Invalid email or password. {$remaining} attempt(s) remaining out of " . LOGIN_MAX_ATTEMPTS . " before lockout.";
             } else {
-                $error = "Too many failed attempts. Please try again in " . LOGIN_LOCKOUT_SECONDS . " second(s).";
+                $isLocked = true;
+                $lockoutSecsLeft = LOGIN_LOCKOUT_SECONDS;
+                $error = "Too many failed attempts (" . LOGIN_MAX_ATTEMPTS . " of " . LOGIN_MAX_ATTEMPTS . "). Account locked. Please wait " . LOGIN_LOCKOUT_SECONDS . " second(s).";
             }
         } else {
             // ── Clear failed attempts on success ─────────────
@@ -90,6 +99,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'contact_number' => $user['contact_number'],
                 'address'        => $user['address'],
                 'birthdate'      => $user['birthdate'],
+                'elementary'     => $user['elementary'] ?? '',
+                'jhs'            => $user['jhs'] ?? '',
+                'shs'            => $user['shs'] ?? '',
+                'college'        => $user['college'] ?? '',
+                'skills'         => $user['skills'] ?? '',
+                'experience'     => $user['experience'] ?? '',
             ];
 
             if ($user['role'] === 'admin') {
@@ -235,8 +250,16 @@ $pageTitle = "OJAMS - Login";
             </div>
 
             <?php if ($error): ?>
-            <div class="alert alert-danger">
-                <i class="bi bi-exclamation-circle me-2"></i><?= htmlspecialchars($error) ?>
+            <div class="alert <?= $isLocked ? 'alert-danger shadow-sm border-danger' : 'alert-danger' ?> d-flex align-items-center" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5 flex-shrink-0"></i>
+                <div>
+                    <div><?= htmlspecialchars($error) ?></div>
+                    <?php if ($isLocked): ?>
+                    <div class="small fw-semibold mt-1 text-danger-emphasis">
+                        <i class="bi bi-stopwatch me-1"></i>Lockout cooldown: <span id="cooldownTimer" class="fw-bold"><?= (int)$lockoutSecsLeft ?></span>s
+                    </div>
+                    <?php endif; ?>
+                </div>
             </div>
             <?php endif; ?>
 
@@ -267,7 +290,7 @@ $pageTitle = "OJAMS - Login";
                 </div>
 
                 <div class="d-grid">
-                    <button type="submit" class="btn btn-primary btn-lg">
+                    <button type="submit" id="loginSubmitBtn" class="btn btn-primary btn-lg" <?= $isLocked ? 'disabled' : '' ?>>
                         <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
                     </button>
                 </div>
@@ -296,12 +319,32 @@ function toggleLoginPass() {
     else                         { inp.type = 'password'; icon.className = 'bi bi-eye'; }
 }
 document.getElementById('loginForm')?.addEventListener('submit', function () {
-    const btn = this.querySelector('[type="submit"]');
+    const btn = document.getElementById('loginSubmitBtn');
     if (btn) {
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Signing in…';
         btn.disabled = true;
     }
 });
+
+<?php if ($isLocked && $lockoutSecsLeft > 0): ?>
+let remainingSecs = <?= (int)$lockoutSecsLeft ?>;
+const timerEl = document.getElementById('cooldownTimer');
+const submitBtn = document.getElementById('loginSubmitBtn');
+const countdownInterval = setInterval(() => {
+    remainingSecs--;
+    if (timerEl) timerEl.textContent = remainingSecs;
+    if (remainingSecs <= 0) {
+        clearInterval(countdownInterval);
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Sign In (Ready)';
+        }
+        if (timerEl && timerEl.parentElement) {
+            timerEl.parentElement.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle me-1"></i>Lockout expired. You can now try signing in again.</span>';
+        }
+    }
+}, 1000);
+<?php endif; ?>
 </script>
 </body>
 </html>

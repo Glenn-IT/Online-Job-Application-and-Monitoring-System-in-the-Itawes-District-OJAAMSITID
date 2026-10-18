@@ -33,6 +33,12 @@
                         <i class="bi bi-file-earmark-text me-1"></i>My Applications
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo ($currentPage ?? '') === 'saved-jobs' ? 'active' : ''; ?>"
+                       href="<?php echo $basePath ?? ''; ?>pages/user/saved-jobs.php">
+                        <i class="bi bi-bookmark-check me-1"></i>Saved Drafts &amp; Jobs
+                    </a>
+                </li>
             </ul>
 
             <!-- Right: user dropdown -->
@@ -48,6 +54,12 @@
                             </span>
                         </li>
                         <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item <?php echo ($currentPage ?? '') === 'saved-jobs' ? 'active' : ''; ?>"
+                               href="<?php echo $basePath ?? ''; ?>pages/user/saved-jobs.php">
+                                <i class="bi bi-bookmark-check me-2"></i>Saved Drafts &amp; Jobs
+                            </a>
+                        </li>
                         <li>
                             <a class="dropdown-item <?php echo ($currentPage ?? '') === 'profile-settings' ? 'active' : ''; ?>"
                                href="<?php echo $basePath ?? ''; ?>pages/user/profile-settings.php">

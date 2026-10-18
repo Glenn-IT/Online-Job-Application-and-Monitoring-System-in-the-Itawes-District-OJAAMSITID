@@ -329,6 +329,9 @@ if ($action === 'apply') {
         }
     }
 
+    // Clear any saved draft for this job now that application is officially submitted
+    $pdo->prepare("DELETE FROM saved_jobs WHERE user_id = ? AND job_id = ?")->execute([$userId, $jobId]);
+
     $user = getCurrentUser();
     logActivity($pdo, "New application received from {$user['full_name']} for \"{$job['title']}\"", 'New', $jobId, $newAppId);
 

@@ -1,3 +1,1 @@
-1. In  dashboard, add pie graph , line chart or donut chart to indicate some reports
-
-2. Make the security Question 10s
+Required Documents on that part on applying job of applicant - add the uploading of diploma ok make it also required

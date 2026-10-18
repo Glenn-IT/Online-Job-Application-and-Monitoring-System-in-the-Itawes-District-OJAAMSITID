@@ -34,6 +34,13 @@ $dupStmt->execute([$userId, $jobId]);
 $existingApp = $dupStmt->fetch();
 $alreadyApplied = (bool)$existingApp;
 
+// ── Has the user saved/drafted this job? ─────────────────────
+$savedStmt = $pdo->prepare("SELECT id, draft_data FROM saved_jobs WHERE user_id = ? AND job_id = ? LIMIT 1");
+$savedStmt->execute([$userId, $jobId]);
+$savedJob = $savedStmt->fetch();
+$isSaved = (bool)$savedJob;
+$hasDraft = $isSaved && !empty($savedJob['draft_data']);
+
 // ── Applicant count ──────────────────────────────────────────
 $cntStmt = $pdo->prepare("SELECT COUNT(*) FROM applications WHERE job_id = ?");
 $cntStmt->execute([$jobId]);
@@ -107,6 +114,15 @@ include $basePath . 'layouts/navbar-user.php';
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
+                    <?php if ($hasDraft): ?>
+                        <span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-2">
+                            <i class="bi bi-pencil-square me-1"></i>Draft Saved
+                        </span>
+                    <?php endif; ?>
+                    <button type="button" class="btn btn-outline-secondary btn-sm px-3 py-2" id="saveJobBtn" onclick="toggleSaveJob(<?= $jobId ?>, this)">
+                        <i class="bi <?= $isSaved ? 'bi-bookmark-fill text-warning' : 'bi-bookmark' ?> me-1"></i>
+                        <span><?= $isSaved ? 'Saved' : 'Save Job' ?></span>
+                    </button>
                     <span class="badge fs-6 px-3 py-2 <?= $isOpen ? 'bg-success' : 'bg-secondary' ?>">
                         <?= $isOpen ? 'Open' : 'Closed' ?>
                     </span>
@@ -301,16 +317,16 @@ include $basePath . 'layouts/navbar-user.php';
                     <?php elseif ($isOpen): ?>
                         <!-- Can Apply State -->
                         <div class="mb-3">
-                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center mb-3"
+                            <div class="rounded-circle <?= $hasDraft ? 'bg-info bg-opacity-10 text-info' : 'bg-primary bg-opacity-10 text-primary' ?> d-inline-flex align-items-center justify-content-center mb-3"
                                  style="width: 68px; height: 68px; font-size: 2rem;">
-                                <i class="bi bi-send-fill"></i>
+                                <i class="bi <?= $hasDraft ? 'bi-pencil-square' : 'bi-send-fill' ?>"></i>
                             </div>
-                            <h5 class="fw-bold text-dark mb-1">Ready to Apply?</h5>
-                            <p class="text-muted small mb-0">Submit your profile and resume directly to <?= htmlspecialchars($company) ?>.</p>
+                            <h5 class="fw-bold text-dark mb-1"><?= $hasDraft ? 'Application in Progress' : 'Ready to Apply?' ?></h5>
+                            <p class="text-muted small mb-0"><?= $hasDraft ? 'You have a saved draft for this position. Continue where you left off or submit now.' : 'Submit your profile and resume directly to ' . htmlspecialchars($company) . '.' ?></p>
                         </div>
                         <button class="btn btn-primary w-100 btn-lg mb-2 py-3"
                             onclick="openApplyModal(<?= $job['id'] ?>, '<?= htmlspecialchars($job['title'], ENT_QUOTES) ?>', '<?= htmlspecialchars($job['company'], ENT_QUOTES) ?>')">
-                            <i class="bi bi-send-fill me-2"></i>Apply Now
+                            <i class="bi <?= $hasDraft ? 'bi-pencil-square' : 'bi-send-fill' ?> me-2"></i><?= $hasDraft ? 'Continue Draft Application' : 'Apply Now' ?>
                         </button>
                         <small class="text-muted d-block mt-2" style="font-size: 0.76rem;">
                             <i class="bi bi-shield-check me-1 text-success"></i>Direct application verified by OJAMS
@@ -359,7 +375,7 @@ include $basePath . 'layouts/navbar-user.php';
             <?php elseif ($isOpen): ?>
                 <button class="btn btn-primary btn-sm px-3 py-2 fw-semibold shadow-sm"
                     onclick="openApplyModal(<?= $job['id'] ?>, '<?= htmlspecialchars($job['title'], ENT_QUOTES) ?>', '<?= htmlspecialchars($job['company'], ENT_QUOTES) ?>')">
-                    <i class="bi bi-send-fill me-1"></i>Apply Now
+                    <i class="bi <?= $hasDraft ? 'bi-pencil-square' : 'bi-send-fill' ?> me-1"></i><?= $hasDraft ? 'Continue Draft' : 'Apply Now' ?>
                 </button>
             <?php else: ?>
                 <button class="btn btn-secondary btn-sm px-3 py-2" disabled>
@@ -374,6 +390,7 @@ include $basePath . 'layouts/navbar-user.php';
 
 <script>
 const APP_HANDLER = '../../handlers/applications.php';
+const SAVED_JOBS_HANDLER = '../../handlers/saved-jobs.php';
 
 // ── Age Trapping & Validation ────────────────────────────────
 function computeAge(birthdate) {
@@ -396,17 +413,34 @@ function openApplyModal(jobId, title, company) {
         document.getElementById(k + 'FileInfo')?.classList.add('d-none');
     });
 
-    const sess = <?php echo json_encode([
-        'full_name'      => $_SESSION['ojams_user']['full_name'],
-        'contact_number' => $_SESSION['ojams_user']['contact_number'] ?? '',
-        'address'        => $_SESSION['ojams_user']['address'] ?? '',
-        'birthdate'      => $_SESSION['ojams_user']['birthdate'] ?? '',
-    ]); ?>;
+    const sess = <?php 
+        $uStmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+        $uStmt->execute([$_SESSION['ojams_user']['id']]);
+        $uData = $uStmt->fetch() ?: $_SESSION['ojams_user'];
+        echo json_encode([
+            'full_name'      => $uData['full_name'],
+            'contact_number' => $uData['contact_number'] ?? '',
+            'address'        => $uData['address'] ?? '',
+            'birthdate'      => $uData['birthdate'] ?? '',
+            'elementary'     => $uData['elementary'] ?? '',
+            'jhs'            => $uData['jhs'] ?? '',
+            'shs'            => $uData['shs'] ?? '',
+            'college'        => $uData['college'] ?? '',
+            'skills'         => $uData['skills'] ?? '',
+            'experience'     => $uData['experience'] ?? '',
+        ]);
+    ?>;
     const setV = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
-    setV('appFullName',  sess.full_name);
-    setV('appContact',   sess.contact_number);
-    setV('appAddress',   sess.address);
-    setV('appBirthdate', sess.birthdate);
+    setV('appFullName',   sess.full_name);
+    setV('appContact',    sess.contact_number);
+    setV('appAddress',    sess.address);
+    setV('appBirthdate',  sess.birthdate);
+    setV('appElementary', sess.elementary);
+    setV('appJhs',        sess.jhs);
+    setV('appShs',        sess.shs);
+    setV('appCollege',    sess.college);
+    setV('appSkills',     sess.skills);
+    setV('appExperience', sess.experience);
 
     const ageEl = document.getElementById('appAge');
     if (sess.birthdate) {
@@ -418,6 +452,40 @@ function openApplyModal(jobId, title, company) {
     } else if (ageEl) {
         ageEl.value = '';
     }
+
+    // Check if a saved draft exists for this job and restore it
+    fetch(SAVED_JOBS_HANDLER, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "get_draft",
+            job_id: jobId,
+            csrf_token: getCsrfToken()
+        })
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success && res.has_draft && res.draft) {
+            const d = res.draft;
+            const setVal = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null && v !== "") el.value = v; };
+            if (d.full_name)   setVal("appFullName",   d.full_name);
+            if (d.birthdate) {
+                setVal("appBirthdate", d.birthdate);
+                if (ageEl) ageEl.value = computeAge(d.birthdate);
+            }
+            if (d.address)     setVal("appAddress",    d.address);
+            if (d.contact)     setVal("appContact",    d.contact);
+            if (d.elementary)  setVal("appElementary", d.elementary);
+            if (d.jhs)         setVal("appJhs",        d.jhs);
+            if (d.shs)         setVal("appShs",        d.shs);
+            if (d.college)     setVal("appCollege",    d.college);
+            if (d.skills)      setVal("appSkills",     d.skills);
+            if (d.experience)  setVal("appExperience", d.experience);
+            showToast("Draft restored! You can continue editing your application.", "info");
+        }
+    })
+    .catch(() => {});
+
     new bootstrap.Modal(document.getElementById('applyJobModal')).show();
 }
 
@@ -599,6 +667,86 @@ function submitApplication() {
         showToast('Request failed. Please try again.', 'danger');
     })
     .finally(() => btnLoading(submitBtn, false));
+}
+
+// ── Save Application as Draft Handler ──────────────────────────
+function saveApplicationDraft() {
+    const form = document.getElementById('applicationForm');
+    const jobId = form ? form.dataset.jobId : null;
+    if (!jobId) { showToast('No job selected.', 'danger'); return; }
+
+    const g = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : '';
+    const draftData = {
+        full_name:   g('appFullName'),
+        birthdate:   document.getElementById('appBirthdate')?.value || '',
+        age:         g('appAge'),
+        address:     g('appAddress'),
+        contact:     g('appContact'),
+        elementary:  g('appElementary'),
+        jhs:         g('appJhs'),
+        shs:         g('appShs'),
+        college:     g('appCollege'),
+        skills:      g('appSkills'),
+        experience:  g('appExperience')
+    };
+
+    const draftBtn = document.getElementById('saveDraftAppBtn');
+    btnLoading(draftBtn, true, 'Saving Draft…');
+
+    fetch(SAVED_JOBS_HANDLER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'save_draft',
+            job_id: jobId,
+            draft_data: draftData,
+            csrf_token: getCsrfToken()
+        })
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            showToast(res.message, 'success');
+            const modalEl = document.getElementById('applyJobModal');
+            bootstrap.Modal.getInstance(modalEl)?.hide();
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            showToast(res.message || 'Failed to save draft.', 'danger');
+        }
+    })
+    .catch(() => showToast('Error saving application draft.', 'danger'))
+    .finally(() => btnLoading(draftBtn, false));
+}
+
+// ── Bookmark / Save Job Handler ────────────────────────────────
+function toggleSaveJob(jobId, btn) {
+    fetch(SAVED_JOBS_HANDLER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'toggle',
+            job_id: jobId,
+            csrf_token: getCsrfToken()
+        })
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            showToast(res.message, 'success');
+            const icon = btn.querySelector('i');
+            const textSpan = btn.querySelector('span');
+            if (res.saved) {
+                if (icon) icon.className = 'bi bi-bookmark-fill text-warning me-1';
+                if (textSpan) textSpan.textContent = 'Saved';
+            } else {
+                if (icon) icon.className = 'bi bi-bookmark me-1';
+                if (textSpan) textSpan.textContent = 'Save Job';
+            }
+        } else {
+            showToast(res.message || 'Action failed.', 'danger');
+        }
+    })
+    .catch(() => showToast('Request error.', 'danger'));
 }
 </script>
 <?php include $basePath . 'layouts/footer.php'; ?>

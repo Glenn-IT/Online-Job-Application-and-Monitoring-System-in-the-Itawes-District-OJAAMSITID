@@ -54,16 +54,17 @@ Use this matrix to identify all connected files whenever modifying a feature:
 
 | Component / Layer | Connected Files |
 | :--- | :--- |
-| **Config & Security Core** | `config/config.php`, `config/auth.php`, `config/db.php` |
-| **Public Auth Pages** | `login.php`, `register.php`, `logout.php`, `forgot-password.php`, `reset-password.php` |
+| **Config & Security Core** | `config/config.php` (`LOGIN_MAX_ATTEMPTS = 3`), `config/auth.php`, `config/db.php` |
+| **Public Auth Pages** | `login.php` (3-attempt lockout with active countdown timer & remaining attempts banner), `register.php` (complete personal data, 18-80 age trapping, educational background & skills), `logout.php`, `forgot-password.php`, `reset-password.php` |
 | **Backend Handlers** | `handlers/profile.php` (`changePassword`), `handlers/admin.php` (`deactivateUser`, `reactivateUser`, `changeRole`) |
 | **Layout Guards** | `layouts/header.php`, `layouts/navbar-admin.php`, `layouts/navbar-staff.php`, `layouts/navbar-user.php` |
-| **Session Keys** | `$_SESSION['user_id']`, `$_SESSION['role']` (`admin`, `staff`, `user`), `$_SESSION['full_name']`, `$_SESSION['email']`, `$_SESSION['csrf_token']` |
+| **Session Keys** | `$_SESSION['user_id']`, `$_SESSION['role']` (`admin`, `staff`, `user`), `$_SESSION['full_name']`, `$_SESSION['email']`, `$_SESSION['csrf_token']`, and full user dossier (`birthdate`, `address`, `contact_number`, `elementary`, `jhs`, `shs`, `college`, `skills`, `experience`) |
 | **Database Tables** | `users`, `password_resets`, `login_attempts`, `activity_logs` |
 | **Modals** | `modals/logout-modal.php` |
 
 *Synchronization Check when modifying Auth:*
 - If changing session keys or roles, update `config/auth.php` (`checkAuth()`, `checkAdmin()`, `checkStaff()`), all page guards at the top of `pages/admin/*.php`, `pages/staff/*.php`, `pages/user/*.php`, and navbar display logic.
+- Login attempt limit is strictly 3 attempts before lockout (`config/config.php` and `login.php`).
 
 ---
 
@@ -87,28 +88,33 @@ Use this matrix to identify all connected files whenever modifying a feature:
 
 | Component / Layer | Connected Files |
 | :--- | :--- |
-| **Backend Handler** | `handlers/jobs.php` (Actions: `add`, `edit`, `delete`, `bulkDelete`) |
+| **Backend Handler** | `handlers/jobs.php` (Actions: `add`, `edit`, `delete`, `bulkDelete`), `handlers/saved-jobs.php` (`toggle`, `save_draft`, `get_draft`, `remove`) |
 | **Admin Management** | `pages/admin/manage-jobs.php`, `pages/admin/dashboard.php` |
 | **Staff Management** | `pages/staff/manage-jobs.php`, `pages/staff/dashboard.php` |
-| **User Job Portal** | `pages/user/browse-jobs.php`, `pages/user/job-detail.php`, `index.php` |
-| **Modals & UI** | `modals/add-job-modal.php` (used for both Add & Edit modes), `components/job-card.php` |
-| **Frontend Script & Styling** | `assets/css/style.css` (`.browse-hero-card`, `.browse-search-box`, `.filter-pills-scroll`, `.filter-chip`, `.job-card-modern`, `.company-monogram`, `.badge-tag`, `.detail-stat-box`) |
-| **Database Tables** | `jobs` |
+| **User Job Portal** | `pages/user/browse-jobs.php`, `pages/user/job-detail.php`, `pages/user/saved-jobs.php`, `index.php` |
+| **Modals & UI** | `modals/add-job-modal.php`, `#publicJobModal` in `index.php`, `modals/apply-job-modal.php`, `components/job-card.php` |
+| **Frontend Script & Styling** | `assets/css/style.css` (`.browse-hero-card`, `.browse-search-box`, `.filter-pills-scroll`, `.filter-chip`, `.job-card-modern`, `.company-monogram`, `.badge-tag`, `.detail-stat-box`, `.saved-hero`, `.saved-job-card`) |
+| **Database Tables** | `jobs`, `saved_jobs` (columns: `id`, `user_id`, `job_id`, `created_at`, `draft_data`, `updated_at`) |
 
-*Modern Applicant Job Browsing Architecture:*
-1. **Hero & Unified Search**: `pages/user/browse-jobs.php` features a modern discovery hero card with unified keyword/company/location search, status selector, and responsive action button.
-2. **Scrollable Quick-Filter Chips**: Dynamic pills for All Jobs, Full-time, Part-time, Contract, Internship, and Freelance.
-3. **Company Monogram & Soft Badges**: Deterministic hashing generates distinctive initials and soft pastel badges (`tag-fulltime`, `tag-parttime`, `tag-contract`, `tag-internship`, `tag-freelance`, `tag-salary`, `tag-location`).
-4. **Direct Applicant Flow**: Saved jobs / bookmarking feature was retired from the applicant interface in favor of direct browsing and streamlined 1-tap application.
-5. **Job Detail Highlights**: `pages/user/job-detail.php` includes a 6-box quick highlight tile grid (`.detail-stat-box`) displaying Job Type, Salary, Location, Date Posted, Deadline (with expiration alert), and Total Applicants.
-6. **Mobile Ergonomics & Sticky Action Bar**: `pages/user/browse-jobs.php` features responsive input stacking (`col-12 col-sm-6 col-md-3`), compact card padding, and touch targets >=44px. `pages/user/job-detail.php` features a fixed glassmorphic bottom bar (`.mobile-sticky-apply-bar`) for 1-tap applications on mobile without vertical scrolling, plus 3-column overview metrics on `pages/user/my-applications.php`.
+*Modern Applicant Job Browsing & Draft Architecture:*
+1. **Public Job Discovery (`index.php`)**: Non-logged in visitors can view full qualifications, eligibility requirements, salary, contact person, and detailed descriptions via modal (`#publicJobModal`) and on-card qualification callout snippets.
+2. **Hero & Unified Search**: `pages/user/browse-jobs.php` features a modern discovery hero card with unified keyword/company/location search, status selector, and responsive action button.
+3. **Scrollable Quick-Filter Chips**: Dynamic pills for All Jobs, Full-time, Part-time, Contract, Internship, and Freelance.
+4. **Company Monogram & Soft Badges**: Deterministic hashing generates distinctive initials and soft pastel badges (`tag-fulltime`, `tag-parttime`, `tag-contract`, `tag-internship`, `tag-freelance`, `tag-salary`, `tag-location`).
+5. **Saved Jobs & Application Drafts**:
+   - Applicants can bookmark openings and save partially completed applications as drafts (`handlers/saved-jobs.php`).
+   - Draft data (`full_name`, `birthdate`, `address`, `contact`, `elementary`, `jhs`, `shs`, `college`, `skills`, `experience`) is serialized into `saved_jobs.draft_data`.
+   - Dedicated management view `pages/user/saved-jobs.php` provides tabs (All, Drafts, Bookmarked), draft restore triggers, and bookmark removal.
+   - When submitting the final application (`handlers/applications.php`), existing drafts for that job are automatically cleared.
+6. **Job Detail Highlights**: `pages/user/job-detail.php` includes a 6-box quick highlight tile grid (`.detail-stat-box`) displaying Job Type, Salary, Location, Date Posted, Deadline (with expiration alert), and Total Applicants.
+7. **Mobile Ergonomics & Sticky Action Bar**: `pages/user/browse-jobs.php` features responsive input stacking (`col-12 col-sm-6 col-md-3`), compact card padding, and touch targets >=44px. `pages/user/job-detail.php` features a fixed glassmorphic bottom bar (`.mobile-sticky-apply-bar`) for 1-tap applications on mobile without vertical scrolling, plus 3-column overview metrics on `pages/user/my-applications.php`.
 
 *Synchronization Check when modifying Job fields (e.g. adding new field `employment_type` or `department`):*
 1. Add field to `config/database.sql` (`jobs` table).
 2. Update `handlers/jobs.php` in `add` and `edit` action validators & SQL statements.
 3. Update `modals/add-job-modal.php` to include form inputs with proper `id` and `name`.
 4. Update `pages/admin/manage-jobs.php` and `pages/staff/manage-jobs.php` data attributes and table columns.
-5. Update `pages/user/browse-jobs.php`, `pages/user/job-detail.php`, and `components/job-card.php` display.
+5. Update `pages/user/browse-jobs.php`, `pages/user/job-detail.php`, `pages/user/saved-jobs.php`, and `components/job-card.php` display.
 6. Update `assets/js/script.js` populate modal script for edit triggers.
 
 ---
@@ -118,14 +124,14 @@ Use this matrix to identify all connected files whenever modifying a feature:
 
 | Component / Layer | Connected Files |
 | :--- | :--- |
-| **Backend Handler** | `handlers/applications.php` (Actions: `apply`, `cancel`, `updateStatus`, `scheduleInterview`, `getDetails`, `updateDocuments`, `bulkUpdateStatus`, `bulkDelete`) |
-| **User Pages** | `pages/user/my-applications.php`, `pages/user/job-detail.php`, `pages/user/browse-jobs.php` |
+| **Backend Handler** | `handlers/applications.php` (Actions: `apply`, `cancel`, `updateStatus`, `scheduleInterview`, `getDetails`, `updateDocuments`, `bulkUpdateStatus`, `bulkDelete`), `handlers/saved-jobs.php` (`save_draft`, `get_draft`) |
+| **User Pages** | `pages/user/my-applications.php`, `pages/user/job-detail.php`, `pages/user/browse-jobs.php`, `pages/user/saved-jobs.php` |
 | **Admin & Staff Pages** | `pages/admin/applications.php`, `pages/staff/applications.php`, `pages/admin/reports.php`, `pages/admin/dashboard.php`, `pages/staff/dashboard.php` |
-| **Modals** | `modals/apply-job-modal.php`, `modals/view-application-modal.php`, `modals/schedule-interview-modal.php` |
+| **Modals** | `modals/apply-job-modal.php` (includes "Save as Draft" button & document upload previews), `modals/view-application-modal.php`, `modals/schedule-interview-modal.php` |
 | **Components** | `components/application-row.php`, `components/stats-card.php` |
 | **Notifications Bridge** | `config/mailer.php` (Email notifications), `config/sms.php` (SMS alerts) |
 | **Upload Directory** | `uploads/resumes/` |
-| **Database Tables** | `applications`, `resumes` (stores documents with `document_type`: `resume`, `application_letter`, `pds`, `csc_eligib`, `tor`), `application_status_history`, `activity_logs` |
+| **Database Tables** | `applications`, `resumes` (stores documents with `document_type`: `resume`, `application_letter`, `pds`, `csc_eligib`, `tor`), `saved_jobs` (`draft_data`), `application_status_history`, `activity_logs` |
 
 *Synchronization Check when modifying Application status, fields, or document uploads:*
 1. If status enum/values change: sync `handlers/applications.php`, status badges in `pages/admin/applications.php`, `pages/staff/applications.php`, `pages/user/my-applications.php`, and `components/application-row.php`.

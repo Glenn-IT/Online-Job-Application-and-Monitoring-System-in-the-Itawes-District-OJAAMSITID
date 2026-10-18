@@ -63,6 +63,19 @@ $appliedStmt = $pdo->prepare("SELECT job_id FROM applications WHERE user_id = ?"
 $appliedStmt->execute([$userId]);
 $appliedJobIds = array_column($appliedStmt->fetchAll(), "job_id");
 
+// Saved job IDs and draft tracking for this user
+$savedStmt = $pdo->prepare("SELECT job_id, draft_data FROM saved_jobs WHERE user_id = ?");
+$savedStmt->execute([$userId]);
+$savedRows = $savedStmt->fetchAll();
+$savedJobIds = [];
+$draftJobIds = [];
+foreach ($savedRows as $sr) {
+    $savedJobIds[] = (int)$sr['job_id'];
+    if (!empty($sr['draft_data'])) {
+        $draftJobIds[] = (int)$sr['job_id'];
+    }
+}
+
 // Applicant counts — cached in session for 5 minutes to reduce DB hits
 $cacheKey = 'browse_app_counts';
 $cacheTtl = 300;
@@ -270,11 +283,13 @@ include $basePath . "layouts/navbar-user.php";
             $palette        = getCompanyPalette($company);
             $timeAgo        = formatJobPostingTime($job["date_posted"] ?? "");
             $jtSlug         = strtolower(str_replace(['-', ' '], '', $job['job_type'] ?? ''));
+            $isSaved        = in_array($jobId, $savedJobIds);
+            $hasDraft       = in_array($jobId, $draftJobIds);
         ?>
         <div class="col-12 col-md-6 col-lg-4 mb-4">
             <div class="job-card-modern h-100 p-3 p-sm-4 shadow-sm">
                 
-                <!-- Card Header: Company Monogram + Names -->
+                <!-- Card Header: Company Monogram + Names + Bookmark Action -->
                 <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
                     <div class="d-flex align-items-center gap-3 min-w-0">
                         <div class="company-monogram" style="background: <?= $palette['bg'] ?>; color: <?= $palette['color'] ?>;">
@@ -289,6 +304,11 @@ include $basePath . "layouts/navbar-user.php";
                             </div>
                         </div>
                     </div>
+                    <button type="button" class="btn btn-sm btn-icon border-0 p-1 text-muted" 
+                            title="<?= $isSaved ? 'Remove bookmark' : 'Bookmark job' ?>"
+                            onclick="toggleSaveJob(<?= $jobId ?>, this)">
+                        <i class="bi <?= $isSaved ? 'bi-bookmark-fill text-warning fs-5' : 'bi-bookmark text-muted fs-5' ?>"></i>
+                    </button>
                 </div>
 
                 <!-- Job Title & Status -->
@@ -300,8 +320,13 @@ include $basePath . "layouts/navbar-user.php";
                     </h5>
                 </div>
 
-                <!-- Soft Modern Badge Tags (Job Type, Salary, Location) -->
+                <!-- Soft Modern Badge Tags (Job Type, Salary, Location, Draft) -->
                 <div class="d-flex flex-wrap gap-1 mb-3">
+                    <?php if ($hasDraft): ?>
+                    <span class="badge-tag bg-info-subtle text-info border border-info-subtle">
+                        <i class="bi bi-pencil-square"></i>Draft Saved
+                    </span>
+                    <?php endif; ?>
                     <?php if (!empty($job['job_type'])): ?>
                     <span class="badge-tag tag-<?= $jtSlug ?>">
                         <i class="bi bi-briefcase"></i><?= htmlspecialchars($job['job_type']) ?>
@@ -348,7 +373,7 @@ include $basePath . "layouts/navbar-user.php";
                     <?php endif; ?>
                 </div>
 
-                <!-- Action Buttons: View Details & Apply -->
+                <!-- Action Buttons: View Details & Apply / Continue Draft -->
                 <div class="d-flex gap-2 pt-1 mt-auto">
                     <a href="job-detail.php?id=<?= $jobId ?>" class="btn btn-outline-primary btn-sm flex-grow-1">
                         <i class="bi bi-eye me-1"></i>Details
@@ -358,9 +383,9 @@ include $basePath . "layouts/navbar-user.php";
                             <i class="bi bi-check-circle me-1"></i>Applied
                         </button>
                     <?php elseif ($isOpen): ?>
-                        <button class="btn btn-primary btn-sm flex-grow-1"
+                        <button class="btn <?= $hasDraft ? 'btn-outline-primary' : 'btn-primary' ?> btn-sm flex-grow-1"
                                 onclick="openApplyModal(<?= $jobId ?>, '<?= htmlspecialchars($job['title'], ENT_QUOTES) ?>', '<?= htmlspecialchars($job['company'], ENT_QUOTES) ?>')">
-                            <i class="bi bi-send me-1"></i>Apply
+                            <i class="bi <?= $hasDraft ? 'bi-pencil-square' : 'bi-send' ?> me-1"></i><?= $hasDraft ? 'Continue Draft' : 'Apply' ?>
                         </button>
                     <?php else: ?>
                         <button class="btn btn-secondary btn-sm flex-grow-1" disabled>
@@ -411,6 +436,7 @@ include $basePath . "layouts/navbar-user.php";
 
 <script>
 const APP_HANDLER = "../../handlers/applications.php";
+const SAVED_JOBS_HANDLER = "../../handlers/saved-jobs.php";
 
 // ── Age Trapping & Auto-computation ──────────────────────────
 function computeAge(birthdate) {
@@ -434,17 +460,34 @@ function openApplyModal(jobId, title, company) {
         document.getElementById(k + "FileInfo")?.classList.add("d-none");
     });
 
-    const sess = <?php echo json_encode([
-        "full_name"      => $_SESSION["ojams_user"]["full_name"],
-        "contact_number" => $_SESSION["ojams_user"]["contact_number"] ?? "",
-        "address"        => $_SESSION["ojams_user"]["address"] ?? "",
-        "birthdate"      => $_SESSION["ojams_user"]["birthdate"] ?? "",
-    ]); ?>;
+    const sess = <?php 
+        $uStmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+        $uStmt->execute([$_SESSION["ojams_user"]["id"]]);
+        $uData = $uStmt->fetch() ?: $_SESSION["ojams_user"];
+        echo json_encode([
+            "full_name"      => $uData["full_name"],
+            "contact_number" => $uData["contact_number"] ?? "",
+            "address"        => $uData["address"] ?? "",
+            "birthdate"      => $uData["birthdate"] ?? "",
+            "elementary"     => $uData["elementary"] ?? "",
+            "jhs"            => $uData["jhs"] ?? "",
+            "shs"            => $uData["shs"] ?? "",
+            "college"        => $uData["college"] ?? "",
+            "skills"         => $uData["skills"] ?? "",
+            "experience"     => $uData["experience"] ?? "",
+        ]);
+    ?>;
     const setV = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
-    setV("appFullName",  sess.full_name);
-    setV("appContact",   sess.contact_number);
-    setV("appAddress",   sess.address);
-    setV("appBirthdate", sess.birthdate);
+    setV("appFullName",   sess.full_name);
+    setV("appContact",    sess.contact_number);
+    setV("appAddress",    sess.address);
+    setV("appBirthdate",  sess.birthdate);
+    setV("appElementary", sess.elementary);
+    setV("appJhs",        sess.jhs);
+    setV("appShs",        sess.shs);
+    setV("appCollege",    sess.college);
+    setV("appSkills",     sess.skills);
+    setV("appExperience", sess.experience);
 
     // Auto-compute age and check trapping from session birthdate
     const ageEl = document.getElementById("appAge");
@@ -457,6 +500,40 @@ function openApplyModal(jobId, title, company) {
     } else if (ageEl) {
         ageEl.value = "";
     }
+
+    // Check if a saved draft exists for this job and restore it
+    fetch(SAVED_JOBS_HANDLER, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "get_draft",
+            job_id: jobId,
+            csrf_token: getCsrfToken()
+        })
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success && res.has_draft && res.draft) {
+            const d = res.draft;
+            const setVal = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null && v !== "") el.value = v; };
+            if (d.full_name)   setVal("appFullName",   d.full_name);
+            if (d.birthdate) {
+                setVal("appBirthdate", d.birthdate);
+                if (ageEl) ageEl.value = computeAge(d.birthdate);
+            }
+            if (d.address)     setVal("appAddress",    d.address);
+            if (d.contact)     setVal("appContact",    d.contact);
+            if (d.elementary)  setVal("appElementary", d.elementary);
+            if (d.jhs)         setVal("appJhs",        d.jhs);
+            if (d.shs)         setVal("appShs",        d.shs);
+            if (d.college)     setVal("appCollege",    d.college);
+            if (d.skills)      setVal("appSkills",     d.skills);
+            if (d.experience)  setVal("appExperience", d.experience);
+            showToast("Draft restored! You can continue editing your application.", "info");
+        }
+    })
+    .catch(() => {});
+
     new bootstrap.Modal(document.getElementById("applyJobModal")).show();
 }
 
@@ -640,6 +717,85 @@ function submitApplication() {
         showToast("Request failed. Please try again.", "danger");
     })
     .finally(() => btnLoading(submitBtn, false));
+}
+
+// ── Save Application as Draft Handler ──────────────────────────
+function saveApplicationDraft() {
+    const form = document.getElementById("applicationForm");
+    const jobId = form ? form.dataset.jobId : null;
+    if (!jobId) { showToast("No job selected.", "danger"); return; }
+
+    const g = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
+    const draftData = {
+        full_name:   g("appFullName"),
+        birthdate:   document.getElementById("appBirthdate")?.value || "",
+        age:         g("appAge"),
+        address:     g("appAddress"),
+        contact:     g("appContact"),
+        elementary:  g("appElementary"),
+        jhs:         g("appJhs"),
+        shs:         g("appShs"),
+        college:     g("appCollege"),
+        skills:      g("appSkills"),
+        experience:  g("appExperience")
+    };
+
+    const draftBtn = document.getElementById("saveDraftAppBtn");
+    btnLoading(draftBtn, true, "Saving Draft…");
+
+    fetch(SAVED_JOBS_HANDLER, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "save_draft",
+            job_id: jobId,
+            draft_data: draftData,
+            csrf_token: getCsrfToken()
+        })
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            showToast(res.message, "success");
+            const modalEl = document.getElementById("applyJobModal");
+            bootstrap.Modal.getInstance(modalEl)?.hide();
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            showToast(res.message || "Failed to save draft.", "danger");
+        }
+    })
+    .catch(() => showToast("Error saving application draft.", "danger"))
+    .finally(() => btnLoading(draftBtn, false));
+}
+
+// ── Bookmark / Save Job Handler ────────────────────────────────
+function toggleSaveJob(jobId, btn) {
+    fetch(SAVED_JOBS_HANDLER, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "toggle",
+            job_id: jobId,
+            csrf_token: getCsrfToken()
+        })
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            showToast(res.message, "success");
+            const icon = btn.querySelector("i");
+            if (res.saved) {
+                if (icon) icon.className = "bi bi-bookmark-fill text-warning fs-5";
+                btn.title = "Remove bookmark";
+            } else {
+                if (icon) icon.className = "bi bi-bookmark text-muted fs-5";
+                btn.title = "Bookmark job";
+            }
+        } else {
+            showToast(res.message || "Action failed.", "danger");
+        }
+    })
+    .catch(() => showToast("Request error.", "danger"));
 }
 </script>
 <?php include $basePath . "layouts/footer.php"; ?>

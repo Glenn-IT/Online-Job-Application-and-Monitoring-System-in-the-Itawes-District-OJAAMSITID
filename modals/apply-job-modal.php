@@ -200,13 +200,18 @@
             </div>
 
             <!-- Footer -->
-            <div class="modal-footer d-flex flex-column-reverse flex-sm-row gap-2">
+            <div class="modal-footer d-flex flex-column-reverse flex-sm-row justify-content-between gap-2">
                 <button type="button" class="btn btn-secondary w-100 w-sm-auto" data-bs-dismiss="modal">
                     <i class="bi bi-x-lg me-1"></i>Cancel
                 </button>
-                <button type="button" class="btn btn-primary w-100 w-sm-auto" id="submitAppBtn" onclick="submitApplication()">
-                    <i class="bi bi-send me-1"></i>Submit Application
-                </button>
+                <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto">
+                    <button type="button" class="btn btn-outline-primary w-100 w-sm-auto" id="saveDraftAppBtn" onclick="saveApplicationDraft()">
+                        <i class="bi bi-bookmark-plus me-1"></i>Save as Draft
+                    </button>
+                    <button type="button" class="btn btn-primary w-100 w-sm-auto" id="submitAppBtn" onclick="submitApplication()">
+                        <i class="bi bi-send me-1"></i>Submit Application
+                    </button>
+                </div>
             </div>
         </div>
     </div>

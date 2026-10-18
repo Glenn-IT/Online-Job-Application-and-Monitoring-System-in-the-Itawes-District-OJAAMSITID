@@ -27,6 +27,12 @@ CREATE TABLE IF NOT EXISTS users (
   contact_number  VARCHAR(20)     DEFAULT NULL,
   address         TEXT            DEFAULT NULL,
   birthdate       DATE            DEFAULT NULL,
+  elementary      VARCHAR(200)    DEFAULT NULL, -- Educational background
+  jhs             VARCHAR(200)    DEFAULT NULL,
+  shs             VARCHAR(200)    DEFAULT NULL,
+  college         VARCHAR(200)    DEFAULT NULL,
+  skills          TEXT            DEFAULT NULL, -- Candidate skills
+  experience      TEXT            DEFAULT NULL, -- Work experience
   is_active       TINYINT(1)      NOT NULL DEFAULT 1,
   is_approved     TINYINT(1)      NOT NULL DEFAULT 1, -- staff register with 0; admin must approve before login
   profile_photo   VARCHAR(255)    DEFAULT NULL, -- stored filename in uploads/avatars/
@@ -38,6 +44,12 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Run this if the table already exists (adds column to existing installs):
+-- ALTER TABLE users ADD COLUMN elementary VARCHAR(200) DEFAULT NULL AFTER birthdate;
+-- ALTER TABLE users ADD COLUMN jhs VARCHAR(200) DEFAULT NULL AFTER elementary;
+-- ALTER TABLE users ADD COLUMN shs VARCHAR(200) DEFAULT NULL AFTER jhs;
+-- ALTER TABLE users ADD COLUMN college VARCHAR(200) DEFAULT NULL AFTER shs;
+-- ALTER TABLE users ADD COLUMN skills TEXT DEFAULT NULL AFTER college;
+-- ALTER TABLE users ADD COLUMN experience TEXT DEFAULT NULL AFTER skills;
 -- ALTER TABLE users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER birthdate;
 -- ALTER TABLE users ADD COLUMN profile_photo VARCHAR(255) DEFAULT NULL AFTER is_active;
 -- ALTER TABLE users ADD COLUMN security_question VARCHAR(255) DEFAULT NULL AFTER profile_photo;
@@ -273,10 +285,12 @@ CREATE TABLE IF NOT EXISTS application_status_history (
 -- Lets users bookmark job listings to review later.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS saved_jobs (
-  id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id  INT UNSIGNED NOT NULL,
-  job_id   INT UNSIGNED NOT NULL,
-  saved_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id    INT UNSIGNED NOT NULL,
+  job_id     INT UNSIGNED NOT NULL,
+  saved_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  draft_data LONGTEXT     DEFAULT NULL, -- JSON snapshot of application form inputs for continuing later
+  updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_saved (user_id, job_id),
   CONSTRAINT fk_sj_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

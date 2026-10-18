@@ -35,6 +35,16 @@ $totalOpen  = (int)$pdo->query("SELECT COUNT(*) FROM jobs WHERE status='Open'")-
 $totalJobs  = (int)$pdo->query("SELECT COUNT(*) FROM jobs")->fetchColumn();
 $totalApps  = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn();
 
+function getJobTypeClass(?string $type): string {
+    return match(strtolower($type ?? '')) {
+        'full-time'  => 'tag-fulltime',
+        'part-time'  => 'tag-parttime',
+        'contract'   => 'tag-contract',
+        'internship' => 'tag-internship',
+        'freelance'  => 'tag-freelance',
+        default      => 'tag-location'
+    };
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -178,14 +188,57 @@ $totalApps  = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn
             overflow: hidden;
         }
         .pub-job-card .job-qual {
-            color: #64748b;
-            font-size: .82rem;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+            color: #475569;
+            font-size: .84rem;
+            line-height: 1.5;
         }
         .pub-job-card .divider { border-color: #f1f5f9; margin: .9rem 0; }
+
+        .tag-pill {
+            font-size: 0.76rem;
+            font-weight: 600;
+            padding: 0.28rem 0.65rem;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .tag-fulltime   { background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; }
+        .tag-parttime   { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .tag-contract   { background: #fef9c3; color: #a16207; border: 1px solid #fef08a; }
+        .tag-internship { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+        .tag-freelance  { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+        .tag-location   { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+        .tag-salary     { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+        .tag-deadline   { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+
+        .qual-box-preview {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #4f46e5;
+            border-radius: 8px;
+            padding: 0.75rem;
+        }
+
+        .stat-grid-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 0.85rem 1rem;
+        }
+        .stat-grid-box .stat-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 0.2rem;
+        }
+        .stat-grid-box .stat-val {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #1e1b4b;
+        }
 
         .btn-apply {
             background: linear-gradient(135deg, #4f46e5, #6366f1);
@@ -372,13 +425,35 @@ $totalApps  = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn
 
         <?php else: ?>
         <div class="row g-4" id="jobCardsContainer">
-            <?php foreach ($jobs as $job): ?>
+            <?php foreach ($jobs as $job): 
+                $jobType = $job['job_type'] ?: 'Full-time';
+                $location = $job['location'] ?: 'Piat / Itawes District';
+                $salary = $job['salary_range'] ?: 'Competitive / Standard Rate';
+                $deadlineFormatted = !empty($job['deadline']) ? date('M j, Y', strtotime($job['deadline'])) : 'Open Until Filled';
+                
+                $jobPayload = [
+                    'id'             => $job['id'],
+                    'title'          => $job['title'],
+                    'company'        => $job['company'],
+                    'description'    => $job['description'],
+                    'qualification'  => $job['qualification'],
+                    'job_type'       => $jobType,
+                    'location'       => $location,
+                    'salary_range'   => $salary,
+                    'deadline'       => $deadlineFormatted,
+                    'contact_person' => $job['contact_person'] ?? 'HR Recruitment Officer',
+                    'contact_phone'  => $job['contact_phone'] ?? 'LGU Trunkline',
+                    'date_posted'    => date('M j, Y', strtotime($job['date_posted'])),
+                    'poster_name'    => $job['poster_name'] ?? 'OJAMS Admin',
+                ];
+                $jsonSafe = htmlspecialchars(json_encode($jobPayload), ENT_QUOTES, 'UTF-8');
+            ?>
             <div class="col-md-6 col-lg-4">
                 <div class="card pub-job-card h-100">
                     <div class="card-header-stripe"></div>
                     <div class="card-body d-flex flex-column">
                         <!-- Title & Company -->
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <div class="job-title">
                                 <i class="bi bi-briefcase text-primary me-2"></i>
                                 <?php echo htmlspecialchars($job['title']); ?>
@@ -389,38 +464,64 @@ $totalApps  = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn
                             </div>
                         </div>
 
-                        <!-- Description -->
-                        <p class="job-desc flex-grow-1 mb-2">
+                        <!-- Major Details Badges -->
+                        <div class="d-flex flex-wrap gap-1 mb-3">
+                            <span class="tag-pill <?php echo getJobTypeClass($jobType); ?>">
+                                <i class="bi bi-clock-history"></i><?php echo htmlspecialchars($jobType); ?>
+                            </span>
+                            <span class="tag-pill tag-location">
+                                <i class="bi bi-geo-alt"></i><?php echo htmlspecialchars($location); ?>
+                            </span>
+                            <span class="tag-pill tag-salary">
+                                <i class="bi bi-cash-stack"></i><?php echo htmlspecialchars($salary); ?>
+                            </span>
+                            <?php if (!empty($job['deadline'])): ?>
+                            <span class="tag-pill tag-deadline">
+                                <i class="bi bi-calendar-x"></i>Due: <?php echo date('M j', strtotime($job['deadline'])); ?>
+                            </span>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Brief Description -->
+                        <p class="job-desc mb-3 text-muted" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
                             <?php echo htmlspecialchars($job['description']); ?>
                         </p>
 
-                        <!-- Qualifications -->
-                        <div class="mb-3">
-                            <p class="job-qual mb-0">
-                                <i class="bi bi-mortarboard me-1 text-muted"></i>
-                                <strong class="text-muted">Requirements:</strong>
+                        <!-- Prominent Qualifications Box -->
+                        <div class="qual-box-preview mb-3 flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="fw-bold text-primary small">
+                                    <i class="bi bi-mortarboard-fill me-1"></i>Key Qualifications &amp; Eligibility:
+                                </span>
+                                <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:0.68rem;">Must Qualify</span>
+                            </div>
+                            <div class="job-qual" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;">
                                 <?php echo htmlspecialchars($job['qualification']); ?>
-                            </p>
+                            </div>
                         </div>
 
-                        <hr class="divider">
-
-                        <!-- Meta -->
-                        <div class="d-flex justify-content-between align-items-center mb-3">
+                        <!-- Meta Info -->
+                        <div class="d-flex justify-content-between align-items-center mb-3 pt-2 border-top">
                             <small class="text-muted">
-                                <i class="bi bi-calendar-event me-1"></i>
-                                <?php echo date('M j, Y', strtotime($job['date_posted'])); ?>
+                                <i class="bi bi-calendar-event me-1"></i>Posted <?php echo date('M j, Y', strtotime($job['date_posted'])); ?>
                             </small>
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2">
                                 <i class="bi bi-circle-fill me-1" style="font-size:.45rem;vertical-align:middle"></i>Open
                             </span>
                         </div>
 
-                        <!-- Apply Button -->
-                        <button class="btn btn-apply"
-                                onclick="showAuthPrompt('<?php echo htmlspecialchars($job['title'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($job['company'], ENT_QUOTES); ?>')">
-                            <i class="bi bi-send me-2"></i>Apply Now
-                        </button>
+                        <!-- Action Buttons -->
+                        <div class="d-flex flex-column gap-2 mt-auto">
+                            <button type="button" class="btn btn-outline-primary btn-sm fw-semibold w-100 py-2"
+                                    data-job-info='<?php echo $jsonSafe; ?>'
+                                    onclick="viewJobPublic(JSON.parse(this.dataset.jobInfo))">
+                                <i class="bi bi-card-checklist me-1"></i>View Full Qualifications &amp; Details
+                            </button>
+                            <button class="btn btn-apply"
+                                    onclick="showAuthPrompt('<?php echo htmlspecialchars($job['title'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($job['company'], ENT_QUOTES); ?>')">
+                                <i class="bi bi-send me-2"></i>Apply Now
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -429,6 +530,106 @@ $totalApps  = (int)$pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn
         <?php endif; ?>
     </div>
 </section>
+
+<!-- ── Comprehensive Public Job Details Modal (No Login Required) ────────────────── -->
+<div class="modal fade" id="publicJobModal" tabindex="-1" aria-labelledby="publicJobModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 18px; overflow: hidden;">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); padding: 1.25rem 1.5rem;">
+                <div>
+                    <span class="badge bg-white bg-opacity-25 text-white mb-1" id="pubModalCompany">—</span>
+                    <h5 class="modal-title fw-bold mb-0" id="pubModalTitle">Job Details</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- 4 Highlights Grid -->
+                <div class="row g-2 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="stat-grid-box h-100">
+                            <div class="stat-label"><i class="bi bi-clock-history me-1 text-primary"></i>Type</div>
+                            <div class="stat-val" id="pubModalType">—</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-grid-box h-100">
+                            <div class="stat-label"><i class="bi bi-geo-alt me-1 text-danger"></i>Location</div>
+                            <div class="stat-val" id="pubModalLocation">—</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-grid-box h-100">
+                            <div class="stat-label"><i class="bi bi-cash-stack me-1 text-success"></i>Salary</div>
+                            <div class="stat-val text-success" id="pubModalSalary">—</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-grid-box h-100">
+                            <div class="stat-label"><i class="bi bi-calendar-event me-1 text-warning"></i>Deadline</div>
+                            <div class="stat-val text-danger" id="pubModalDeadlineStat">—</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Qualifications & Eligibility Requirements -->
+                <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 mb-4 shadow-sm" style="border-radius: 12px;">
+                    <div class="card-body p-3 p-md-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-primary text-white p-2 rounded-circle">
+                                <i class="bi bi-mortarboard-fill"></i>
+                            </span>
+                            <h6 class="fw-bold text-primary mb-0 fs-6">
+                                Minimum Qualifications &amp; Eligibility Requirements
+                            </h6>
+                        </div>
+                        <p class="small text-muted mb-2">Review these requirements carefully to verify your qualification for this municipal opening:</p>
+                        <div id="pubModalQual" class="p-3 bg-white rounded-3 border text-dark" style="white-space: pre-line; line-height: 1.65; font-size: 0.92rem;">
+                            —
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Description & Scope of Work -->
+                <div class="mb-4">
+                    <h6 class="fw-bold text-dark mb-2">
+                        <i class="bi bi-file-earmark-text-fill text-primary me-2"></i>Job Description &amp; Scope of Responsibilities
+                    </h6>
+                    <div id="pubModalDesc" class="p-3 bg-light rounded-3 border text-secondary" style="white-space: pre-line; line-height: 1.65; font-size: 0.92rem;">
+                        —
+                    </div>
+                </div>
+
+                <!-- Section: Contact Details & Poster Info -->
+                <div class="mb-4 p-3 bg-light rounded-3 border">
+                    <h6 class="fw-bold text-dark mb-2">
+                        <i class="bi bi-info-circle-fill text-info me-2"></i>Hiring Office &amp; Contact Details
+                    </h6>
+                    <div class="row g-2 small text-muted">
+                        <div class="col-sm-6" id="pubModalContactPerson"><strong>Contact Person:</strong> —</div>
+                        <div class="col-sm-6" id="pubModalContactPhone"><strong>Contact Phone:</strong> —</div>
+                        <div class="col-sm-6" id="pubModalDatePosted"><strong>Date Posted:</strong> —</div>
+                        <div class="col-sm-6" id="pubModalDeadline"><strong>Deadline:</strong> —</div>
+                    </div>
+                </div>
+
+                <!-- Section: Notice on Mandatory Requirements -->
+                <div class="alert alert-warning border-warning border-opacity-50 mb-0 d-flex gap-3 align-items-start" style="border-radius: 12px;">
+                    <i class="bi bi-exclamation-triangle-fill fs-4 text-warning flex-shrink-0"></i>
+                    <div class="small">
+                        <strong>Civil Service Application Note:</strong> All official applicants must submit the 5 standard civil service documents upon application:
+                        <em>Resume/CV, Application Letter, CS Form 212 (PDS), Certificate of CSC Eligibility, and Transcript of Records (TOR)</em>.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light px-4 py-3 d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary px-4 fw-semibold" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" id="pubModalApplyBtn">
+                    <i class="bi bi-send-fill me-1"></i>Apply for this Job
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ── Auth Prompt Modal ──────────────────────────────────── -->
 <div class="modal fade auth-modal" id="authPromptModal" tabindex="-1" aria-hidden="true">
@@ -486,6 +687,31 @@ function showAuthPrompt(title, company) {
     document.getElementById('authJobLabel').textContent =
         'Apply for "' + title + '" at ' + company;
     new bootstrap.Modal(document.getElementById('authPromptModal')).show();
+}
+
+function viewJobPublic(job) {
+    document.getElementById('pubModalTitle').textContent = job.title;
+    document.getElementById('pubModalCompany').textContent = job.company;
+    document.getElementById('pubModalType').textContent = job.job_type || 'Unspecified';
+    document.getElementById('pubModalLocation').textContent = job.location || 'Municipal / District Office';
+    document.getElementById('pubModalSalary').textContent = job.salary_range || 'Competitive Rate';
+    document.getElementById('pubModalDeadlineStat').textContent = job.deadline || 'Open until filled';
+    document.getElementById('pubModalQual').textContent = job.qualification || 'No specific qualification recorded.';
+    document.getElementById('pubModalDesc').textContent = job.description || 'No job description provided.';
+    document.getElementById('pubModalContactPerson').innerHTML = '<strong>Contact Person:</strong> ' + (job.contact_person || 'HR Recruitment Unit');
+    document.getElementById('pubModalContactPhone').innerHTML = '<strong>Phone:</strong> ' + (job.contact_phone || 'LGU Piat Trunkline');
+    document.getElementById('pubModalDatePosted').innerHTML = '<strong>Posted Date:</strong> ' + (job.date_posted || '—');
+    document.getElementById('pubModalDeadline').innerHTML = '<strong>Application Deadline:</strong> ' + (job.deadline || 'Open until filled');
+
+    const applyBtn = document.getElementById('pubModalApplyBtn');
+    if (applyBtn) {
+        applyBtn.onclick = function() {
+            const pubModalEl = document.getElementById('publicJobModal');
+            bootstrap.Modal.getInstance(pubModalEl)?.hide();
+            setTimeout(() => showAuthPrompt(job.title, job.company), 350);
+        };
+    }
+    new bootstrap.Modal(document.getElementById('publicJobModal')).show();
 }
 </script>
 </body>

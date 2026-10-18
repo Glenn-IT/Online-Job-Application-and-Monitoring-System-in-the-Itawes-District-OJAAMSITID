@@ -5,12 +5,12 @@ $pageTitle   = "OJAMS - Profile Settings";
 $basePath    = "../../";
 $currentPage = "profile-settings";
 
-$u = $_SESSION["ojams_user"];
+$uStmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+$uStmt->execute([$_SESSION["ojams_user"]["id"]]);
+$u = $uStmt->fetch() ?: $_SESSION["ojams_user"];
 
 // Current security question (read from DB — older sessions won't have it)
-$sqStmt = $pdo->prepare("SELECT security_question FROM users WHERE id = ?");
-$sqStmt->execute([$u["id"]]);
-$currentSecQuestion = $sqStmt->fetchColumn() ?: null;
+$currentSecQuestion = $u["security_question"] ?? null;
 
 include $basePath . "layouts/header.php";
 include $basePath . "layouts/navbar-user.php";
@@ -89,6 +89,30 @@ include $basePath . "layouts/navbar-user.php";
                                 <td id="pvBirthdate"><?php echo htmlspecialchars($u["birthdate"] ?? "—"); ?></td>
                             </tr>
                             <tr>
+                                <th class="text-muted text-nowrap"><i class="bi bi-mortarboard me-2"></i>Elementary</th>
+                                <td id="pvElementary"><?php echo htmlspecialchars($u["elementary"] ?? "—"); ?></td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted text-nowrap"><i class="bi bi-book me-2"></i>Junior High</th>
+                                <td id="pvJhs"><?php echo htmlspecialchars($u["jhs"] ?? "—"); ?></td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted text-nowrap"><i class="bi bi-award me-2"></i>Senior High</th>
+                                <td id="pvShs"><?php echo htmlspecialchars($u["shs"] ?? "—"); ?></td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted text-nowrap"><i class="bi bi-bank me-2"></i>College / Degree</th>
+                                <td id="pvCollege"><?php echo htmlspecialchars($u["college"] ?? "—"); ?></td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted text-nowrap"><i class="bi bi-tools me-2"></i>Skills</th>
+                                <td id="pvSkills" style="white-space: pre-line;"><?php echo htmlspecialchars($u["skills"] ?? "—"); ?></td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted text-nowrap"><i class="bi bi-briefcase me-2"></i>Experience</th>
+                                <td id="pvExperience" style="white-space: pre-line;"><?php echo htmlspecialchars($u["experience"] ?? "—"); ?></td>
+                            </tr>
+                            <tr>
                                 <th class="text-muted text-nowrap"><i class="bi bi-lock me-2"></i>Password</th>
                                 <td>••••••••••</td>
                             </tr>
@@ -134,6 +158,38 @@ include $basePath . "layouts/navbar-user.php";
                                 <label class="form-label">Address</label>
                                 <input type="text" class="form-control" id="editAddress"
                                        value="<?php echo htmlspecialchars($u['address'] ?? ''); ?>" maxlength="500">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Elementary School</label>
+                                    <input type="text" class="form-control" id="editElementary"
+                                           value="<?php echo htmlspecialchars($u['elementary'] ?? ''); ?>" maxlength="200">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Junior High School (JHS)</label>
+                                    <input type="text" class="form-control" id="editJhs"
+                                           value="<?php echo htmlspecialchars($u['jhs'] ?? ''); ?>" maxlength="200">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Senior High School (SHS)</label>
+                                    <input type="text" class="form-control" id="editShs"
+                                           value="<?php echo htmlspecialchars($u['shs'] ?? ''); ?>" maxlength="200">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">College / Degree</label>
+                                    <input type="text" class="form-control" id="editCollege"
+                                           value="<?php echo htmlspecialchars($u['college'] ?? ''); ?>" maxlength="200">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Skills &amp; Proficiencies</label>
+                                <textarea class="form-control" id="editSkills" rows="2"><?php echo htmlspecialchars($u['skills'] ?? ''); ?></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Work Experience</label>
+                                <textarea class="form-control" id="editExperience" rows="2"><?php echo htmlspecialchars($u['experience'] ?? ''); ?></textarea>
                             </div>
                             <hr>
                             <p class="text-muted small mb-3">Leave blank to keep your current password.</p>
@@ -307,13 +363,19 @@ function saveProfile() {
     const fullName  = document.getElementById("editFullName")?.value.trim();
     const email     = document.getElementById("editEmail")?.value.trim();
     const contact   = document.getElementById("editContact")?.value.trim();
-    const address   = document.getElementById("editAddress")?.value.trim();
-    const birthdate = document.getElementById("editBirthdate")?.value;
-    const currentPw = document.getElementById("editCurrentPassword")?.value || "";
-    const newPw     = document.getElementById("editNewPassword")?.value || "";
-    const confirmPw = document.getElementById("editConfirmPassword")?.value || "";
-    const secQ      = document.getElementById("editSecQuestion")?.value;
-    const secA      = document.getElementById("editSecAnswer")?.value.trim();
+    const address    = document.getElementById("editAddress")?.value.trim();
+    const birthdate  = document.getElementById("editBirthdate")?.value;
+    const elementary = document.getElementById("editElementary")?.value.trim() || "";
+    const jhs        = document.getElementById("editJhs")?.value.trim() || "";
+    const shs        = document.getElementById("editShs")?.value.trim() || "";
+    const college    = document.getElementById("editCollege")?.value.trim() || "";
+    const skills     = document.getElementById("editSkills")?.value.trim() || "";
+    const experience = document.getElementById("editExperience")?.value.trim() || "";
+    const currentPw  = document.getElementById("editCurrentPassword")?.value || "";
+    const newPw      = document.getElementById("editNewPassword")?.value || "";
+    const confirmPw  = document.getElementById("editConfirmPassword")?.value || "";
+    const secQ       = document.getElementById("editSecQuestion")?.value;
+    const secA       = document.getElementById("editSecAnswer")?.value.trim();
 
     clearAllFieldErrors("editProfileForm");
     let editValid = true;
@@ -385,7 +447,21 @@ function saveProfile() {
     const updateInfo = () => fetch(PROFILE_HANDLER, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "updateInfo", full_name: fullName, email, contact_number: contact, address, birthdate, csrf_token: getCsrfToken() })
+        body: JSON.stringify({
+            action: "updateInfo",
+            full_name: fullName,
+            email,
+            contact_number: contact,
+            address,
+            birthdate,
+            elementary,
+            jhs,
+            shs,
+            college,
+            skills,
+            experience,
+            csrf_token: getCsrfToken()
+        })
     }).then(r => r.json());
 
     const changePass = () => fetch(PROFILE_HANDLER, {
@@ -402,13 +478,19 @@ function saveProfile() {
 
     updateInfo().then(res => {
         if (!res.success) { showToast(res.message, "danger"); return; }
-        document.getElementById("pvFullName").textContent  = fullName;
-        document.getElementById("pvEmail").textContent     = email;
-        document.getElementById("pvContact").textContent   = contact || "—";
-        document.getElementById("pvAddress").textContent   = address || "—";
-        document.getElementById("pvBirthdate").textContent = birthdate || "—";
-        document.getElementById("cardName").textContent    = fullName;
-        document.getElementById("cardEmail").textContent   = email;
+        document.getElementById("pvFullName").textContent   = fullName;
+        document.getElementById("pvEmail").textContent      = email;
+        document.getElementById("pvContact").textContent    = contact || "—";
+        document.getElementById("pvAddress").textContent    = address || "—";
+        document.getElementById("pvBirthdate").textContent  = birthdate || "—";
+        document.getElementById("pvElementary").textContent = elementary || "—";
+        document.getElementById("pvJhs").textContent        = jhs || "—";
+        document.getElementById("pvShs").textContent        = shs || "—";
+        document.getElementById("pvCollege").textContent    = college || "—";
+        document.getElementById("pvSkills").textContent     = skills || "—";
+        document.getElementById("pvExperience").textContent = experience || "—";
+        document.getElementById("cardName").textContent     = fullName;
+        document.getElementById("cardEmail").textContent    = email;
         if (doSecurityQuestion) {
             updateSecurity().then(r3 => {
                 if (r3.success) {

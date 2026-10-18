@@ -83,6 +83,12 @@ if ($action === 'updateInfo') {
     $contact  = trim($body['contact_number'] ?? '');
     $address  = trim($body['address']        ?? '');
     $birthdate = $body['birthdate']          ?? null;
+    $elementary = trim($body['elementary']   ?? '');
+    $jhs        = trim($body['jhs']          ?? '');
+    $shs        = trim($body['shs']          ?? '');
+    $college    = trim($body['college']      ?? '');
+    $skills     = trim($body['skills']       ?? '');
+    $experience = trim($body['experience']   ?? '');
 
     if (!$fullName || !$email) {
         echo json_encode(['success' => false, 'message' => 'Full name and email are required.']);
@@ -124,12 +130,15 @@ if ($action === 'updateInfo') {
     }
     $stmt = $pdo->prepare("
         UPDATE users
-        SET full_name = ?, email = ?, contact_number = ?, address = ?, birthdate = ?
+        SET full_name = ?, email = ?, contact_number = ?, address = ?, birthdate = ?,
+            elementary = ?, jhs = ?, shs = ?, college = ?, skills = ?, experience = ?
         WHERE id = ?
     ");
     $stmt->execute([
         $fullName, $email, $contact ?: null,
         $address  ?: null, $birthdate ?: null,
+        $elementary ?: null, $jhs ?: null, $shs ?: null, $college ?: null,
+        $skills ?: null, $experience ?: null,
         $userId
     ]);
     $_SESSION['ojams_user']['full_name']      = $fullName;
@@ -137,6 +146,12 @@ if ($action === 'updateInfo') {
     $_SESSION['ojams_user']['contact_number'] = $contact;
     $_SESSION['ojams_user']['address']        = $address;
     $_SESSION['ojams_user']['birthdate']      = $birthdate;
+    $_SESSION['ojams_user']['elementary']     = $elementary;
+    $_SESSION['ojams_user']['jhs']            = $jhs;
+    $_SESSION['ojams_user']['shs']            = $shs;
+    $_SESSION['ojams_user']['college']        = $college;
+    $_SESSION['ojams_user']['skills']         = $skills;
+    $_SESSION['ojams_user']['experience']     = $experience;
     echo json_encode(['success' => true, 'message' => 'Profile updated successfully.']);
     exit;
 }
