@@ -717,6 +717,34 @@ function viewAppDetails(appId) {
                     </div>`;
                 }
             });
+            // Render any additional certificates uploaded by the applicant
+            const certsList = res.certificates || (res.all_documents ? res.all_documents.filter(d => d.document_type === 'certificate') : []);
+            if (certsList && certsList.length > 0) {
+                certsList.forEach((cert, idx) => {
+                    attachedCount++;
+                    const sizeStr = cert.file_size ? (cert.file_size > 1024 * 1024 ? (cert.file_size / (1024 * 1024)).toFixed(2) + ' MB' : Math.round(cert.file_size / 1024) + ' KB') : '';
+                    const fileUrl = `../../uploads/resumes/${encodeURIComponent(cert.stored_name)}`;
+                    docsHtml += `
+                    <div class="col-12 col-md-6">
+                        <div class="border border-success-subtle rounded-3 p-2 bg-success-subtle bg-opacity-25 d-flex justify-content-between align-items-center h-100">
+                            <div class="d-flex align-items-center me-2 text-truncate">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle p-2 me-2 rounded-2">
+                                    <i class="bi bi-patch-check-fill fs-6"></i>
+                                </span>
+                                <div class="text-truncate">
+                                    <div class="fw-semibold small text-truncate" title="${cert.original_name}">Additional Certificate ${certsList.length > 1 ? '#' + (idx + 1) : ''}</div>
+                                    <div class="text-muted small text-truncate" style="font-size:0.75rem;" title="${cert.original_name}">
+                                        ${cert.original_name} ${sizeStr ? `(${sizeStr})` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <a href="${fileUrl}" target="_blank" class="btn btn-sm btn-outline-success text-nowrap flex-shrink-0" title="Open or Download certificate">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>View
+                            </a>
+                        </div>
+                    </div>`;
+                });
+            }
             docsListEl.innerHTML = docsHtml;
         }
         if (docsCountEl) {

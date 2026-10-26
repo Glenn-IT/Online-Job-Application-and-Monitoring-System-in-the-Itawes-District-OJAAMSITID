@@ -409,6 +409,7 @@ function openApplyModal(jobId, title, company) {
     document.getElementById('applicationForm').reset();
     document.getElementById('applicationForm').dataset.jobId = jobId;
     clearAllFieldErrors('applicationForm');
+    if (typeof clearCertificateRows === 'function') clearCertificateRows('additionalCertsContainer');
     ['resume', 'appLetter', 'pds', 'csc', 'tor', 'diploma'].forEach(k => {
         document.getElementById(k + 'FileInfo')?.classList.add('d-none');
     });
@@ -662,6 +663,17 @@ function submitApplication() {
     fd.append('csc_eligib',         cscFile);
     fd.append('tor',                torFile);
     fd.append('diploma',            diplomaFile);
+
+    // Append Additional Certificates
+    const certRows = document.querySelectorAll('#additionalCertsContainer .cert-upload-row');
+    certRows.forEach(row => {
+        const fileInput = row.querySelector('.cert-file-input');
+        const titleInput = row.querySelector('.cert-title-input');
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            fd.append('certificates[]', fileInput.files[0]);
+            fd.append('cert_titles[]', titleInput ? titleInput.value.trim() : '');
+        }
+    });
 
     fetch(APP_HANDLER, { method: 'POST', body: fd })
     .then(r => r.json())

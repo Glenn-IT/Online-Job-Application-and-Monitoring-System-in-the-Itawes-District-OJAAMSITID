@@ -476,6 +476,7 @@ function openApplyModal(jobId, title, company) {
     document.getElementById("applyJobTitle").textContent   = title;
     document.getElementById("applyJobCompany").textContent = company;
     document.getElementById("applicationForm").reset();
+    if (typeof clearCertificateRows === 'function') clearCertificateRows('additionalCertsContainer');
     document.getElementById("applicationForm").dataset.jobId = jobId;
     clearAllFieldErrors("applicationForm");
     ['resume', 'appLetter', 'pds', 'csc', 'tor', 'diploma'].forEach(k => {
@@ -683,6 +684,17 @@ function submitApplication() {
     fd.append("csc_eligib", document.getElementById("appCsc").files[0]);
     fd.append("tor", document.getElementById("appTor").files[0]);
     fd.append("diploma", document.getElementById("appDiploma").files[0]);
+
+    // Append Additional Certificates
+    const certRows = document.querySelectorAll("#additionalCertsContainer .cert-upload-row");
+    certRows.forEach(row => {
+        const fileInput = row.querySelector(".cert-file-input");
+        const titleInput = row.querySelector(".cert-title-input");
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            fd.append("certificates[]", fileInput.files[0]);
+            fd.append("cert_titles[]", titleInput ? titleInput.value.trim() : "");
+        }
+    });
 
     fetch(APPLICATIONS_HANDLER, {
         method: "POST",

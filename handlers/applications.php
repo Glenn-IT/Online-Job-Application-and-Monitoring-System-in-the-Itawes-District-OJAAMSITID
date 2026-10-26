@@ -111,6 +111,41 @@ $documentDefs = [
     ],
 ];
 
+$certDocDef = [
+    'label'        => 'Certificate',
+    'required'     => false,
+    'allowed_exts' => ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+    'allowed_mimes'=> [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/jpeg',
+        'image/png',
+    ],
+];
+
+function parseMultipleUploadedFiles(array $filePost): array {
+    $files = [];
+    if (!isset($filePost['name'])) return $files;
+    if (is_array($filePost['name'])) {
+        $count = count($filePost['name']);
+        for ($i = 0; $i < $count; $i++) {
+            if (isset($filePost['error'][$i]) && $filePost['error'][$i] !== UPLOAD_ERR_NO_FILE) {
+                $files[] = [
+                    'name'     => $filePost['name'][$i],
+                    'type'     => $filePost['type'][$i] ?? '',
+                    'tmp_name' => $filePost['tmp_name'][$i],
+                    'error'    => $filePost['error'][$i],
+                    'size'     => $filePost['size'][$i],
+                ];
+            }
+        }
+    } elseif ($filePost['error'] !== UPLOAD_ERR_NO_FILE) {
+        $files[] = $filePost;
+    }
+    return $files;
+}
+
 function validateUploadedDoc(array $file, array $def): array {
     if ($file['error'] !== UPLOAD_ERR_OK) {
         return ['ok' => false, 'error' => "{$def['label']} upload failed (code {$file['error']})."];
@@ -307,6 +342,25 @@ if ($action === 'apply') {
         $uploadedDocs[$docKey] = $val;
     }
 
+    // ── Additional Certificates Validation (Optional) ──
+    $uploadedCerts = [];
+    if (isset($_FILES['certificates'])) {
+        $parsedCerts = parseMultipleUploadedFiles($_FILES['certificates']);
+        $certTitles  = isset($_POST['cert_titles']) ? (array)$_POST['cert_titles'] : [];
+        foreach ($parsedCerts as $idx => $cFile) {
+            $cVal = validateUploadedDoc($cFile, $certDocDef);
+            if (!$cVal['ok']) {
+                echo json_encode(['success' => false, 'message' => $cVal['error']]);
+                exit;
+            }
+            $title = isset($certTitles[$idx]) ? trim($certTitles[$idx]) : '';
+            if ($title !== '') {
+                $cVal['original'] = mb_substr($title . ' (' . $cVal['original'] . ')', 0, 250);
+            }
+            $uploadedCerts[] = $cVal;
+        }
+    }
+
     $stmt = $pdo->prepare("
         INSERT INTO applications
         (user_id, job_id, full_name, email, contact, address, birthdate, age,
@@ -342,7 +396,25 @@ if ($action === 'apply') {
     }
 
     // Clear any saved draft for this job now that application is officially submitted
-    $pdo->prepare("DELETE FROM saved_jobs WHERE user_id = ? AND job_id = ?")->execute([$userId, $jobId]);
+    // ── Move uploaded certificates and record them ──────────
+        if (!empty($uploadedCerts)) {
+            foreach ($uploadedCerts as $cert) {
+                $storedName = $userId . '_' . $jobId . '_certificate_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $cert['ext'];
+                if (move_uploaded_file($cert['tmp'], $uploadDir . $storedName)) {
+                    $pdo->prepare("
+                        INSERT INTO resumes (application_id, user_id, document_type, original_name, stored_name, file_size, mime_type)
+                        VALUES (?, ?, 'certificate', ?, ?, ?, ?)
+                    ")->execute([
+                        $newAppId, $userId,
+                        $cert['original'], $storedName,
+                        $cert['size'], $cert['mime'],
+                    ]);
+                }
+            }
+        }
+
+        // Clear any saved draft for this job now that application is officially submitted
+        $pdo->prepare("DELETE FROM saved_jobs WHERE user_id = ? AND job_id = ?")->execute([$userId, $jobId]);
 
     $user = getCurrentUser();
     logActivity($pdo, "New application received from {$user['full_name']} for \"{$job['title']}\"", 'New', $jobId, $newAppId);
@@ -416,6 +488,15 @@ if ($action === 'updateStatus') {
     $oldStatus = $oldRow->fetchColumn();
 
     if ($status === 'Approved') {
+        if (empty($interviewDate)) {
+            echo json_encode(['success' => false, 'message' => 'Please provide an interview date and time.']);
+            exit;
+        }
+        $interviewTimestamp = strtotime($interviewDate);
+        if ($interviewTimestamp === false || $interviewTimestamp < (time() - 60)) {
+            echo json_encode(['success' => false, 'message' => 'Interview date and time cannot be in the past. Please select an upcoming schedule.']);
+            exit;
+        }
         $pdo->prepare("UPDATE applications SET status = ?, interview_date = ?, interview_notes = ?, rejection_reason = NULL WHERE id = ?")
             ->execute([$status, $interviewDate, $interviewNotes, $appId]);
     } elseif ($status === 'Pending') {
@@ -471,6 +552,11 @@ if ($action === 'scheduleInterview') {
 
     if ($appId <= 0 || empty($interviewDate)) {
         echo json_encode(['success' => false, 'message' => 'Please provide a valid interview date and time.']);
+        exit;
+    }
+    $interviewTimestamp = strtotime($interviewDate);
+    if ($interviewTimestamp === false || $interviewTimestamp < (time() - 60)) {
+        echo json_encode(['success' => false, 'message' => 'Interview date and time cannot be in the past. Please select an upcoming schedule.']);
         exit;
     }
     $check = $pdo->prepare("
@@ -631,8 +717,13 @@ if ($action === 'getDetails') {
     $allDocs = $docsStmt->fetchAll();
 
     $documents = [];
+    $certificates = [];
     foreach ($allDocs as $doc) {
-        $documents[$doc['document_type']] = $doc;
+        if ($doc['document_type'] === 'certificate') {
+            $certificates[] = $doc;
+        } else {
+            $documents[$doc['document_type']] = $doc;
+        }
     }
     $resume = $documents['resume'] ?? ($allDocs[0] ?? null);
 
@@ -642,6 +733,7 @@ if ($action === 'getDetails') {
         'history'       => $history,
         'resume'        => $resume ?: null,
         'documents'     => $documents,
+        'certificates'  => $certificates,
         'all_documents' => $allDocs
     ]);
     exit;
@@ -682,8 +774,27 @@ if ($action === 'updateDocuments') {
         }
     }
 
-    if (empty($uploadedDocs)) {
-        echo json_encode(['success' => false, 'message' => 'No documents were uploaded to update.']);
+    // Additional Certificates
+    $uploadedCerts = [];
+    if (isset($_FILES['certificates'])) {
+        $parsedCerts = parseMultipleUploadedFiles($_FILES['certificates']);
+        $certTitles  = isset($_POST['cert_titles']) ? (array)$_POST['cert_titles'] : [];
+        foreach ($parsedCerts as $idx => $cFile) {
+            $cVal = validateUploadedDoc($cFile, $certDocDef);
+            if (!$cVal['ok']) {
+                echo json_encode(['success' => false, 'message' => $cVal['error']]);
+                exit;
+            }
+            $title = isset($certTitles[$idx]) ? trim($certTitles[$idx]) : '';
+            if ($title !== '') {
+                $cVal['original'] = mb_substr($title . ' (' . $cVal['original'] . ')', 0, 250);
+            }
+            $uploadedCerts[] = $cVal;
+        }
+    }
+
+    if (empty($uploadedDocs) && empty($uploadedCerts)) {
+        echo json_encode(['success' => false, 'message' => 'No documents or certificates were uploaded to update.']);
         exit;
     }
 
@@ -713,6 +824,16 @@ if ($action === 'updateDocuments') {
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 ")->execute([$appId, $userId, $docKey, $doc['original'], $storedName, $doc['size'], $doc['mime']]);
             }
+        }
+    }
+
+    foreach ($uploadedCerts as $cert) {
+        $storedName = $userId . '_' . $app['job_id'] . '_certificate_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $cert['ext'];
+        if (move_uploaded_file($cert['tmp'], $uploadDir . $storedName)) {
+            $pdo->prepare("
+                INSERT INTO resumes (application_id, user_id, document_type, original_name, stored_name, file_size, mime_type)
+                VALUES (?, ?, 'certificate', ?, ?, ?, ?)
+            ")->execute([$appId, $userId, $cert['original'], $storedName, $cert['size'], $cert['mime']]);
         }
     }
 

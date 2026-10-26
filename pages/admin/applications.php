@@ -388,19 +388,49 @@ function openApproveModal(data) {
     document.getElementById('approveApplicantName').textContent = data.full_name || 'Applicant';
     document.getElementById('approveJobTitle').textContent = (data.job_title || '') + (data.company ? ' at ' + data.company : '');
     
-    // Set default datetime: tomorrow at 09:00 AM if empty
     const dateInput = document.getElementById('approveInterviewDate');
+    dateInput.classList.remove('is-invalid');
+
+    // Compute current local ISO string YYYY-MM-DDTHH:MM for min attribute
+    const now = new Date();
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    const nowLocalISO = new Date(now.getTime() - tzOffset).toISOString().substring(0, 16);
+    dateInput.min = nowLocalISO;
+
+    // Real-time input listener
+    if (!dateInput.dataset.listenerAttached) {
+        dateInput.dataset.listenerAttached = 'true';
+        dateInput.addEventListener('input', function() {
+            if (!this.value) {
+                this.classList.remove('is-invalid');
+                return;
+            }
+            const selected = new Date(this.value).getTime();
+            if (selected < Date.now()) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+
     if (data.interview_date) {
-        // Convert 'YYYY-MM-DD HH:MM:SS' to 'YYYY-MM-DDTHH:MM'
-        dateInput.value = data.interview_date.replace(' ', 'T').substring(0, 16);
+        const existingIso = data.interview_date.replace(' ', 'T').substring(0, 16);
+        if (existingIso >= nowLocalISO) {
+            dateInput.value = existingIso;
+        } else {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(9, 0, 0, 0);
+            const tomorrowLocalISO = new Date(tomorrow.getTime() - tzOffset).toISOString().substring(0, 16);
+            dateInput.value = tomorrowLocalISO;
+        }
     } else {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(9, 0, 0, 0);
-        // timezone offset adjust to local ISO
-        const tzOffset = tomorrow.getTimezoneOffset() * 60000;
-        const localISO = new Date(tomorrow.getTime() - tzOffset).toISOString().substring(0, 16);
-        dateInput.value = localISO;
+        const tomorrowLocalISO = new Date(tomorrow.getTime() - tzOffset).toISOString().substring(0, 16);
+        dateInput.value = tomorrowLocalISO;
     }
 
     document.getElementById('approveInterviewNotes').value = data.interview_notes || '';
@@ -412,14 +442,31 @@ function openApproveModal(data) {
 function handleApproveSubmit(e) {
     e.preventDefault();
     const id = parseInt(document.getElementById('approveAppId').value);
-    const interviewDate = document.getElementById('approveInterviewDate').value;
+    const dateInput = document.getElementById('approveInterviewDate');
+    const interviewDate = dateInput ? dateInput.value : '';
     const interviewNotes = document.getElementById('approveInterviewNotes').value.trim();
     const btn = document.getElementById('approveSubmitBtn');
 
     if (!id || !interviewDate) {
         showToast('Please specify a date and time for the interview.', 'warning');
+        if (dateInput) {
+            dateInput.classList.add('is-invalid');
+            dateInput.focus();
+        }
         return;
     }
+
+    // Trapping past dates
+    const selectedTime = new Date(interviewDate).getTime();
+    if (isNaN(selectedTime) || selectedTime < Date.now()) {
+        showToast('Interview date and time cannot be in the past. Please select an upcoming schedule.', 'warning');
+        if (dateInput) {
+            dateInput.classList.add('is-invalid');
+            dateInput.focus();
+        }
+        return;
+    }
+    dateInput.classList.remove('is-invalid');
 
     btnLoading(btn, true, 'Approving & Notifying…');
     showLoadingModal();
@@ -843,6 +890,34 @@ function viewAppDetails(appId) {
                     </div>`;
                 }
             });
+            // Render any additional certificates uploaded by the applicant
+            const certsList = res.certificates || (res.all_documents ? res.all_documents.filter(d => d.document_type === 'certificate') : []);
+            if (certsList && certsList.length > 0) {
+                certsList.forEach((cert, idx) => {
+                    attachedCount++;
+                    const sizeStr = cert.file_size ? (cert.file_size > 1024 * 1024 ? (cert.file_size / (1024 * 1024)).toFixed(2) + ' MB' : Math.round(cert.file_size / 1024) + ' KB') : '';
+                    const fileUrl = `../../uploads/resumes/${encodeURIComponent(cert.stored_name)}`;
+                    docsHtml += `
+                    <div class="col-12 col-md-6">
+                        <div class="border border-success-subtle rounded-3 p-2 bg-success-subtle bg-opacity-25 d-flex justify-content-between align-items-center h-100">
+                            <div class="d-flex align-items-center me-2 text-truncate">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle p-2 me-2 rounded-2">
+                                    <i class="bi bi-patch-check-fill fs-6"></i>
+                                </span>
+                                <div class="text-truncate">
+                                    <div class="fw-semibold small text-truncate" title="${cert.original_name}">Additional Certificate ${certsList.length > 1 ? '#' + (idx + 1) : ''}</div>
+                                    <div class="text-muted small text-truncate" style="font-size:0.75rem;" title="${cert.original_name}">
+                                        ${cert.original_name} ${sizeStr ? `(${sizeStr})` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <a href="${fileUrl}" target="_blank" class="btn btn-sm btn-outline-success text-nowrap flex-shrink-0" title="Open or Download certificate">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>View
+                            </a>
+                        </div>
+                    </div>`;
+                });
+            }
             docsListEl.innerHTML = docsHtml;
         }
 

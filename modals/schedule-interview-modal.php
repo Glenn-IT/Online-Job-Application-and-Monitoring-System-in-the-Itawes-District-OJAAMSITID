@@ -31,8 +31,11 @@
                             Interview Date &amp; Time <span class="text-danger">*</span>
                         </label>
                         <input type="datetime-local" class="form-control" id="approveInterviewDate" required>
+                        <div class="invalid-feedback">
+                            Interview date and time cannot be in the past. Please select an upcoming schedule.
+                        </div>
                         <div class="form-text small text-muted">
-                            <i class="bi bi-clock me-1"></i>Set the scheduled interview date and time.
+                            <i class="bi bi-clock me-1"></i>Set the scheduled interview date and time (must be in the future).
                         </div>
                     </div>
 

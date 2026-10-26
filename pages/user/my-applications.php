@@ -297,6 +297,23 @@ include $basePath . "layouts/navbar-user.php";
                                         <input type="file" class="form-control form-control-sm" id="upDiploma" name="diploma" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
                                     </div>
                                 </div>
+
+                                <!-- Additional Certificates & Credentials -->
+                                <div class="border-top pt-2 mt-2 mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                        <div>
+                                            <label class="form-label small fw-bold mb-0 text-dark">
+                                                <i class="bi bi-patch-check-fill me-1 text-success"></i>Additional Certificates &amp; Credentials
+                                                <span class="badge bg-secondary-subtle text-secondary ms-1 fw-normal">Optional</span>
+                                            </label>
+                                            <div class="form-text small text-muted">Upload any additional trainings, seminars, or certifications.</div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addCertificateRow('myAppUpdateCertsContainer')">
+                                            <i class="bi bi-plus-circle me-1"></i>Add More Certificate
+                                        </button>
+                                    </div>
+                                    <div id="myAppUpdateCertsContainer" class="d-flex flex-column gap-2"></div>
+                                </div>
                                 <div class="text-end">
                                     <button type="button" class="btn btn-sm btn-primary" id="saveUpdatedDocsBtn" onclick="submitUpdatedDocs()">
                                         <i class="bi bi-upload me-1"></i>Save &amp; Upload Documents
@@ -345,7 +362,7 @@ document.getElementById("confirmCancelBtn").addEventListener("click", function()
 // PHP-embedded application data for view modal
 const myAppsData = <?php echo json_encode(array_values($myApps)); ?>;
 
-function renderMyAppDocuments(documents, fallbackResume) {
+function renderMyAppDocuments(documents, fallbackResume, certificates = [], allDocs = []) {
     const docsListEl  = document.getElementById("vmyAppDocumentsList");
     const docsCountEl = document.getElementById("vmyAppDocsCount");
     const docTypesConfig = [
@@ -408,6 +425,34 @@ function renderMyAppDocuments(documents, fallbackResume) {
                 </div>`;
             }
         });
+        // Render any additional certificates uploaded by the applicant
+        const certsList = certificates || (allDocs ? allDocs.filter(d => d.document_type === 'certificate') : []);
+        if (certsList && certsList.length > 0) {
+            certsList.forEach((cert, idx) => {
+                attachedCount++;
+                const sizeStr = cert.file_size ? (cert.file_size > 1024 * 1024 ? (cert.file_size / (1024 * 1024)).toFixed(2) + ' MB' : Math.round(cert.file_size / 1024) + ' KB') : '';
+                const fileUrl = `../../uploads/resumes/${encodeURIComponent(cert.stored_name)}`;
+                docsHtml += `
+                <div class="col-12 col-md-6">
+                    <div class="border border-success-subtle rounded-3 p-2 bg-success-subtle bg-opacity-25 d-flex justify-content-between align-items-center h-100">
+                        <div class="d-flex align-items-center me-2 text-truncate">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle p-2 me-2 rounded-2">
+                                <i class="bi bi-patch-check-fill fs-6"></i>
+                            </span>
+                            <div class="text-truncate">
+                                <div class="fw-semibold small text-truncate" title="${cert.original_name}">Additional Certificate ${certsList.length > 1 ? '#' + (idx + 1) : ''}</div>
+                                <div class="text-muted small text-truncate" style="font-size:0.75rem;" title="${cert.original_name}">
+                                    ${cert.original_name} ${sizeStr ? `(${sizeStr})` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <a href="${fileUrl}" target="_blank" class="btn btn-sm btn-outline-success text-nowrap flex-shrink-0" title="Open or Download certificate">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>View
+                        </a>
+                    </div>
+                </div>`;
+            });
+        }
         docsListEl.innerHTML = docsHtml;
     }
     if (docsCountEl) {
@@ -483,6 +528,7 @@ function viewMyApp(appId) {
     if (upDocsWrap) {
         upDocsWrap.style.display = app.status === "Pending" ? "" : "none";
         document.getElementById("updateDocsForm")?.reset();
+            if (typeof clearCertificateRows === 'function') clearCertificateRows('myAppUpdateCertsContainer');
     }
 
     // Load documents via AJAX
@@ -500,7 +546,7 @@ function viewMyApp(appId) {
             if (docsListEl) docsListEl.innerHTML = '<div class="col-12 text-danger small">Failed to load documents.</div>';
             return;
         }
-        renderMyAppDocuments(res.documents, res.resume);
+        renderMyAppDocuments(res.documents, res.resume, res.certificates, res.all_documents);
     })
     .catch(() => {
         if (docsListEl) docsListEl.innerHTML = '<div class="col-12 text-danger small">Failed to load documents.</div>';
@@ -518,8 +564,23 @@ function submitUpdatedDocs() {
     const torFile     = document.getElementById("upTor")?.files?.[0];
     const diplomaFile = document.getElementById("upDiploma")?.files?.[0];
 
-    if (!resumeFile && !letterFile && !pdsFile && !cscFile && !torFile && !diplomaFile) {
-        showToast("Please select at least one document to upload or update.", "warning");
+    // Additional Certificates
+    const certRows = document.querySelectorAll("#myAppUpdateCertsContainer .cert-upload-row");
+    let certCount = 0;
+    const certFiles = [];
+    const certTitles = [];
+    certRows.forEach(row => {
+        const fileInput = row.querySelector(".cert-file-input");
+        const titleInput = row.querySelector(".cert-title-input");
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            certFiles.push(fileInput.files[0]);
+            certTitles.push(titleInput ? titleInput.value.trim() : "");
+            certCount++;
+        }
+    });
+
+    if (!resumeFile && !letterFile && !pdsFile && !cscFile && !torFile && !diplomaFile && certCount === 0) {
+        showToast("Please select at least one document or certificate to upload or update.", "warning");
         return;
     }
 
@@ -535,6 +596,11 @@ function submitUpdatedDocs() {
     if (torFile)     fd.append("tor", torFile);
     if (diplomaFile) fd.append("diploma", diplomaFile);
 
+    certFiles.forEach((f, i) => {
+        fd.append("certificates[]", f);
+        fd.append("cert_titles[]", certTitles[i]);
+    });
+
     const btn = document.getElementById("saveUpdatedDocsBtn");
     btnLoading(btn, true, "Uploading…");
 
@@ -544,6 +610,7 @@ function submitUpdatedDocs() {
         showToast(res.message, res.success ? "success" : "danger");
         if (res.success) {
             document.getElementById("updateDocsForm")?.reset();
+            if (typeof clearCertificateRows === 'function') clearCertificateRows('myAppUpdateCertsContainer');
             viewMyApp(appId);
         }
     })

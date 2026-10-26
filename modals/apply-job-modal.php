@@ -214,6 +214,27 @@
                                 </span>
                             </div>
                         </div>
+
+                        <!-- Additional Certificates & Supporting Credentials (Optional) -->
+                        <div class="col-12 mt-3 pt-3 border-top">
+                            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                <div>
+                                    <label class="form-label fw-bold mb-0 text-dark">
+                                        <i class="bi bi-patch-check-fill me-1 text-success"></i>Additional Certificates &amp; Credentials
+                                        <span class="badge bg-secondary-subtle text-secondary ms-1 fw-normal">Optional</span>
+                                    </label>
+                                    <div class="form-text small text-muted">
+                                        Upload training certificates, seminars, TESDA NC II, PRC licenses, or other credentials.
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="addMoreCertBtn" onclick="addCertificateRow('additionalCertsContainer')">
+                                    <i class="bi bi-plus-circle me-1"></i>Add More Certificate
+                                </button>
+                            </div>
+                            <div id="additionalCertsContainer" class="d-flex flex-column gap-2">
+                                <!-- Dynamic certificate rows will be added here -->
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -235,3 +256,75 @@
         </div>
     </div>
 </div>
+
+<script>
+let _certRowCounter = 0;
+function addCertificateRow(containerId = 'additionalCertsContainer') {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    _certRowCounter++;
+    const rowId = 'cert_row_' + _certRowCounter;
+    const row = document.createElement('div');
+    row.className = 'border rounded-3 p-2 bg-light cert-upload-row';
+    row.id = rowId;
+    row.innerHTML = `
+        <div class="row g-2 align-items-center">
+            <div class="col-12 col-md-5">
+                <label class="form-label small fw-semibold mb-1 text-muted">Certificate Name / Description</label>
+                <input type="text" class="form-control form-control-sm cert-title-input" placeholder="e.g. NC II Cookery, Civil Service Seminar" name="cert_titles[]">
+            </div>
+            <div class="col-10 col-md-6">
+                <label class="form-label small fw-semibold mb-1 text-muted">File (PDF, Word, JPG, PNG &bull; Max 5MB)</label>
+                <input type="file" class="form-control form-control-sm cert-file-input" name="certificates[]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="handleCertFileChange(this)">
+                <div class="cert-file-badge mt-1 d-none">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small">
+                        <i class="bi bi-file-earmark-check me-1"></i>
+                        <span class="cert-file-name"></span>
+                        <span class="cert-file-size ms-1 text-muted"></span>
+                    </span>
+                </div>
+            </div>
+            <div class="col-2 col-md-1 text-end pt-md-3">
+                <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeCertificateRow('${rowId}')" title="Remove Certificate">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(row);
+}
+
+function removeCertificateRow(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) row.remove();
+}
+
+function handleCertFileChange(input) {
+    const parent = input.closest('.cert-upload-row');
+    if (!parent) return;
+    const badge = parent.querySelector('.cert-file-badge');
+    const nameEl = parent.querySelector('.cert-file-name');
+    const sizeEl = parent.querySelector('.cert-file-size');
+    if (!input.files || !input.files[0]) {
+        badge?.classList.add('d-none');
+        return;
+    }
+    const f = input.files[0];
+    if (f.size > 5 * 1024 * 1024) {
+        showToast("Certificate file must be 5 MB or smaller.", "danger");
+        input.value = "";
+        badge?.classList.add('d-none');
+        return;
+    }
+    const kb = (f.size / 1024).toFixed(1);
+    const mb = (f.size / (1024 * 1024)).toFixed(2);
+    if (nameEl) nameEl.textContent = f.name;
+    if (sizeEl) sizeEl.textContent = f.size > 1024 * 1024 ? mb + " MB" : kb + " KB";
+    badge?.classList.remove('d-none');
+}
+
+function clearCertificateRows(containerId = 'additionalCertsContainer') {
+    const container = document.getElementById(containerId);
+    if (container) container.innerHTML = '';
+}
+</script>
